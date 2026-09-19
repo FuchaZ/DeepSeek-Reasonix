@@ -1,0 +1,154 @@
+# One-off native Windows package for tester handoff. This workflow is outside
+# the public release control plane and always checks out the pinned main-v2 SHA.
+name: QA Windows v1.38.10-1
+run-name: QA Windows v1.38.10-1 from main-v2 fceba0407989
+
+on:
+  push:
+    branches: [codex/qa-windows-v1.38.10-1]
+    paths: [.github/workflows/qa-windows-v1.38.10-1.yml]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qa-windows-v1.38.10-1
+  cancel-in-progress: false
+
+env:
+  SOURCE_SHA: fceba0407989ed7ca54bbc533b2d2100441aeac9
+  TEST_VERSION: v1.38.10-1
+
+jobs:
+  package:
+    name: package and accept windows-x64
+    runs-on: windows-latest
+    timeout-minutes: 60
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout immutable main-v2 source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+          persist-credentials: false
+
+      - name: Verify source identity
+        run: |
+          test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+          test -z "$(git status --porcelain)"
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: desktop/go.mod
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            desktop/go.sum
+
+      - uses: pnpm/action-setup@v6.1.0
+        with:
+          version: 10
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: desktop/pnpm-lock.yaml
+
+      - name: Install NSIS
+        shell: pwsh
+        run: ./scripts/install-nsis.ps1
+
+      - name: Build Windows x64 installer and portable archive
+        run: scripts/desktop-build.sh windows/amd64 "$TEST_VERSION" canary
+
+      - name: Verify package structure and native shell handshake
+        run: |
+          node desktop/packaging/verify.mjs dist/Reasonix-windows-amd64.zip
+          node desktop/packaging/smoke.mjs desktop/build/electron/windows-amd64/app \
+            --service desktop/build/bin/reasonix-desktop.exe --timeout 90
+
+      - name: Accept final installer on disposable Windows runner
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          go build -o "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" ./cmd/windows-upgrade-fixture
+          ./scripts/test-windows-installer-startup.ps1 `
+            -InstallerPath dist/Reasonix-windows-amd64-installer.exe `
+            -ExpectedVersion $env:TEST_VERSION `
+            -FixtureBuilderPath "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" `
+            -EvidenceDirectory "$env:RUNNER_TEMP/reasonix-installer-acceptance" `
+            -DisposableEnvironment
+
+      - name: Record source identity, checksums and handoff notes
+        run: |
+          sha256sum \
+            dist/Reasonix-windows-amd64-installer.exe \
+            dist/Reasonix-windows-amd64.zip \
+            > dist/SHA256SUMS.txt
+          cp "$RUNNER_TEMP/reasonix-installer-acceptance/acceptance.json" dist/INSTALLER-ACCEPTANCE.json
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import crypto from 'node:crypto';
+          const names = ['Reasonix-windows-amd64-installer.exe', 'Reasonix-windows-amd64.zip'];
+          const artifacts = names.map(name => {
+            const bytes = fs.readFileSync(`dist/${name}`);
+            return { name, size: bytes.length, sha256: crypto.createHash('sha256').update(bytes).digest('hex') };
+          });
+          const manifest = {
+            version: process.env.TEST_VERSION,
+            channel: 'canary',
+            platform: 'windows/amd64',
+            sourceRepository: 'esengine/DeepSeek-Reasonix',
+            sourceRevision: process.env.SOURCE_SHA,
+            testingOnly: true,
+            productionSigned: false,
+            nativeAcceptance: true,
+            workflowRun: `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`,
+            artifacts,
+          };
+          fs.writeFileSync('dist/BUILD-INFO.json', `${JSON.stringify(manifest, null, 2)}\n`);
+          fs.writeFileSync('dist/README-TEST.txt', [
+            `${manifest.version} Windows x64 internal test package`,
+            `Source: ${manifest.sourceRepository}@${manifest.sourceRevision}`,
+            'For internal testing only; this is not an official Stable release.',
+            'The Windows executables are unsigned.',
+            'The package passed structure checks, the packaged shell/service handshake, and native installer acceptance.',
+            'Exit any running Reasonix instance before installing or starting the portable build.',
+            'SHA256SUMS.txt verifies the package bytes.',
+            '',
+          ].join('\n'));
+          console.log(JSON.stringify(manifest, null, 2));
+          NODE
+
+      - name: Upload downloadable internal package
+        id: upload
+        uses: actions/upload-artifact@v7
+        with:
+          name: Reasonix-v1.38.10-1-windows-x64-internal
+          path: |
+            dist/Reasonix-windows-amd64-installer.exe
+            dist/Reasonix-windows-amd64.zip
+            dist/SHA256SUMS.txt
+            dist/BUILD-INFO.json
+            dist/INSTALLER-ACCEPTANCE.json
+            dist/README-TEST.txt
+          if-no-files-found: error
+          retention-days: 30
+          compression-level: 0
+
+      - name: Write handoff summary
+        run: |
+          {
+            echo '### Reasonix v1.38.10-1 Windows x64 internal package'
+            echo
+            echo 'Download: ${{ steps.upload.outputs.artifact-url }}'
+            echo "Source: $SOURCE_SHA"
+            echo "Version: $TEST_VERSION"
+            echo 'Channel: canary; unsigned; testing only'
+            echo 'Acceptance: package structure, native shell/service handshake, fresh install, suffix reinstall, legacy data upgrade, clean uninstall, and user-data retention passed.'
+          } >> "$GITHUB_STEP_SUMMARY"
