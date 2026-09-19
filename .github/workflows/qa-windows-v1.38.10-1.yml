@@ -76,7 +76,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          go build -o "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" ./cmd/windows-upgrade-fixture
+          go build -o "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" ./desktop/cmd/windows-upgrade-fixture
           ./scripts/test-windows-installer-startup.ps1 `
             -InstallerPath dist/Reasonix-windows-amd64-installer.exe `
             -ExpectedVersion $env:TEST_VERSION `
