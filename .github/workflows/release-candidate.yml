@@ -314,7 +314,7 @@ jobs:
           test -s payload/evidence/windows-amd64.json
           test -s payload/evidence/windows-arm64.json
           test -s payload/evidence/macos-universal-intel.json
-      - uses: actions/attest-build-provenance@v3
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: payload/**/*
       - name: Upload immutable candidate payload
@@ -371,7 +371,7 @@ jobs:
           else
             node scripts/release-candidate.mjs verify payload record/record.json
           fi
-      - uses: actions/attest-build-provenance@v3
+      - uses: actions/attest-build-provenance@v4
         with:
           subject-path: record/record.json
       - uses: actions/upload-artifact@v7
