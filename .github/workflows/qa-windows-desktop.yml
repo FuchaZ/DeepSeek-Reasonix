@@ -46,11 +46,6 @@ jobs:
           cache: pnpm
           cache-dependency-path: desktop/pnpm-lock.yaml
 
-      - name: Install Wails CLI
-        run: |
-          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
-          go install "github.com/wailsapp/wails/v2/cmd/wails@$(cat "$GITHUB_WORKSPACE/.wails-version")"
-
       - name: Install NSIS
         run: pwsh -NoProfile -File scripts/install-nsis.ps1
 
