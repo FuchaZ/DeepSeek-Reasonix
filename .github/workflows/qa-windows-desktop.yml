@@ -76,7 +76,7 @@ jobs:
       - name: Install and smoke-test Windows installer identity
         shell: pwsh
         run: |
-          go build -o "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" ./cmd/windows-upgrade-fixture
+          go -C desktop build -o "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" ./cmd/windows-upgrade-fixture
           ./scripts/test-windows-installer-startup.ps1 `
             -InstallerPath dist/Reasonix-windows-amd64-installer.exe `
             -ExpectedVersion v1.38.11-1 `
