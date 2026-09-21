@@ -25,6 +25,7 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
 
       - name: Verify pinned source
         run: git merge-base --is-ancestor "$SOURCE_SHA" HEAD
