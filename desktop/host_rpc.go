@@ -123,6 +123,8 @@ func runEmitContract(dir string) int {
 // shell closes stdin or acknowledges desktop/shutdown. It returns the
 // process exit code.
 func runHostRPC(app *App, stdin io.Reader, stdout io.Writer) int {
+	stopQAProfile := startQACPUProfileFromEnvironment()
+	defer stopQAProfile()
 	stopEndpoint, err := startUpdateEndpoint()
 	if err != nil {
 		slog.Error("desktop host: update endpoint", "err", err)

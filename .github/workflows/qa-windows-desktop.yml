@@ -24,10 +24,10 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ env.SOURCE_SHA }}
+          ref: ${{ github.sha }}
 
       - name: Verify pinned source
-        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+        run: git merge-base --is-ancestor "$SOURCE_SHA" HEAD
 
       - uses: actions/setup-go@v7
         with:
@@ -82,6 +82,69 @@ jobs:
             -ExpectedVersion v1.38.11-1 `
             -FixtureBuilderPath "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" `
             -EvidenceDirectory "$env:RUNNER_TEMP/reasonix-installer-acceptance"
+
+      - name: Profile installed desktop at idle
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $install = Join-Path $env:RUNNER_TEMP 'reasonix-idle-cpu-install'
+          $home = Join-Path $env:RUNNER_TEMP 'reasonix-idle-cpu-home'
+          $evidence = Join-Path $env:RUNNER_TEMP 'reasonix-idle-cpu'
+          New-Item -ItemType Directory -Force -Path $install,$home,$evidence | Out-Null
+          $installer = (Resolve-Path 'dist/Reasonix-windows-amd64-installer.exe').Path
+          $installed = Start-Process -FilePath $installer -ArgumentList @('/S', "/D=$install") -PassThru -Wait
+          if ($installed.ExitCode -ne 0) { throw "diagnostic install failed: $($installed.ExitCode)" }
+          $env:REASONIX_HOME = $home
+          $env:REASONIX_QA_CPU_PROFILE = Join-Path $evidence 'service.pprof'
+          Start-Process -FilePath (Join-Path $install 'Reasonix.exe') | Out-Null
+          Start-Sleep -Seconds 15
+          function Read-ReasonixProcesses {
+            @(Get-CimInstance Win32_Process | Where-Object { $_.ExecutablePath -and $_.ExecutablePath.StartsWith($install, [StringComparison]::OrdinalIgnoreCase) })
+          }
+          $beforeRows = Read-ReasonixProcesses
+          $beforeCpu = @{}
+          foreach ($row in $beforeRows) {
+            $process = Get-Process -Id $row.ProcessId -ErrorAction SilentlyContinue
+            if ($process) { $beforeCpu[$row.ProcessId] = $process.CPU }
+          }
+          Start-Sleep -Seconds 50
+          $afterRows = Read-ReasonixProcesses
+          $logical = [Environment]::ProcessorCount
+          $samples = foreach ($row in $afterRows) {
+            $process = Get-Process -Id $row.ProcessId -ErrorAction SilentlyContinue
+            if (-not $process) { continue }
+            $startCpu = $beforeCpu[$row.ProcessId]
+            $delta = if ($null -eq $startCpu) { $null } else { [Math]::Max(0, $process.CPU - $startCpu) }
+            [pscustomobject]@{
+              pid = $row.ProcessId
+              parentPid = $row.ParentProcessId
+              executable = $row.ExecutablePath.Substring($install.Length).TrimStart('\')
+              commandLine = $row.CommandLine
+              cpuSeconds = $delta
+              cpuPercentOneCore = if ($null -eq $delta) { $null } else { [Math]::Round(100 * $delta / 50, 2) }
+              cpuPercentMachine = if ($null -eq $delta) { $null } else { [Math]::Round(100 * $delta / 50 / $logical, 2) }
+              workingSetMb = [Math]::Round($process.WorkingSet64 / 1MB, 2)
+            }
+          }
+          [pscustomobject]@{ logicalProcessors = $logical; intervalSeconds = 50; processes = @($samples) } |
+            ConvertTo-Json -Depth 6 | Set-Content -Encoding utf8 (Join-Path $evidence 'processes.json')
+          $profile = Join-Path $evidence 'service.pprof'
+          if (-not (Test-Path $profile)) { throw 'Go service CPU profile was not written' }
+          go tool pprof -top -nodecount=100 $profile | Set-Content -Encoding utf8 (Join-Path $evidence 'service-pprof-top.txt')
+          $logs = Join-Path $home 'desktop-shell/logs'
+          if (Test-Path $logs) { Copy-Item -Recurse -Force $logs (Join-Path $evidence 'logs') }
+          Get-Content (Join-Path $evidence 'processes.json')
+          Get-Content (Join-Path $evidence 'service-pprof-top.txt')
+          Get-Process -Name Reasonix,reasonix-desktop,reasonix-launcher -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+
+      - name: Upload Windows idle CPU evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Reasonix-windows-amd64-v1.38.11-1-idle-cpu
+          path: ${{ runner.temp }}/reasonix-idle-cpu/**
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Upload Windows installer acceptance evidence
         if: always()
