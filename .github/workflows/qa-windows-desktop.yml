@@ -1,0 +1,113 @@
+# One-off QA packaging for tester handoff. Not part of the release control plane.
+# The source ref and version are pinned so the produced binaries match the
+# requested main-v2 tip and can be traced independently of a public release.
+name: QA Windows desktop package
+
+on:
+  push:
+    branches: [chore/qa-windows-v1.38.11-1]
+
+permissions:
+  contents: read
+
+env:
+  SOURCE_SHA: 8ad1f01bdfb6c7a47e115335909654b51eceb82f
+  QA_VERSION: v1.38.11-1
+
+jobs:
+  package:
+    name: package windows-amd64
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.SOURCE_SHA }}
+
+      - name: Verify pinned source
+        run: test "$(git rev-parse HEAD)" = "$SOURCE_SHA"
+
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: desktop/go.mod
+          cache: true
+          cache-dependency-path: desktop/go.sum
+
+      - uses: pnpm/action-setup@v6.0.9
+        with:
+          version: 10
+          run_install: false
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: desktop/frontend/pnpm-lock.yaml
+
+      - name: Install Wails CLI
+        run: |
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+          go install "github.com/wailsapp/wails/v2/cmd/wails@$(cat "$GITHUB_WORKSPACE/.wails-version")"
+
+      - name: Install NSIS
+        run: pwsh -NoProfile -File scripts/install-nsis.ps1
+
+      - name: Build Windows installer and portable archive
+        timeout-minutes: 30
+        run: scripts/desktop-build.sh windows/amd64 "$QA_VERSION" canary
+
+      - name: Verify packaged artifacts
+        run: |
+          node desktop/packaging/verify.mjs dist/Reasonix-windows-amd64.zip
+          sha256sum \
+            dist/Reasonix-windows-amd64-installer.exe \
+            dist/Reasonix-windows-amd64.zip \
+            > dist/SHA256SUMS.txt
+          {
+            echo "QA Windows desktop package"
+            echo "source_sha=$SOURCE_SHA"
+            echo "version=$QA_VERSION"
+            echo "platform=windows/amd64"
+            echo "channel=canary"
+            echo "built_at_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+            echo "unsigned=true"
+            echo "note=Tester build from the pinned main-v2 tip; not an official signed release."
+            echo
+            cat dist/SHA256SUMS.txt
+          } | tee dist/QA-HANDOFF.txt
+
+      - name: Install and smoke-test Windows installer identity
+        shell: pwsh
+        run: |
+          go build -o "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" ./cmd/windows-upgrade-fixture
+          ./scripts/test-windows-installer-startup.ps1 `
+            -InstallerPath dist/Reasonix-windows-amd64-installer.exe `
+            -ExpectedVersion v1.38.11-1 `
+            -FixtureBuilderPath "$env:RUNNER_TEMP/windows-upgrade-fixture.exe" `
+            -EvidenceDirectory "$env:RUNNER_TEMP/reasonix-installer-acceptance"
+
+      - name: Upload Windows installer acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: Reasonix-windows-amd64-v1.38.11-1-acceptance
+          path: |
+            ${{ runner.temp }}/reasonix-installer-acceptance/**/*.json
+            ${{ runner.temp }}/reasonix-installer-acceptance/**/*.png
+            ${{ runner.temp }}/reasonix-installer-acceptance/**/*.log
+            !${{ runner.temp }}/reasonix-installer-acceptance/installed/**
+          if-no-files-found: warn
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: Reasonix-windows-amd64-v1.38.11-1
+          path: |
+            dist/Reasonix-windows-amd64-installer.exe
+            dist/Reasonix-windows-amd64.zip
+            dist/SHA256SUMS.txt
+            dist/QA-HANDOFF.txt
+          if-no-files-found: error
+          retention-days: 14
