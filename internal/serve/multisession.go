@@ -447,6 +447,7 @@ func (s *Server) Close() {
 	if concrete, ok := cur.(*control.Controller); ok {
 		s.forgetSessionTag(concrete)
 	}
+	s.closeDesktopStore()
 }
 
 // busyDetach publishes a fresh controller before demoting a busy controller.

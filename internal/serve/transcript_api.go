@@ -172,6 +172,12 @@ func (s *Server) canonicalSessionQuery(w http.ResponseWriter, r *http.Request) (
 	requested = strings.TrimPrefix(requested, remoteSessionIDQueryPrefix)
 	cold := session.SessionRef{HostID: service.HostID(), SessionID: requested}
 	if _, err := service.Query().Stat(r.Context(), cold); err != nil {
+		// The identity is not in this process's store. A Desktop v5 session is
+		// still readable here through the read-only Desktop store, so answer
+		// from there instead of failing the page.
+		if desktopQuery, desktopRef, ok := s.desktopV5Query(r.Context(), requested); ok {
+			return desktopQuery, desktopRef, true
+		}
 		http.Error(w, "session history is not bound to this runtime", http.StatusConflict)
 		return nil, session.SessionRef{}, false
 	}

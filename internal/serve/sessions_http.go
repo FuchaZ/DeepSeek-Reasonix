@@ -28,6 +28,13 @@ type sessionListEntry struct {
 
 	Preview       string `json:"preview,omitempty"`
 	MetadataReady bool   `json:"metadataReady,omitempty"`
+
+	// Workspace grouping for a store whose membership lives in a registry
+	// rather than in the session directory (the Desktop v5 store). Empty for
+	// legacy and canonical rows, whose grouping the frontend derives from the
+	// session path.
+	WorkspaceID    string `json:"workspaceId,omitempty"`
+	WorkspaceTitle string `json:"workspaceTitle,omitempty"`
 }
 
 // sessions lists saved sessions with event-log-aware titles and turn counts.
@@ -39,6 +46,11 @@ func (s *Server) sessions(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	out := mergeSessionRows(s.legacySessionRows(r, ctrl, entries))
+	// The Desktop's v5 sessions live in a separate store this process only
+	// reads. They are appended rather than merged into the migration fold:
+	// v5 identities are independent of the legacy transcripts, and a v5
+	// session has no legacy path to fold against.
+	out = append(out, s.desktopV5Rows(r.Context())...)
 	sort.SliceStable(out, func(i, j int) bool { return out[i].MtimeMilli > out[j].MtimeMilli })
 	writeJSON(w, out)
 }

@@ -565,6 +565,12 @@ func (s *Server) statusIdentityOverride(w http.ResponseWriter, raw string) bool 
 func (s *Server) identityColdHistory(raw string) ([]provider.Message, bool) {
 	ref, _, err := s.resolveSessionIdentity(raw)
 	if err != nil {
+		// The identity is not in this process's store. It may belong to the
+		// Desktop's v5 store, which Serve only reads: resolveSessionIdentity
+		// cannot see it, so read it cold from there before giving up.
+		if msgs, ok := s.desktopV5History(strings.TrimPrefix(strings.TrimSpace(raw), remoteSessionIDQueryPrefix)); ok {
+			return msgs, true
+		}
 		return nil, false
 	}
 	concrete, ok := s.ctl().(*control.Controller)

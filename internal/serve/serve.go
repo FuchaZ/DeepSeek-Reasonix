@@ -92,6 +92,18 @@ type Server struct {
 	// and mirrors the writer's frames, but holds no write authority.
 	mirrorMu sync.Mutex
 	mirrored map[string]mirroredSession
+	// desktopV5 is a read-only handle on the Desktop's v5 session store
+	// (desktop-sessions-v5/by-id). It is set when this process runs on a host
+	// that also has a Desktop store, so the same machine's Desktop sessions are
+	// visible and readable through Serve. It is opened observation-only and
+	// never writes: see SetDesktopSessionStore. nil means "no Desktop store".
+	desktopV5 *session.Service
+	// desktopWorkspaceState is the path to the Desktop workspace registry
+	// (desktop/workspace-state-v1.json). It is read per listing rather than
+	// cached: the running Desktop rewrites this file as sessions are created,
+	// archived, or moved, so a snapshot taken at startup would group and hide
+	// sessions by stale membership. Empty means "no registry on this host".
+	desktopWorkspaceState string
 }
 
 // SetControllerBuildOptions records the process-local options used to build

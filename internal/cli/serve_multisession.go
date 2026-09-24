@@ -10,6 +10,7 @@ import (
 	"reasonix/internal/control"
 	"reasonix/internal/remote/bootstrap"
 	"reasonix/internal/serve"
+	"reasonix/internal/session"
 )
 
 func registerServeCapabilityFlags(fs *flag.FlagSet) {
@@ -65,5 +66,12 @@ func newCLIMultiSessionServer(ctrl *control.Controller, bc *serve.Broadcaster, t
 	srv.SetControllerBuildOptions(buildOpts)
 	srv.RegisterSessionTag(ctrl, tag)
 	_ = srv.SetSessionLeases(leases)
+	// The Desktop's v5 sessions live in a separate store. Expose them read-only
+	// alongside this process's own sessions so a client sees one conversation
+	// universe on a host where both the Desktop and Serve run. Opening the store
+	// is optional: a host without one keeps the legacy-only listing.
+	if desktop, workspaceState, err := session.OpenDesktopStore(); err == nil {
+		srv.SetDesktopSessionStore(desktop, workspaceState)
+	}
 	return srv
 }
