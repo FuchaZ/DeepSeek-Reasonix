@@ -22,6 +22,7 @@ controls and states are the same in other locales.
 - [Hosts and configuration](#hosts-and-configuration)
 - [Connecting from the CLI](#connecting-from-the-cli)
 - [The remote serve process](#the-remote-serve-process)
+- [Desktop v5 sessions on the serve host](#desktop-v5-sessions-on-the-serve-host)
 - [Remote session lifecycle](#remote-session-lifecycle)
 - [Desktop remote work](#desktop-remote-work)
 - [Credentials and model access](#credentials-and-model-access)
@@ -251,6 +252,31 @@ arguments match exactly; it never kills an unrelated process.
 **Concurrent bootstraps**: clients bootstrapping the same workspace at the
 same time are serialized by a remote file lock; the lock expires after 60
 seconds of inactivity.
+
+## Desktop v5 sessions on the serve host
+
+A host can run the Desktop and a `reasonix serve` at the same time. The Desktop
+keeps its conversations in `desktop-sessions-v5/by-id`, a store serve never
+opened, so those sessions were invisible and unreadable through the serve web
+client even though both processes share the machine.
+
+Serve now attaches a read-only handle to that store when one exists:
+
+- `/sessions` includes the Desktop's v5 sessions alongside the sessions serve
+  itself owns. Grouping and visibility come from the Desktop workspace registry
+  (`desktop/workspace-state-v1.json`), so a session the Desktop hides
+  (archived, deleted, or an unfinished create reservation) stays hidden here
+  too. The registry is re-read on each listing because the Desktop rewrites it
+  while running.
+- The identity-addressed history endpoints answer for a Desktop v5 session the
+  same way they answer for a stored sessions-v4 session: a cold read of the
+  durable event log, needing neither a runtime nor the writer lease.
+- These rows report as taken over. Serve holds no write authority over the
+  Desktop store, so a client offers a read-only view instead of a resume that
+  cannot succeed. Creating or writing v5 sessions through serve is not
+  supported; this is a read-only visibility gap being closed.
+
+A host with no Desktop store keeps its previous listing behavior.
 
 ## Remote session lifecycle
 
