@@ -109,7 +109,11 @@ export function SayCard({ item, afterAnswer, settled = true, reply, quiet }: { i
   const [branching, setBranching] = useState(false);
   const thinking = !item.done && item.thoughtMs === undefined;
   const start = useStartsOpen("thinking", thinking && !item.text);
-  const alwaysOpen = useFoldModes().thinking === "open";
+  const thoughtMode = useFoldModes().thinking;
+  const alwaysOpen = thoughtMode === "open";
+  // A thought the reader asked to see while it streams gets the same uncapped
+  // window "open" gets: "live" is about when it opens, not how much of it shows.
+  const fullWhileLive = alwaysOpen || thoughtMode === "live";
   // The title changes once, when a thought this card watched finishes; a
   // thought drawn already finished is not that change happening.
   const watchedThinking = useRef(thinking);
@@ -172,7 +176,7 @@ export function SayCard({ item, afterAnswer, settled = true, reply, quiet }: { i
         </div>
         <div className="out">
           {item.reasoning?.trim() && (
-            <details className="think" open={open} data-live={thinking ? "" : undefined} data-full={alwaysOpen ? "" : undefined} data-cut={item.cut}
+            <details className="think" open={open} data-live={thinking ? "" : undefined} data-full={fullWhileLive ? "" : undefined} data-cut={item.cut}
               data-settled={settledHere ? "" : undefined} onToggle={(e) => {
                 const next = e.currentTarget.open;
                 if (next === open) return;

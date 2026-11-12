@@ -24,16 +24,21 @@ describe("the thinking block, as the Think-Exec board draws it", () => {
     expect(label().textContent).toBe("思考 1.2 秒 · 1 字");
   });
 
-  it("tells the stylesheet when the reader asked for every thought open, so the live window does not cap it", () => {
+  it("tells the stylesheet when every thought should show uncapped, so the live window does not cap it", () => {
     act(() => setFoldModes({ thinking: "open" }));
     const view = render(<SayCard item={appendText([], "想", "reasoning")[0] as Say} />);
     expect(think().hasAttribute("data-live")).toBe(true);
     expect(think().hasAttribute("data-full")).toBe(true);
     view.unmount();
+    // "live" opens a thought while it streams and finishes folded: the cap is
+    // what made it six lines, so it gets the uncapped window too.
     act(() => setFoldModes({ thinking: "live" }));
+    const live = render(<SayCard item={appendText([], "想", "reasoning")[0] as Say} />);
+    expect(think().hasAttribute("data-full")).toBe(true);
+    live.unmount();
+    act(() => setFoldModes({ thinking: "folded" }));
     render(<SayCard item={appendText([], "想", "reasoning")[0] as Say} />);
     expect(think().hasAttribute("data-full")).toBe(false);
-    act(() => setFoldModes({ thinking: "folded" }));
   });
 
   it("keeps a caret only on reasoning still arriving", () => {
