@@ -3,7 +3,7 @@
 </p>
 
 > [!NOTE]
-> **Reasonix Studio Tweaks** —— [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) `studio`（2.x）分支的个人 fork。上游停在 v2.61.0；本仓库从这里继续，改动集中在 Reasonix Studio 桌面端：UI 布局、小功能和部分小缺陷修复。
+> **Reasonix Studio Tweaks** —— [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) `studio`（2.x）分支的个人 fork。上游停在 v2.61.0；本仓库从这里继续，对 Reasonix Studio 做小范围的改动：UI 布局、会话之间能够互相交流，以及后台辅助把对话往下推。
 
 <p align="center">
   <a href="./README.md">English</a>
@@ -23,11 +23,12 @@
 
 ## 这个分支改了什么
 
-本 fork 名为 **Reasonix Studio Tweaks**。引擎部分保持上游原样，改动落在 Reasonix Studio 桌面端：
+本 fork 名为 **Reasonix Studio Tweaks**。引擎部分保持上游原样，改动都很小、范围明确，落在 Reasonix Studio 上：
 
 - **UI 布局**：重排工作台、面板和输入区，把窗口更多空间留给对话和项目树，少留给人来看的壳子。
+- **会话之间能交流**：跨项目的会话，以及同一项目里的多个会话，都能借助现有的 `peers` 机制互发消息、根据听到的内容行动，而不是每次都从零开始。
+- **后台辅助**：有一个助手在对话背后工作，让台前那条对话继续往前走——它读上下文、把线索理顺，再把会话下一步需要的东西递回来。
 - **小功能**：让应用更顺手的那些小改进，一项一项加。
-- **多 Agent UI**：为同时运行多个 Agent 的会话搭桌面端界面，让每个 Agent 的产出都看得见、认得出是谁做的。
 - **小缺陷修复**：桌面外壳和网页界面里那些窄范围的问题逐个修掉，每个都带上对应的测试。
 
 改动保持小而可审阅，不是重写。

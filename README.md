@@ -3,7 +3,7 @@
 </p>
 
 > [!NOTE]
-> **Reasonix Studio Tweaks** — a personal fork of [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) on the `studio` (2.x) line. Upstream stopped at v2.61.0; this fork continues from there, focused on the Reasonix Studio desktop app: UI layout, small features and small bug fixes.
+> **Reasonix Studio Tweaks** — a personal fork of [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) on the `studio` (2.x) line. Upstream stopped at v2.61.0; this fork continues from there with small, scoped changes to Reasonix Studio: UI layout, sessions that can talk to each other, and background help that carries a conversation forward.
 
 <p align="center">
   <strong>English</strong>
@@ -23,11 +23,12 @@
 
 ## What this fork changes
 
-This fork is **Reasonix Studio Tweaks**. The engine is kept as upstream left it; the work lands in Reasonix Studio, the desktop app:
+This fork is **Reasonix Studio Tweaks**. The engine is kept as upstream left it; the work is small and scoped, and lands in Reasonix Studio:
 
 - **UI layout.** The workbench, panes and prompt area are rearranged so the conversation and the project tree get more of the window and the chrome gets less.
+- **Sessions that talk to each other.** Sessions across projects, and several sessions inside one project, can exchange messages on the existing `peers` machinery and act on what they hear, instead of each one starting from nothing.
+- **Background help.** An assistant works behind the conversation so the visible one keeps moving: it reads context, keeps the thread straight, and hands back what the session needs next.
 - **Small features.** Small conveniences that make the app nicer to live in, added one at a time.
-- **Multi-agent UI.** The desktop UI is being built out for sessions that run more than one agent, so each agent's work stays visible and attributable.
 - **Small bug fixes.** Narrow defects in the desktop shell and the web UI, fixed one at a time, each with the test that covers it.
 
 Changes stay small and reviewable. Nothing here is a rewrite.
