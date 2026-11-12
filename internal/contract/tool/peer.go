@@ -25,16 +25,19 @@ type PeerDirectory interface {
 }
 
 // DispatchReceipt says a task was written into a session of another project.
+// Role is the name the caller gave the job, empty when it named none.
 type DispatchReceipt struct {
 	Project string
 	Key     string
 	ID      string
+	Role    string
 }
 
 // ProjectDispatcher is what the dispatch tool asks of the session that owns it:
-// hand a task to a session in another of the user's projects.
+// hand a task to a session in another of the user's projects. A non-empty role
+// keeps several sessions in one project apart.
 type ProjectDispatcher interface {
-	DispatchToProject(ctx context.Context, project, text string) (DispatchReceipt, error)
+	DispatchToProject(ctx context.Context, project, text, role string) (DispatchReceipt, error)
 }
 
 // OpenedProject is what became of one folder the model asked to have opened.

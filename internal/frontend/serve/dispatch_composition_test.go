@@ -29,7 +29,7 @@ func TestDispatchKeepsTheExactCompositionAndRefusesAnotherWorkspace(t *testing.T
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.hub.openDispatchSession(t.Context(), rt, ctrl, root, []byte("pair")); err != nil {
+	if _, err := f.hub.openDispatchSession(t.Context(), rt, ctrl, root, "", []byte("pair")); err != nil {
 		t.Fatal(err)
 	}
 	got := f.bindings[0]
@@ -37,7 +37,7 @@ func TestDispatchKeepsTheExactCompositionAndRefusesAnotherWorkspace(t *testing.T
 		t.Fatalf("dispatched runtime lost its exact composition: %+v", got)
 	}
 	opened := f.opened
-	if _, err := f.hub.openDispatchSession(t.Context(), rt, ctrl, other, []byte("pair")); !errors.Is(err, agentcomposition.ErrUnavailable) {
+	if _, err := f.hub.openDispatchSession(t.Context(), rt, ctrl, other, "", []byte("pair")); !errors.Is(err, agentcomposition.ErrUnavailable) {
 		t.Fatalf("another workspace accepted a bound composition: %v", err)
 	}
 	if f.opened != opened {

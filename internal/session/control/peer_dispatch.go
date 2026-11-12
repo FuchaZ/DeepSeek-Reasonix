@@ -8,6 +8,7 @@ import (
 
 	"reasonix/internal/contract/config"
 	"reasonix/internal/contract/tool"
+	"reasonix/internal/safety/permission"
 	"reasonix/internal/state/peermail"
 )
 
@@ -31,11 +32,14 @@ type DispatchResult struct {
 	Project string
 	Key     string
 	ID      string
+	Role    string
 }
 
 // ProjectDispatcher opens, or reuses, a session in another project of the user
-// and writes the task into it. The host that owns the panes supplies it.
-type ProjectDispatcher func(ctx context.Context, project, text string) (DispatchResult, error)
+// and writes the task into it. The host that owns the panes supplies it. A
+// non-empty role is the caller's name for the job, and the host keeps one
+// session per role rather than one per project.
+type ProjectDispatcher func(ctx context.Context, project, text, role string) (DispatchResult, error)
 
 // dispatchState is the controller's side of cross-project dispatch.
 type dispatchState struct {
@@ -198,8 +202,30 @@ func (c *Controller) TrustOfWorkspace(root string) config.WorkspaceTrust {
 	return trust
 }
 
+// DispatchIntoSelfAllowed reports whether the person has already allowed a
+// dispatch into this session's own project. The same yes the permission card
+// writes counts: a rule in a config file, or an allow given to this session on a
+// prompt. So a person who chose "always allow" there does not have to find a
+// second switch for the same intent.
+func (c *Controller) DispatchIntoSelfAllowed() bool {
+	const tool = "dispatch_to_project"
+	rules := c.PermissionRules()
+	lists := [][]string{rules.Allow, rules.Granted}
+	if rules.Effective != nil {
+		lists = append(lists, rules.Effective.Allow)
+	}
+	// DecideSubject with an empty mode asks "is there an allow rule for this
+	// tool?", which is the question; Deny still wins, as it does everywhere.
+	for _, allow := range lists {
+		if permission.New("deny", allow, nil, rules.Deny).DecideSubject(tool, false, "") == permission.Allow {
+			return true
+		}
+	}
+	return false
+}
+
 // DispatchToProject hands a task to a session in another of the user's projects.
-func (c *Controller) DispatchToProject(ctx context.Context, project, text string) (DispatchResult, error) {
+func (c *Controller) DispatchToProject(ctx context.Context, project, text, role string) (DispatchResult, error) {
 	cfg := config.LoadForEdit(config.UserConfigPath())
 	if !cfg.PeersDispatch() {
 		return DispatchResult{}, ErrDispatchDisabled
@@ -211,15 +237,15 @@ func (c *Controller) DispatchToProject(ctx context.Context, project, text string
 	if hook == nil {
 		return DispatchResult{}, ErrDispatchUnavailable
 	}
-	return (*hook)(ctx, project, text)
+	return (*hook)(ctx, project, text, role)
 }
 
-func (d peerDirectory) DispatchToProject(ctx context.Context, project, text string) (tool.DispatchReceipt, error) {
-	r, err := d.c.DispatchToProject(ctx, project, text)
+func (d peerDirectory) DispatchToProject(ctx context.Context, project, text, role string) (tool.DispatchReceipt, error) {
+	r, err := d.c.DispatchToProject(ctx, project, text, role)
 	if err != nil {
 		return tool.DispatchReceipt{}, fmtPeerError(err)
 	}
-	return tool.DispatchReceipt{Project: r.Project, Key: r.Key, ID: r.ID}, nil
+	return tool.DispatchReceipt{Project: r.Project, Key: r.Key, ID: r.ID, Role: r.Role}, nil
 }
 
 // RefreshPeers reads this session's spool now rather than at the next tick, so

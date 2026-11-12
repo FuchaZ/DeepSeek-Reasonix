@@ -9,20 +9,21 @@ import (
 )
 
 const (
-	codePeersDisabled  = "peer.disabled"
-	codePeerNotFound   = "peer.not_found"
-	codePeerAmbiguous  = "peer.ambiguous"
-	codePeerSelf       = "peer.self"
-	codePeerRefused    = "peer.refused"
-	codePeerRateLimit  = "peer.rate_limited"
-	codePeerEmpty      = "peer.empty"
-	codePeerTooLarge   = "peer.too_large"
-	codePeerNotHeld    = "peer.not_held"
-	codePeerSendFailed = "peer.send_failed"
-	codePeerBadProject = "peer.invalid_project"
-	codePeerBadCeiling = "peer.invalid_ceiling"
-	codePeerRemember   = "peer.remember_denied"
-	codePeerSettings   = "peer.settings_unwritable"
+	codePeersDisabled   = "peer.disabled"
+	codePeerNotFound    = "peer.not_found"
+	codePeerAmbiguous   = "peer.ambiguous"
+	codePeerSelf        = "peer.self"
+	codePeerRefused     = "peer.refused"
+	codePeerRateLimit   = "peer.rate_limited"
+	codePeerEmpty       = "peer.empty"
+	codePeerTooLarge    = "peer.too_large"
+	codePeerNotHeld     = "peer.not_held"
+	codePeerSendFailed  = "peer.send_failed"
+	codePeerBadProject  = "peer.invalid_project"
+	codePeerBadCeiling  = "peer.invalid_ceiling"
+	codePeerBadIncoming = "peer.invalid_incoming"
+	codePeerRemember    = "peer.remember_denied"
+	codePeerSettings    = "peer.settings_unwritable"
 )
 
 func (s *Server) registerPeerRoutes(mux *http.ServeMux) {
@@ -52,13 +53,14 @@ func (s *Server) savePeersSettings(w http.ResponseWriter, r *http.Request) {
 		MaxDepth        *int      `json:"max_dispatch_depth"`
 		MaxSessions     *int      `json:"max_dispatched_sessions"`
 		OpenNested      *bool     `json:"open_nested"`
+		Incoming        *string   `json:"incoming"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&body); err != nil ||
-		(body.Enabled == nil && body.Dispatch == nil && body.ReleaseProjects == nil && body.MaxDepth == nil && body.MaxSessions == nil && body.OpenNested == nil) {
+		(body.Enabled == nil && body.Dispatch == nil && body.ReleaseProjects == nil && body.MaxDepth == nil && body.MaxSessions == nil && body.OpenNested == nil && body.Incoming == nil) {
 		badBody(w)
 		return
 	}
-	got, err := s.ctl().SavePeersSettings(control.PeersPatch{Enabled: body.Enabled, Dispatch: body.Dispatch, ReleaseProjects: body.ReleaseProjects, MaxDispatchDepth: body.MaxDepth, MaxDispatchedSessions: body.MaxSessions, OpenNested: body.OpenNested})
+	got, err := s.ctl().SavePeersSettings(control.PeersPatch{Enabled: body.Enabled, Dispatch: body.Dispatch, ReleaseProjects: body.ReleaseProjects, MaxDispatchDepth: body.MaxDepth, MaxDispatchedSessions: body.MaxSessions, OpenNested: body.OpenNested, Incoming: body.Incoming})
 	if err != nil {
 		refusePeer(w, err)
 		return

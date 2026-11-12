@@ -170,6 +170,9 @@ export interface PeerHeld {
   body: string;
 }
 
+/** What another of the user's sessions may send without a card. */
+export type PeerIncoming = "ask" | "dispatch" | "always";
+
 export type PeerThreadState = "waiting" | "working" | "replied" | "declined";
 
 export interface PeerThread {
@@ -207,6 +210,9 @@ export interface PeersSettings {
   // The user's standing yes for open_projects to add folders inside the session's
   // own workspace without a card; it applies at the next call.
   open_nested: boolean;
+  // What another session of the user's may send without a card: ask, dispatch (a
+  // paired session only) or always.
+  incoming: PeerIncoming;
   path: string;
   applies: "next_turn";
   pending: boolean;
@@ -222,6 +228,7 @@ export interface PeersSettingsEdit {
   max_dispatch_depth?: number;
   max_dispatched_sessions?: number;
   open_nested?: boolean;
+  incoming?: PeerIncoming;
 }
 
 export type PeerRemember = "project" | "none";

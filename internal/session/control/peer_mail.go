@@ -309,25 +309,28 @@ func (c *Controller) noteUnreadFromPeer(path string) {
 	c.sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Audience: event.NoticeAudienceOperator, Code: event.NoticeCodePeerMessageArrived})
 }
 
-// releaseHeldPeerMessages approves what just arrived when the user's own file
-// lists this session's project, or when the user's dispatch switch is on, whoever
-// the sender is among their sessions. Only the asking is skipped: the message is the same follow-up an approval would
-// queue, and what it starts runs under this session's own approvals and sandbox.
+// releaseHeldPeerMessages approves what just arrived without showing the card,
+// as far as the user's own answer allows. peers.incoming is that answer: ask
+// holds everything, dispatch takes a paired session, always takes any. A project
+// the user released is taken too, whichever answer is set. Only the asking is
+// skipped: the message is the same follow-up an approval would queue, and what
+// it starts runs under this session's own approvals and sandbox.
 func (c *Controller) releaseHeldPeerMessages(ids []string) {
 	if len(ids) == 0 {
 		return
 	}
 	cfg := config.LoadForEdit(config.UserConfigPath())
-	projectReleased, dispatchOn := cfg.PeersReleasedProject(c.WorkspaceRoot()), cfg.PeersDispatch()
+	incoming := cfg.PeersIncoming()
+	projectReleased := cfg.PeersReleasedProject(c.WorkspaceRoot())
 	for _, id := range ids {
 		var consent peermail.Consent
 		switch {
 		case projectReleased:
 			consent = peermail.ConsentProject
-		case dispatchOn && c.dispatchPartner(c.heldPeerMessageBody(id)):
-			consent = peermail.ConsentDispatch
-		case dispatchOn:
+		case incoming == config.IncomingAlways:
 			consent = peermail.ConsentSwitch
+		case incoming == config.IncomingDispatch && c.dispatchPartner(c.heldPeerMessageBody(id)):
+			consent = peermail.ConsentDispatch
 		default:
 			continue
 		}

@@ -12,6 +12,8 @@ import (
 var (
 	// ErrPeerProjectInvalid is a release project that is not an absolute path.
 	ErrPeerProjectInvalid = errors.New("a released project must be an absolute folder path")
+	// ErrPeerIncomingInvalid is an answer that is not one of the three.
+	ErrPeerIncomingInvalid = errors.New(`incoming must be "ask", "dispatch" or "always"`)
 	// ErrPeerCeilingInvalid is a dispatch ceiling below zero; 0 is how a ceiling is removed.
 	ErrPeerCeilingInvalid = errors.New("a dispatch ceiling is a count of 0 or more")
 	// ErrPeerRememberDenied is a "remember" attached to a denial; only an approval
@@ -22,7 +24,7 @@ var (
 )
 
 func settingsWriteError(err error) error {
-	if err == nil || errors.Is(err, ErrPeerProjectInvalid) || errors.Is(err, ErrPeerCeilingInvalid) {
+	if err == nil || errors.Is(err, ErrPeerProjectInvalid) || errors.Is(err, ErrPeerCeilingInvalid) || errors.Is(err, ErrPeerIncomingInvalid) {
 		return err
 	}
 	return fmt.Errorf("%w: %w", ErrPeerSettingsUnwritable, err)
@@ -48,11 +50,14 @@ type PeersSettings struct {
 	MaxDispatchedSessions int `json:"max_dispatched_sessions"`
 	// OpenNested is the user's standing yes for open_projects to add folders inside
 	// the session's own workspace without a card; it takes effect at the next call.
-	OpenNested bool   `json:"open_nested"`
-	Path       string `json:"path"`
-	Applies    string `json:"applies"`
-	Pending    bool   `json:"pending"`
-	Available  bool   `json:"available"`
+	OpenNested bool `json:"open_nested"`
+	// Incoming is what another session of the user's may send without a card:
+	// ask, dispatch (a paired session only) or always.
+	Incoming  string `json:"incoming"`
+	Path      string `json:"path"`
+	Applies   string `json:"applies"`
+	Pending   bool   `json:"pending"`
+	Available bool   `json:"available"`
 }
 
 // PeersPatch is a partial update: a nil field is left as it is, and a non-nil
@@ -65,6 +70,7 @@ type PeersPatch struct {
 	MaxDispatchDepth      *int
 	MaxDispatchedSessions *int
 	OpenNested            *bool
+	Incoming              *string
 }
 
 // PeerRemember says what a decision on a held message also writes down.
@@ -86,7 +92,8 @@ func (c *Controller) peersSettingsFrom(cfg config.PeersConfig) PeersSettings {
 	out := PeersSettings{
 		Enabled: cfg.Enabled, Dispatch: cfg.Enabled && cfg.Dispatch, Path: config.UserConfigPath(),
 		MaxDispatchDepth: max(cfg.MaxDispatchDepth, 0), MaxDispatchedSessions: max(cfg.MaxDispatchedSessions, 0), OpenNested: cfg.OpenNested,
-		Applies: "next_turn", Available: p != nil && p.root != "", ReleaseProjects: []PeerReleased{},
+		Incoming: cfg.Incoming,
+		Applies:  "next_turn", Available: p != nil && p.root != "", ReleaseProjects: []PeerReleased{},
 	}
 	for _, path := range cfg.ReleaseProjects {
 		out.ReleaseProjects = append(out.ReleaseProjects, PeerReleased{Path: path, Name: filepath.Base(path)})
@@ -129,6 +136,14 @@ func (c *Controller) SavePeersSettings(patch PeersPatch) (PeersSettings, error) 
 		}
 		if patch.OpenNested != nil {
 			p.OpenNested = *patch.OpenNested
+		}
+		if patch.Incoming != nil {
+			switch *patch.Incoming {
+			case config.IncomingAsk, config.IncomingDispatch, config.IncomingAlways:
+				p.Incoming = *patch.Incoming
+			default:
+				return fmt.Errorf("%w: %q", ErrPeerIncomingInvalid, *patch.Incoming)
+			}
 		}
 		return nil
 	})

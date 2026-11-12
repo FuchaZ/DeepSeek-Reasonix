@@ -324,7 +324,7 @@ export class MockBoundary extends MockShell {
     return mockMods(this.modConfig.enabled);
   }
 
-  protected peerSettings: PeersSettings = { enabled: false, dispatch: false, release_projects: [], max_dispatch_depth: 1, max_dispatched_sessions: 8, open_nested: false, path: "/Users/you/.reasonix/config.toml", applies: "next_turn", pending: false, available: true };
+  protected peerSettings: PeersSettings = { enabled: false, dispatch: false, release_projects: [], max_dispatch_depth: 1, max_dispatched_sessions: 8, open_nested: false, incoming: "dispatch", path: "/Users/you/.reasonix/config.toml", applies: "next_turn", pending: false, available: true };
 
   async peersSettings(): Promise<PeersSettings> {
     return { ...this.peerSettings, release_projects: [...this.peerSettings.release_projects] };

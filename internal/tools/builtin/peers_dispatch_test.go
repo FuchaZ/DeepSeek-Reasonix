@@ -13,15 +13,17 @@ import (
 type fakeDispatcher struct {
 	fakePeers
 	asked [2]string
+	role  string
 	err   error
 }
 
-func (f *fakeDispatcher) DispatchToProject(_ context.Context, project, text string) (tool.DispatchReceipt, error) {
+func (f *fakeDispatcher) DispatchToProject(_ context.Context, project, text, role string) (tool.DispatchReceipt, error) {
 	f.asked = [2]string{project, text}
+	f.role = role
 	if f.err != nil {
 		return tool.DispatchReceipt{}, f.err
 	}
-	return tool.DispatchReceipt{Project: "/work/billing", Key: "s-9", ID: "m-7"}, nil
+	return tool.DispatchReceipt{Project: "/work/billing", Key: "s-9", ID: "m-7", Role: role}, nil
 }
 
 func dispatchTool(dir tool.PeerDirectory) tool.Tool {
@@ -65,5 +67,29 @@ func TestDispatchToolRefusalsKeepTheirIdentity(t *testing.T) {
 	boom := errors.New("dispatch.untrusted: that project is not one you have trusted")
 	if _, err := dispatchTool(&fakeDispatcher{err: boom}).Execute(ctx, json.RawMessage(`{"project":"b","text":"x"}`)); !errors.Is(err, boom) {
 		t.Fatalf("a refusal from the host was changed on the way: %v", err)
+	}
+}
+
+// A role travels through to the host and comes back in the result, and a call
+// that names none leaves it empty so the host keeps its one-per-project rule.
+func TestDispatchToolPassesTheRoleThrough(t *testing.T) {
+	ctx := context.Background()
+
+	plain := &fakeDispatcher{}
+	out, err := dispatchTool(plain).Execute(ctx, json.RawMessage(`{"project":"billing","text":"rotate the key"}`))
+	if err != nil || plain.role != "" {
+		t.Fatalf("no role: err %v, role %q; want an empty role", err, plain.role)
+	}
+	if strings.Contains(out, "role") {
+		t.Errorf("a roleless result names a role: %s", out)
+	}
+
+	named := &fakeDispatcher{}
+	out, err = dispatchTool(named).Execute(ctx, json.RawMessage(`{"project":"alpha","text":"build the layout","role":"frontend"}`))
+	if err != nil || named.role != "frontend" {
+		t.Fatalf("role: err %v, role %q; want frontend", err, named.role)
+	}
+	if !strings.Contains(out, `"frontend"`) {
+		t.Errorf("result does not name the role: %s", out)
 	}
 }

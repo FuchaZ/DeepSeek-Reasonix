@@ -27,7 +27,7 @@ func TestDispatchSaysWhetherTheSwitchOrTheHostRefused(t *testing.T) {
 	ctx := context.Background()
 
 	setDispatchSwitch(t, true, false)
-	_, err := f.c.DispatchToProject(ctx, "b", "x")
+	_, err := f.c.DispatchToProject(ctx, "b", "x", "")
 	if !errors.Is(err, ErrDispatchDisabled) || errors.Is(err, ErrDispatchUnavailable) {
 		t.Fatalf("switch off = %v, want ErrDispatchDisabled only", err)
 	}
@@ -36,7 +36,7 @@ func TestDispatchSaysWhetherTheSwitchOrTheHostRefused(t *testing.T) {
 	}
 
 	setDispatchSwitch(t, true, true)
-	_, err = f.c.DispatchToProject(ctx, "b", "x")
+	_, err = f.c.DispatchToProject(ctx, "b", "x", "")
 	if !errors.Is(err, ErrDispatchUnavailable) || errors.Is(err, ErrDispatchDisabled) {
 		t.Fatalf("switch on, no host = %v, want ErrDispatchUnavailable only", err)
 	}

@@ -16,7 +16,6 @@ function Messages({ port }: { port: Parameters<typeof PeerMessages>[0]["port"] }
 afterEach(cleanup);
 
 const held = { id: "m-1", fromSession: "s-1", fromTitle: "拾音", fromProject: "alpha", sentAt: "2026-10-16T12:00:00Z", body: "请核对第三节" };
-const peer = { key: "s-2", title: "文档整理", project: "docs" };
 
 class PeerPort extends MockPort {
   constructor(state: PeersState) {
@@ -33,32 +32,9 @@ describe("messages between sessions", () => {
     expect(screen.queryByRole("button", { name: "发送" })).toBeNull();
   });
 
-  it("sends the text to the chosen session and says the other user still decides", async () => {
-    const p = port({ enabled: true, peers: [peer], held: [] });
-    const send = vi.spyOn(p, "sendPeerMessage");
-    render(<Messages port={p} />);
-    const box = await screen.findByLabelText("要发的内容");
-    const button = screen.getByRole("button", { name: "发送" });
-    expect(button.hasAttribute("disabled")).toBe(true);
-    await userEvent.type(box, "迁移完成");
-    await userEvent.click(button);
-    expect(send).toHaveBeenCalledWith("s-2", "迁移完成");
-    expect(await screen.findByText(/对方的模型会直接读到/)).toBeTruthy();
-    expect((box as HTMLTextAreaElement).value).toBe("");
-  });
-
-  it("shows the refusal when the kernel refuses a send and keeps the words", async () => {
-    const p = port({ enabled: true, peers: [peer], held: [] });
-    p.sendPeerMessage = async () => {
-      throw new Error("too many messages sent in a short time");
-    };
-    render(<Messages port={p} />);
-    const box = await screen.findByLabelText("要发的内容");
-    await userEvent.type(box, "再来一条");
-    await userEvent.click(screen.getByRole("button", { name: "发送" }));
-    await screen.findByText(/too many messages/);
-    expect((box as HTMLTextAreaElement).value).toBe("再来一条");
-  });
+  // Sending is the model's job now — the dispatch tool, and a session's own
+  // reply. The settings page keeps the switches and the held messages; there is
+  // no box here to type one by hand.
 
   it("holds a received message as another session's words until it is approved or refused", async () => {
     const p = port({ enabled: true, peers: [], held: [held] });

@@ -31,10 +31,42 @@ type PeersConfig struct {
 	// workspace without the approval card. A folder outside it still asks. Off
 	// unless the user turns it on; user file only.
 	OpenNested bool `toml:"open_nested"`
+	// Incoming is what happens to a message another of the user's sessions sends
+	// to this one: ask, take it from the sessions this one has a dispatch
+	// relationship with, or take it from any of them. Only the asking is skipped;
+	// what the message starts still runs under this session's own approvals and
+	// sandbox. User file only.
+	Incoming string `toml:"incoming"`
 }
 
 func defaultPeers() PeersConfig {
-	return PeersConfig{Enabled: true, Dispatch: true, MaxDispatchDepth: DefaultMaxDispatchDepth, MaxDispatchedSessions: DefaultMaxDispatchedSessions}
+	return PeersConfig{Enabled: true, Dispatch: true, MaxDispatchDepth: DefaultMaxDispatchDepth, MaxDispatchedSessions: DefaultMaxDispatchedSessions, Incoming: IncomingDispatch}
+}
+
+// The three answers to "what arrives from another session of mine".
+const (
+	// IncomingAsk holds every message until the person answers its card.
+	IncomingAsk = "ask"
+	// IncomingDispatch takes a message from a session this one dispatched to or
+	// was dispatched by, and holds everything else. It is the default: a pairing
+	// is an agreement the person already made once, in this session.
+	IncomingDispatch = "dispatch"
+	// IncomingAlways takes a message from any session of the person's on this
+	// machine. It is the widest answer, and the one that lets a session they did
+	// not start put text in front of the model unattended.
+	IncomingAlways = "always"
+)
+
+// PeersIncoming is the configured answer, defaulted when unset or unknown.
+func (c *Config) PeersIncoming() string {
+	if c == nil {
+		return IncomingDispatch
+	}
+	switch c.Peers.Incoming {
+	case IncomingAsk, IncomingDispatch, IncomingAlways:
+		return c.Peers.Incoming
+	}
+	return IncomingDispatch
 }
 
 // Defaults of the two ceilings above.
@@ -99,7 +131,7 @@ func renderServeAndPeers(b *strings.Builder, c *Config) {
 func renderPeersSection(b *strings.Builder, c *Config) {
 	p := c.Peers
 	customCeilings := p.MaxDispatchDepth != DefaultMaxDispatchDepth || p.MaxDispatchedSessions != DefaultMaxDispatchedSessions
-	if p.Enabled && p.Dispatch && len(p.ReleaseProjects) == 0 && !customCeilings && !p.OpenNested {
+	if p.Enabled && p.Dispatch && len(p.ReleaseProjects) == 0 && !customCeilings && !p.OpenNested && (p.Incoming == "" || p.Incoming == IncomingDispatch) {
 		return
 	}
 	b.WriteString("[peers]\n")
@@ -110,6 +142,9 @@ func renderPeersSection(b *strings.Builder, c *Config) {
 	}
 	if p.OpenNested {
 		b.WriteString("open_nested = true   # open_projects adds folders inside the asking session's workspace without a card; user file only\n")
+	}
+	if p.Incoming != "" && p.Incoming != IncomingDispatch {
+		fmt.Fprintf(b, "incoming = %q   # ask | dispatch | always: what another session of yours may send without a card; user file only\n", p.Incoming)
 	}
 	if customCeilings {
 		fmt.Fprintf(b, "max_dispatch_depth = %d   # how many sessions deep a dispatch may chain; 0 for no ceiling\n", p.MaxDispatchDepth)

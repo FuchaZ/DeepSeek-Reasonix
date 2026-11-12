@@ -265,7 +265,7 @@ func TestOpeningASettingEmitsANoticeAndChangesNothing(t *testing.T) {
 func TestADisabledDispatchNamesTheSwitchThatWouldLiftIt(t *testing.T) {
 	c, requests, _ := settingController(t)
 	setDispatchSwitch(t, false, false)
-	_, err := peerDirectory{c}.DispatchToProject(context.Background(), "other", "do it")
+	_, err := peerDirectory{c}.DispatchToProject(context.Background(), "other", "do it", "")
 	r, ok := asRefusal(err)
 	if !ok || r.Code != "dispatch.disabled" || r.Remedy == nil || r.Remedy.Setting != "peers.enabled" || r.Remedy.Op != tool.RemedyPropose {
 		t.Fatalf("err = %#v, want the refusal to name peers.enabled", err)
@@ -276,7 +276,7 @@ func TestADisabledDispatchNamesTheSwitchThatWouldLiftIt(t *testing.T) {
 		t.Fatalf("applying the remedy: %+v err=%v enabled=%v", got.receipt, got.err, userFile().Peers.Enabled)
 	}
 	c.settings.proposals.Store(0)
-	_, err = peerDirectory{c}.DispatchToProject(context.Background(), "other", "do it")
+	_, err = peerDirectory{c}.DispatchToProject(context.Background(), "other", "do it", "")
 	if r, ok = asRefusal(err); !ok || r.Remedy == nil || r.Remedy.Setting != "peers.dispatch" {
 		t.Fatalf("with messaging on, err = %#v, want the dispatch switch next", err)
 	}

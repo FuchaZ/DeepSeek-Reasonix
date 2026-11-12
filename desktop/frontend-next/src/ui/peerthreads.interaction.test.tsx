@@ -51,6 +51,17 @@ describe("a dispatch indicator on the peer's session", () => {
     expect(mark.getAttribute("title")).toMatch(/site/);
   });
 
+  it("marks the state with a lamp rather than an icon, so the row reads at a glance", async () => {
+    draw(portWith([thread("working")]));
+    const mark = await screen.findByRole("button", { name: /已放行/ });
+    const lamp = mark.querySelector(".peerthread-lamp");
+    expect(lamp).not.toBeNull();
+    // The lamp carries the state on the element itself: the stylesheet keys off
+    // these two attributes, and a renamed class would leave a bare dot.
+    expect(lamp?.tagName).toBe("I");
+    expect(lamp?.getAttribute("aria-hidden")).toBe("true");
+  });
+
   it("draws nothing on a session that was never written to", async () => {
     draw(portWith([thread("replied")]));
     await screen.findByRole("button", { name: /回复了你/ });

@@ -49,6 +49,26 @@ export function PeerSettings({ port, settings, onSaved }: { port: AgentPort; set
       </div>
       <div className="lrow">
         <span className="tx">
+          <span className="lb">{t("remote.what_another_session_may_send")}</span>
+          <span className="ds">{t("remote.what_another_session_may_send_ds")}</span>
+        </span>
+        <div className="seg" role="radiogroup" aria-label={t("remote.what_another_session_may_send")}>
+          {/* The three answers are spelled out here rather than built from the
+              value: a key assembled at run time is one no scan can find, so a
+              missing string would only show up as its own key name on screen. */}
+          {([
+            ["ask", t("remote.incoming_ask"), t("remote.incoming_ask_ds")],
+            ["dispatch", t("remote.incoming_dispatch"), t("remote.incoming_dispatch_ds")],
+            ["always", t("remote.incoming_always"), t("remote.incoming_always_ds")],
+          ] as const).map(([k, label, hint]) => (
+            <button key={k} role="radio" data-action="peers.incoming" data-value={k} disabled={off || !state.enabled}
+              aria-checked={state.incoming === k} title={hint}
+              onClick={() => void save({ incoming: k })}>{label}</button>
+          ))}
+        </div>
+      </div>
+      <div className="lrow">
+        <span className="tx">
           <span className="lb">{t("remote.open_nested_folders_without_asking")}</span>
           <span className="ds">{t("remote.open_nested_folders_without_asking_ds")}</span>
         </span>

@@ -15,9 +15,10 @@ import (
 	"reasonix/internal/state/sessionstore"
 )
 
-// dispatchBook remembers which pane a sender opened in which project, so a
-// second task to the same project goes to the session already waiting instead
-// of opening another.
+// dispatchBook remembers which pane a sender opened in which project and role,
+// so a second task to the same project and role goes to the session already
+// waiting instead of opening another. A role is what lets one project hold
+// several of a sender's sessions at once; an empty role is one per project.
 type dispatchBook struct {
 	mu       sync.Mutex
 	sessions map[dispatchKey]string
@@ -27,12 +28,12 @@ type dispatchBook struct {
 	open    func(context.Context, OpenRequest, *agentcomposition.Binding) (*Runtime, error)
 }
 
-type dispatchKey struct{ from, root string }
+type dispatchKey struct{ from, root, role string }
 
-func (b *dispatchBook) get(from, root string) string {
+func (b *dispatchBook) get(from, root, role string) string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.sessions[dispatchKey{from, root}]
+	return b.sessions[dispatchKey{from, root, role}]
 }
 
 func (b *dispatchBook) targets(from string) []string {
@@ -49,41 +50,41 @@ func (b *dispatchBook) targets(from string) []string {
 	return out
 }
 
-func (b *dispatchBook) set(from, root, id string) {
+func (b *dispatchBook) set(from, root, role, id string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.sessions == nil {
 		b.sessions = map[dispatchKey]string{}
 	}
-	k := dispatchKey{from, root}
+	k := dispatchKey{from, root, role}
 	b.sessions[k] = id
 	delete(b.pending, k)
 }
 
-func (b *dispatchBook) getPending(from, root string) string {
+func (b *dispatchBook) getPending(from, root, role string) string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	return b.pending[dispatchKey{from, root}]
+	return b.pending[dispatchKey{from, root, role}]
 }
 
-func (b *dispatchBook) setPending(from, root, id string) {
+func (b *dispatchBook) setPending(from, root, role, id string) {
 	b.mu.Lock()
 	defer b.mu.Unlock()
 	if b.pending == nil {
 		b.pending = map[dispatchKey]string{}
 	}
-	b.pending[dispatchKey{from, root}] = id
+	b.pending[dispatchKey{from, root, role}] = id
 }
 
 // dispatcherFor is what a pane's controller calls to hand a task to another of
 // the user's projects. The controller has already checked the user's switch.
 func (h *Hub) dispatcherFor(from *Runtime) control.ProjectDispatcher {
-	return func(ctx context.Context, project, text string) (control.DispatchResult, error) {
-		return h.dispatchTo(ctx, from, project, text)
+	return func(ctx context.Context, project, text, role string) (control.DispatchResult, error) {
+		return h.dispatchTo(ctx, from, project, text, role)
 	}
 }
 
-func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text string) (control.DispatchResult, error) {
+func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text, role string) (control.DispatchResult, error) {
 	root, err := resolveDispatchProject(project, Workspaces())
 	if err != nil {
 		return control.DispatchResult{}, err
@@ -92,23 +93,27 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text strin
 	if !ok {
 		return control.DispatchResult{}, control.ErrDispatchNotLocal
 	}
-	if sameFolder(root, sender.WorkspaceRoot()) {
+	// This session's own project opens a second session once the person has
+	// allowed dispatch_to_project: an "always allow" on the permission card is
+	// that yes, so there is no separate switch for the same intent. Until then the
+	// old rule stands - this session already lives there, so no window is opened.
+	if sameFolder(root, sender.WorkspaceRoot()) && !sender.DispatchIntoSelfAllowed() {
 		return control.DispatchResult{}, projectError(control.ErrDispatchSameProject, root)
 	}
-	target := h.runtimeByID(h.dispatch.get(from.ID, root))
+	target := h.runtimeByID(h.dispatch.get(from.ID, root, role))
 	var secret []byte
 	if target == nil {
 		if sender.TrustOfWorkspace(root) == config.WorkspaceTrustDeclined {
 			return control.DispatchResult{}, projectError(control.ErrDispatchUntrusted, root)
 		}
-		waiting := h.runtimeByID(h.dispatch.getPending(from.ID, root)) != nil
+		waiting := h.runtimeByID(h.dispatch.getPending(from.ID, root, role)) != nil
 		if limit := config.LoadForEdit(config.UserConfigPath()).PeersMaxDispatchedSessions(); !waiting && limit > 0 && h.liveDispatched(from.ID) >= limit {
 			return control.DispatchResult{}, control.ErrDispatchLimit
 		}
 		if secret, err = newPairSecret(); err != nil {
 			return control.DispatchResult{}, fmt.Errorf("%w: %w", control.ErrDispatchFailed, err)
 		}
-		if target, err = h.openDispatchSession(ctx, from, sender, root, secret); err != nil {
+		if target, err = h.openDispatchSession(ctx, from, sender, root, role, secret); err != nil {
 			return control.DispatchResult{}, err
 		}
 	}
@@ -125,7 +130,7 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text strin
 	if err != nil {
 		return control.DispatchResult{}, err
 	}
-	return control.DispatchResult{Project: root, Key: key, ID: receipt.ID}, nil
+	return control.DispatchResult{Project: root, Key: key, ID: receipt.ID, Role: role}, nil
 }
 
 // newPairSecret makes the secret one dispatch pairing signs its messages with.
@@ -141,7 +146,7 @@ func newPairSecret() ([]byte, error) {
 // the user declined is not opened for someone else's task. A project in the
 // user's own list that nobody has decided about is trusted by being named; one
 // that cannot be trusted whole keeps its pane open on the trust card, task unsent.
-func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *control.Controller, root string, secret []byte) (*Runtime, error) {
+func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *control.Controller, root, role string, secret []byte) (*Runtime, error) {
 	binding := sender.CompositionBinding()
 	if binding != nil && binding.Workspace != "" && binding.Workspace != root {
 		return nil, fmt.Errorf("%w: %w", control.ErrDispatchFailed, agentcomposition.Unavailable(binding.Version.Definition.ID, "A bound composition cannot dispatch into another workspace."))
@@ -151,7 +156,7 @@ func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *co
 		open = h.openBound
 	}
 	grant := sender.DispatchGrant()
-	target := h.runtimeByID(h.dispatch.getPending(from.ID, root))
+	target := h.runtimeByID(h.dispatch.getPending(from.ID, root, role))
 	if target == nil {
 		var err error
 		if target, err = open(ctx, OpenRequest{Root: root, Model: grant.Model}, binding); err != nil {
@@ -170,14 +175,14 @@ func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *co
 		return nil, projectError(control.ErrDispatchUntrusted, root)
 	default:
 		if err := ctrl.DecideWorkspaceTrust(config.WorkspaceTrusted); err != nil {
-			h.dispatch.setPending(from.ID, root, target.ID)
+			h.dispatch.setPending(from.ID, root, role, target.ID)
 			return nil, projectError(control.ErrDispatchAwaitingTrust, root)
 		}
 	}
 	ctrl.AdoptSessionGrant(grant)
 	ctrl.MarkOpenedByDispatch(sender.PeerKey(), secret, sender.DispatchDepth()+1)
 	ctrl.SetFreshSessionPath(sessionstore.NewSessionPath(SessionDirFor(root), "dispatch"))
-	h.dispatch.set(from.ID, root, target.ID)
+	h.dispatch.set(from.ID, root, role, target.ID)
 	return target, nil
 }
 

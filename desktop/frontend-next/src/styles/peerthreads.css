@@ -13,8 +13,50 @@
   color: var(--muted);
   cursor: pointer;
 }
-.peerthread svg { width: 13px; height: 13px; }
 .peerthread:hover { background: var(--hair); color: var(--text); }
 .peerthread:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
-.peerthread[data-state="replied"] { color: var(--accent); }
-.peerthread[data-state="declined"] { color: var(--err); }
+
+/* The lamp on the row of a session this one has written to. Colour says where
+   the exchange stands; the shape says it too, so the two survive a display
+   where green and amber are hard to tell apart. */
+
+.peerthread-lamp {
+  display: block;
+  width: 8px;
+  height: 8px;
+  box-sizing: border-box;
+  border-radius: 50%;
+  background: var(--muted);
+}
+
+/* waiting: sent, nobody has picked it up yet. A ring that turns. */
+.peerthread[data-state="waiting"] .peerthread-lamp {
+  width: 9px;
+  height: 9px;
+  background: transparent;
+  border: 1.5px solid var(--muted);
+  border-top-color: transparent;
+  animation: m-spin var(--t-live) linear infinite;
+}
+
+/* working: the other session took it and is acting on it. Amber, filled, and
+   breathing so it reads as live without turning like an unanswered send. */
+.peerthread[data-state="working"] .peerthread-lamp {
+  background: var(--warn);
+  animation: m-pulse 1.6s ease-in-out infinite;
+}
+
+/* replied: an answer is waiting for you. Green, filled, still. */
+.peerthread[data-state="replied"] .peerthread-lamp { background: var(--ok); }
+
+/* declined: the other user refused it. Red ring, never filled: nothing is
+   waiting, and nothing is running. */
+.peerthread[data-state="declined"] .peerthread-lamp {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--err);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .peerthread[data-state="waiting"] .peerthread-lamp,
+  .peerthread[data-state="working"] .peerthread-lamp { animation: none; }
+}

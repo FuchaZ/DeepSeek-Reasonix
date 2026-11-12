@@ -29,6 +29,9 @@ func (h heldScope) narrowPeers(c *Config) {
 	if c.Peers.MaxDispatchedSessions != h.peers.MaxDispatchedSessions {
 		c.ignoreProject("peers.max_dispatched_sessions", fmt.Sprint(c.Peers.MaxDispatchedSessions), ProjectUserOnly)
 	}
+	if c.Peers.Incoming != h.peers.Incoming {
+		c.ignoreProject("peers.incoming", c.Peers.Incoming, ProjectUserOnly)
+	}
 	if c.Peers.OpenNested != h.peers.OpenNested {
 		c.ignoreProject("peers.open_nested", fmt.Sprintf("%t", c.Peers.OpenNested), ProjectUserOnly)
 	}

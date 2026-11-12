@@ -65,14 +65,14 @@ func TestDispatchAndRepliesSurviveRuntimeReplacement(t *testing.T) {
 			f := newDispatchFixture(t, dispatchOn)
 			f.project("billing", true)
 			parent := f.sender(f.project("alpha", true))
-			first, err := parent.DispatchToProject(t.Context(), "billing", "first task")
+			first, err := parent.DispatchToProject(t.Context(), "billing", "first task", "")
 			if err != nil {
 				t.Fatal(err)
 			}
 			child := f.paneOf(first.Key)
 			child.RefreshPeers()
 			parent = f.replaceRuntime(parent, action, event.Discard)
-			again, err := parent.DispatchToProject(t.Context(), "billing", "second task")
+			again, err := parent.DispatchToProject(t.Context(), "billing", "second task", "")
 			if err != nil || again.Key != first.Key || f.opened != 1 {
 				t.Fatalf("dispatch after replacement = %+v, %v; opened %d panes", again, err, f.opened)
 			}
@@ -84,7 +84,7 @@ func TestDispatchAndRepliesSurviveRuntimeReplacement(t *testing.T) {
 			if !child.OpenedByDispatch() || child.DispatchDepth() != 1 {
 				t.Fatal("receiver lost its dispatch identity or depth")
 			}
-			if _, err := child.DispatchToProject(t.Context(), "alpha", "nested"); !errors.Is(err, control.ErrDispatchNested) {
+			if _, err := child.DispatchToProject(t.Context(), "alpha", "nested", ""); !errors.Is(err, control.ErrDispatchNested) {
 				t.Fatalf("receiver lost its nesting limit: %v", err)
 			}
 			if _, err := child.SendPeerMessage(parent.PeerKey(), "completed"); err != nil {

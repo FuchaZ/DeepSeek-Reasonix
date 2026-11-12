@@ -104,7 +104,7 @@ func TestDispatchDefaultsOpenASessionAndDeliverTheTask(t *testing.T) {
 	a, b := f.project("alpha", true), f.project("billing", true)
 	sender := f.sender(a)
 
-	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key")
+	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -129,7 +129,7 @@ func TestDispatchDefaultsOpenASessionAndDeliverTheTask(t *testing.T) {
 		t.Fatal("the opened session is not marked as opened by a dispatch")
 	}
 
-	again, err := sender.DispatchToProject(context.Background(), "billing", "and one more thing")
+	again, err := sender.DispatchToProject(context.Background(), "billing", "and one more thing", "")
 	if err != nil || again.Key != got.Key || f.opened != 1 {
 		t.Fatalf("second dispatch = %+v, %v with %d panes opened; want the same session reused", again, err, f.opened)
 	}
@@ -156,7 +156,7 @@ func TestDispatchRefusesWithTypedIdentities(t *testing.T) {
 		"untrusted": {"stranger", control.ErrDispatchUntrusted},
 		"outside":   {"/tmp", control.ErrDispatchUnknownProject},
 	} {
-		if _, err := sender.DispatchToProject(ctx, tc.project, "x"); !errors.Is(err, tc.want) {
+		if _, err := sender.DispatchToProject(ctx, tc.project, "x", ""); !errors.Is(err, tc.want) {
 			t.Errorf("%s: err = %v, want %v", name, err, tc.want)
 		}
 	}
@@ -169,13 +169,13 @@ func TestADispatchedSessionCannotDispatchFurther(t *testing.T) {
 	f := newDispatchFixture(t, dispatchOn)
 	a, _ := f.project("alpha", true), f.project("billing", true)
 	sender := f.sender(a)
-	if _, err := sender.DispatchToProject(context.Background(), "billing", "x"); err != nil {
+	if _, err := sender.DispatchToProject(context.Background(), "billing", "x", ""); err != nil {
 		t.Fatal(err)
 	}
 	for _, rt := range f.hub.localRuntimes() {
 		c := rt.Server.Controller().(*control.Controller)
 		if c.OpenedByDispatch() {
-			if _, err := c.DispatchToProject(context.Background(), "alpha", "back again"); !errors.Is(err, control.ErrDispatchNested) {
+			if _, err := c.DispatchToProject(context.Background(), "alpha", "back again", ""); !errors.Is(err, control.ErrDispatchNested) {
 				t.Fatalf("nested dispatch = %v, want ErrDispatchNested", err)
 			}
 			return
@@ -188,7 +188,7 @@ func TestDispatchHonoursTheUsersOptOut(t *testing.T) {
 	f := newDispatchFixture(t, "[peers]\nenabled = true\ndispatch = false\n")
 	f.project("billing", true)
 	sender := f.sender(f.project("alpha", true))
-	if _, err := sender.DispatchToProject(context.Background(), "billing", "x"); !errors.Is(err, control.ErrDispatchDisabled) {
+	if _, err := sender.DispatchToProject(context.Background(), "billing", "x", ""); !errors.Is(err, control.ErrDispatchDisabled) {
 		t.Fatalf("dispatch with the switch off = %v, want ErrDispatchDisabled", err)
 	}
 	if f.opened != 0 {
@@ -243,7 +243,7 @@ func TestAnOpenedSessionNeverOutranksTheOneThatOpenedIt(t *testing.T) {
 			sender.SetToolApprovalMode(tc.sender)
 			sender.SetPlanMode(tc.plan)
 			sender.SetAgentPreset("light")
-			got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key")
+			got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key", "")
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -262,7 +262,7 @@ func TestWhileTheSwitchIsOnAnyOfTheUsersSessionsIsTakenWithoutACard(t *testing.T
 	f := newDispatchFixture(t, dispatchOn)
 	f.project("billing", true)
 	sender := f.sender(f.project("alpha", true))
-	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key")
+	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,7 +298,7 @@ func TestTheReplyOfADispatchedSessionIsTakenByTheSenderWithoutACard(t *testing.T
 	f := newDispatchFixture(t, dispatchOn)
 	f.project("billing", true)
 	sender := f.sender(f.project("alpha", true))
-	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key")
+	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key", "")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -313,21 +313,24 @@ func TestTheReplyOfADispatchedSessionIsTakenByTheSenderWithoutACard(t *testing.T
 	f.wantReleasedByDispatch(sender.PeerKey(), got.Key)
 }
 
-func TestSwitchingDispatchOffBeforeTheReceiverReadsPutsTheCardBack(t *testing.T) {
+// What holds an arriving task is the incoming answer, not the dispatch switch:
+// the switch decides whether the model may send one, the answer decides what is
+// taken without a card. Choosing "ask" puts the card back.
+func TestChoosingAskBeforeTheReceiverReadsPutsTheCardBack(t *testing.T) {
 	f := newDispatchFixture(t, dispatchOn)
 	f.project("billing", true)
 	sender := f.sender(f.project("alpha", true))
-	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key")
+	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(config.UserConfigPath(), []byte("[peers]\nenabled = true\ndispatch = false\n"), 0o600); err != nil {
+	if err := os.WriteFile(config.UserConfigPath(), []byte("[peers]\nenabled = true\ndispatch = true\nincoming = \"ask\"\n"), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	child := f.paneOf(got.Key)
 	child.RefreshPeers()
 	if held := child.HeldPeerMessages(); len(held) != 1 {
-		t.Fatalf("held = %+v, want the task held once the user has switched dispatch off", held)
+		t.Fatalf("held = %+v, want the task held once the user asked to approve every message", held)
 	}
 }
 
@@ -355,11 +358,11 @@ func TestTheDepthCeilingDecidesHowFarADispatchMayChain(t *testing.T) {
 			f.project("billing", true)
 			f.project("ledger", true)
 			sender := f.sender(f.project("alpha", true))
-			first, err := sender.DispatchToProject(context.Background(), "billing", "x")
+			first, err := sender.DispatchToProject(context.Background(), "billing", "x", "")
 			if err != nil {
 				t.Fatal(err)
 			}
-			second, err := f.paneOf(first.Key).DispatchToProject(context.Background(), "ledger", "y")
+			second, err := f.paneOf(first.Key).DispatchToProject(context.Background(), "ledger", "y", "")
 			if !errors.Is(err, tc.want) {
 				t.Fatalf("second hop = %+v, %v; want %v", second, err, tc.want)
 			}
@@ -378,17 +381,17 @@ func TestTheSessionCeilingBoundsHowManyPanesOneSessionKeepsOpen(t *testing.T) {
 	}
 	sender := f.sender(f.project("alpha", true))
 	ctx := context.Background()
-	first, err := sender.DispatchToProject(ctx, "one", "x")
+	first, err := sender.DispatchToProject(ctx, "one", "x", "")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := sender.DispatchToProject(ctx, "two", "x"); err != nil {
+	if _, err := sender.DispatchToProject(ctx, "two", "x", ""); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := sender.DispatchToProject(ctx, "three", "x"); !errors.Is(err, control.ErrDispatchLimit) {
+	if _, err := sender.DispatchToProject(ctx, "three", "x", ""); !errors.Is(err, control.ErrDispatchLimit) {
 		t.Fatalf("third pane = %v, want ErrDispatchLimit", err)
 	}
-	if _, err := sender.DispatchToProject(ctx, "one", "again"); err != nil {
+	if _, err := sender.DispatchToProject(ctx, "one", "again", ""); err != nil {
 		t.Fatalf("a task to a pane already open must not count against the ceiling: %v", err)
 	}
 	for _, rt := range f.hub.localRuntimes() {
@@ -396,12 +399,12 @@ func TestTheSessionCeilingBoundsHowManyPanesOneSessionKeepsOpen(t *testing.T) {
 			_ = f.hub.Close(rt.ID)
 		}
 	}
-	if _, err := sender.DispatchToProject(ctx, "three", "x"); err != nil {
+	if _, err := sender.DispatchToProject(ctx, "three", "x", ""); err != nil {
 		t.Fatalf("a closed pane must free its place: %v", err)
 	}
 	setPeersCeilings(t, 1, 0)
 	f.project("four", true)
-	if _, err := sender.DispatchToProject(ctx, "four", "x"); err != nil {
+	if _, err := sender.DispatchToProject(ctx, "four", "x", ""); err != nil {
 		t.Fatalf("0 must remove the ceiling: %v", err)
 	}
 }
@@ -411,7 +414,7 @@ func TestAnUndecidedProjectInTheListIsTrustedAndTheTaskIsSent(t *testing.T) {
 	a := f.project("alpha", true)
 	b := f.project("newcomer", false)
 
-	got, err := f.sender(a).DispatchToProject(context.Background(), "newcomer", "do it")
+	got, err := f.sender(a).DispatchToProject(context.Background(), "newcomer", "do it", "")
 	if err != nil || got.Project != b || f.opened != 1 {
 		t.Fatalf("got %+v, %v, %d panes opened; want the task sent to a newly opened pane", got, err, f.opened)
 	}
@@ -430,7 +433,7 @@ func TestAProjectThatCannotBeTrustedWholeKeepsItsPaneOpenAndTheTaskIsNotSent(t *
 	rememberWorkspace(home)
 	sender := f.sender(a)
 
-	_, err = sender.DispatchToProject(context.Background(), filepath.Base(home), "do it")
+	_, err = sender.DispatchToProject(context.Background(), filepath.Base(home), "do it", "")
 	if !errors.Is(err, control.ErrDispatchAwaitingTrust) {
 		t.Fatalf("err = %v, want dispatch.awaiting_trust", err)
 	}
@@ -446,7 +449,7 @@ func TestADeclinedProjectIsRefusedBeforeAnyPaneOpens(t *testing.T) {
 	if err := config.NewProjectGrantStore(f.home).SetTrust(b, config.WorkspaceTrustDeclined); err != nil {
 		t.Fatal(err)
 	}
-	_, err := f.sender(a).DispatchToProject(context.Background(), "closed", "x")
+	_, err := f.sender(a).DispatchToProject(context.Background(), "closed", "x", "")
 	if !errors.Is(err, control.ErrDispatchUntrusted) || !strings.Contains(err.Error(), "closed") {
 		t.Fatalf("err = %v, want dispatch.untrusted naming the project", err)
 	}
@@ -455,11 +458,89 @@ func TestADeclinedProjectIsRefusedBeforeAnyPaneOpens(t *testing.T) {
 	}
 }
 
+// Until the person allows dispatch_to_project, a dispatch into this session's
+// own project opens nothing.
 func TestADispatchToTheSendersOwnProjectOpensNothing(t *testing.T) {
 	f := newDispatchFixture(t, dispatchOn)
 	a := f.project("alpha", true)
-	_, err := f.sender(a).DispatchToProject(context.Background(), "alpha", "x")
+	_, err := f.sender(a).DispatchToProject(context.Background(), "alpha", "x", "")
 	if !errors.Is(err, control.ErrDispatchSameProject) || f.opened != 0 {
 		t.Fatalf("err = %v, opened %d; want dispatch.same_project and no pane", err, f.opened)
+	}
+}
+
+// A role is what lets one sender hold several sessions in one project: each
+// name opens its own pane, and the same name goes back to the pane it opened.
+// The allowance still comes from the permission rule, as it does without a role.
+func TestARoleOpensASecondSessionInTheSendersOwnProject(t *testing.T) {
+	f := newDispatchFixture(t, dispatchOn+"[permissions]\nallow = [\"dispatch_to_project\"]\n")
+	a := f.project("alpha", true)
+	sender := f.sender(a)
+	ctx := context.Background()
+
+	front, err := sender.DispatchToProject(ctx, "alpha", "build the layout", "frontend")
+	if err != nil {
+		t.Fatalf("frontend role: %v", err)
+	}
+	if front.Role != "frontend" {
+		t.Fatalf("receipt role = %q, want frontend", front.Role)
+	}
+	if f.opened != 1 {
+		t.Fatalf("%d panes opened, want 1", f.opened)
+	}
+
+	review, err := sender.DispatchToProject(ctx, "alpha", "review the layout", "reviewer")
+	if err != nil {
+		t.Fatalf("reviewer role: %v", err)
+	}
+	if review.Key == front.Key {
+		t.Fatal("a second role reused the first role's session")
+	}
+	if f.opened != 2 {
+		t.Fatalf("%d panes opened, want 2 (one per role)", f.opened)
+	}
+
+	again, err := sender.DispatchToProject(ctx, "alpha", "one more thing", "frontend")
+	if err != nil {
+		t.Fatalf("frontend role again: %v", err)
+	}
+	if again.Key != front.Key {
+		t.Fatal("the same role opened another pane instead of reusing its own")
+	}
+	if f.opened != 2 {
+		t.Fatalf("%d panes opened, want 2 after reusing a role", f.opened)
+	}
+}
+
+// The allowance is a permission rule, the same yes the card's "always allow"
+// writes: with no rule the own project is refused, and with one it opens a
+// session that a role-less second dispatch reuses.
+func TestAnAllowRuleIsWhatLetsTheOwnProjectOpenASession(t *testing.T) {
+	f := newDispatchFixture(t, dispatchOn)
+	a := f.project("alpha", true)
+	sender := f.sender(a)
+	if _, err := sender.DispatchToProject(context.Background(), "alpha", "x", ""); !errors.Is(err, control.ErrDispatchSameProject) {
+		t.Fatalf("no rule = %v, want ErrDispatchSameProject", err)
+	}
+	if f.opened != 0 {
+		t.Fatalf("%d panes opened with no rule, want 0", f.opened)
+	}
+
+	allowed := newDispatchFixture(t, dispatchOn+"[permissions]\nallow = [\"dispatch_to_project\"]\n")
+	a2 := allowed.project("alpha", true)
+	sender2 := allowed.sender(a2)
+	first, err := sender2.DispatchToProject(context.Background(), "alpha", "gate the build", "")
+	if err != nil {
+		t.Fatalf("allow rule: %v", err)
+	}
+	if allowed.opened != 1 {
+		t.Fatalf("%d panes opened, want 1", allowed.opened)
+	}
+	again, err := sender2.DispatchToProject(context.Background(), "alpha", "and lint it", "")
+	if err != nil {
+		t.Fatalf("second dispatch: %v", err)
+	}
+	if again.Key != first.Key {
+		t.Fatal("a role-less second dispatch opened another pane instead of reusing the first")
 	}
 }

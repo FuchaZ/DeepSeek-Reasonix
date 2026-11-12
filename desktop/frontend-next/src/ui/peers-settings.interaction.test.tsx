@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { PeerMessages } from "./PeerMessages";
@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 const settings = (over: Partial<PeersSettings> = {}): PeersSettings => ({
-  enabled: false, dispatch: false, release_projects: [], max_dispatch_depth: 1, max_dispatched_sessions: 8, open_nested: false, path: "/home/me/.reasonix/config.toml", applies: "next_turn", pending: false, available: true, ...over,
+  enabled: false, dispatch: false, release_projects: [], max_dispatch_depth: 1, max_dispatched_sessions: 8, open_nested: false, incoming: "dispatch", path: "/home/me/.reasonix/config.toml", applies: "next_turn", pending: false, available: true, ...over,
 });
 
 function portWith(initial: PeersSettings) {
@@ -38,6 +38,7 @@ function portWith(initial: PeersSettings) {
       enabled: edit.enabled ?? current.enabled,
       dispatch: edit.dispatch ?? current.dispatch,
       open_nested: edit.open_nested ?? current.open_nested,
+      incoming: edit.incoming ?? current.incoming,
       release_projects: edit.release_projects ? current.release_projects.filter((p) => edit.release_projects!.includes(p.path)) : current.release_projects,
       pending: true,
     };
@@ -164,5 +165,26 @@ describe("remembering a project when a held message is let through", () => {
     const port = new MockPort() as unknown as AgentPort;
     render(<HeldPeerMessage port={port} held={held} onDone={() => {}} />);
     expect(screen.queryByRole("button", { name: /记住项目/ })).toBeNull();
+  });
+});
+
+describe("what another session may send", () => {
+  it("offers the three answers and saves the one that is picked", async () => {
+    const { port, save } = portWith(settings({ enabled: true, dispatch: true }));
+    render(<Messages port={port} />);
+    const group = await screen.findByRole("radiogroup", { name: /别的会话发来时|another session writes/ });
+    const answers = within(group).getAllByRole("radio");
+    expect(answers.map((b) => b.getAttribute("data-value"))).toEqual(["ask", "dispatch", "always"]);
+    expect(answers[1]!.getAttribute("aria-checked")).toBe("true");
+
+    await userEvent.click(answers[2]!);
+    expect(save).toHaveBeenCalledExactlyOnceWith({ incoming: "always" });
+  });
+
+  it("shows which answer is in force", async () => {
+    const { port } = portWith(settings({ enabled: true, dispatch: true, incoming: "ask" }));
+    render(<Messages port={port} />);
+    const group = await screen.findByRole("radiogroup", { name: /别的会话发来时|another session writes/ });
+    expect(within(group).getAllByRole("radio")[0]!.getAttribute("aria-checked")).toBe("true");
   });
 });

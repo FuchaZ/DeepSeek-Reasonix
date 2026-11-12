@@ -1,8 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, type MouseEvent, type ReactNode } from "react";
 import { t } from "../i18n";
-import type { PeerThread, PeerThreadState } from "../port/boundary";
+import type { PeerThread } from "../port/boundary";
 import type { AgentPort } from "../port/port";
-import { StudioIcon, type StudioIconName } from "./StudioIcon";
 import { usePeers } from "./usePeers";
 
 interface Threads {
@@ -33,13 +32,6 @@ export function PeerThreadsProvider({ port, hub, onOpen, children }: {
   return <PeerThreadsContext.Provider value={value}>{children}</PeerThreadsContext.Provider>;
 }
 
-const ICON: Record<PeerThreadState, StudioIconName> = {
-  waiting: "clock",
-  working: "refresh",
-  replied: "chat",
-  declined: "close",
-};
-
 function wording(th: PeerThread): string {
   const p = { title: th.title, project: th.project };
   switch (th.state) {
@@ -60,9 +52,12 @@ export function PeerThreadMark({ path }: { path?: string }) {
   }, [th, open]);
   if (!th) return null;
   const label = wording(th);
+  // A lamp, not an icon: the state is read at a glance from the sidebar, and the
+  // shape carries it even where colour is hard to tell apart. waiting turns, so
+  // "nobody has picked it up" looks unlike "they are on it".
   return (
     <button type="button" className="peerthread" data-state={th.state} data-action="peer.thread-open" title={label} aria-label={label} onClick={go}>
-      <StudioIcon name={ICON[th.state]} />
+      <i className="peerthread-lamp" aria-hidden="true" />
     </button>
   );
 }
