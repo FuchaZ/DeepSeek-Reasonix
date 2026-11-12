@@ -3,6 +3,6 @@
   .app[data-browser="on"] .pane:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] { grid-area: 2 / 1 / 4 / 3; border-left: 0 }
   .app[data-browser="on"] .pane:has(> .pbody[data-dock]) > :is(.pbody, .compose, .gutter-r) { display: none }
 }
-.pane:has(> .pbody[data-dock]) { --dock-w: var(--dock-open); transition: --dock-w var(--t-panel) cubic-bezier(.32, .72, 0, 1) }
+.pane:has(> .pbody[data-dock]) { --dock-w: var(--dock-open); transition: --dock-w var(--t-panel) cubic-bezier(.4, 0, .2, 1) }
 .app[data-browser="off"] .pane:has(> .pbody[data-dock]) { --dock-w: 0px }
 .app[data-drag] .pane:has(> .pbody[data-dock]) { transition: none }

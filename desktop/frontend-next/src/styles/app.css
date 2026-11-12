@@ -478,7 +478,7 @@
 
   .app {
     --nav-w: 0px; --rail-w: var(--rail-open); --side-w: 0px;
-    transition: --nav-w var(--t-panel) cubic-bezier(.32, .72, 0, 1), --rail-w var(--t-panel) cubic-bezier(.32, .72, 0, 1), --side-w var(--t-panel) cubic-bezier(.32, .72, 0, 1);
+    transition: --nav-w var(--t-panel) cubic-bezier(.4, 0, .2, 1), --rail-w var(--t-panel) cubic-bezier(.4, 0, .2, 1), --side-w var(--t-panel) cubic-bezier(.4, 0, .2, 1);
   }
   .app[data-rail="off"] { --rail-w: 0px }
   .app[data-side="on"] { --side-w: var(--side-open) }
