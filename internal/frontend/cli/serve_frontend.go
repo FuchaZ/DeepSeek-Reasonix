@@ -77,6 +77,24 @@ type serveFrontendOptions struct {
 	// launchTokenPath names the file holding the launch token, so the
 	// terminal shows a path rather than the secret.
 	launchTokenPath string
+	// grant carries the host capabilities a pane takes, so the listener address
+	// recorded once reaches panes opened after it.
+	grant *serveHostGrant
+}
+
+// serveHostGrant remembers what a terminal frontend allows, for the panes it
+// adopts later. The listener address is only known after it is bound, so the
+// decision is held here and read by the Hub's Grant callback.
+type serveHostGrant struct {
+	addr string
+}
+
+// apply is the Hub's Grant callback: what every pane takes on the way in.
+func (g *serveHostGrant) apply(srv *serve.Server) {
+	if g == nil || g.addr == "" {
+		return
+	}
+	srv.AllowProviderEditForListener(g.addr)
 }
 
 type serveFrontendResources struct {
@@ -154,6 +172,11 @@ func runServeFrontend(ctrl *control.Controller, srv serveHost, cfg config.ServeC
 	// this terminal is the one whose keys these are, and a listener another
 	// machine can reach is not that reader.
 	srv.AllowProviderEditForListener(resources.displayAddr)
+	// Recorded once here, read by every pane the hub adopts after this one: a
+	// project opened an hour in gets the same grant as the first.
+	if opts.grant != nil {
+		opts.grant.addr = resources.displayAddr
+	}
 	if public, err := url.Parse(strings.TrimSpace(opts.publicURL)); err == nil && public.Hostname() != "" {
 		srv.AllowHost(public.Hostname())
 	}
@@ -420,14 +443,22 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 
 	// A hub, so this frontend drives several sessions at once the way the studio
 	// window does. The session this command was started for is the first pane.
-	hub := serve.NewHub(serve.HubOptions{Serve: serveCfg, NativeSurfaces: true, DecorateSink: reporter.Wrap, ProviderResolver: providerResolver, Page: pageOrWarn(*page)})
+	// The listener's address is only known once it is bound, and a pane can be
+	// opened after that: the closure reads the address a pane is granted under,
+	// so a pane opened an hour in is as capable as the first one.
+	grant := &serveHostGrant{}
+	hub := serve.NewHub(serve.HubOptions{
+		Serve: serveCfg, NativeSurfaces: true, DecorateSink: reporter.Wrap,
+		ProviderResolver: providerResolver, Page: pageOrWarn(*page),
+		Grant: grant.apply,
+	})
 	adoptFirstPane(hub, ctrl, bc, paneSink, serveCfg, leases)
 	return runServeFrontend(ctrl, hub, serveCfg, serveFrontendOptions{
 		command: opts.command, address: *addr,
 		portFile: *portFile, tokenFile: *tokenFile, pidFile: *pidFile,
 		openBrowser: *openBrowser && !*noOpen, brokered: providerResolver != nil,
 		hasSession: *resume != "" || *sessionID != "",
-		publicURL:  *publicURL,
+		publicURL:  *publicURL, grant: grant,
 	})
 }
 

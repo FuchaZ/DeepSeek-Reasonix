@@ -56,6 +56,7 @@ func (h *Hub) EnableProviderSetupForListener(addr string) bool {
 // AllowProviderEditForListener opens the /providers writes on loopback only, for
 // every runtime that shares this listener. Same rule and same reason as the
 // setup surface above: the keys these routes write are this machine's.
+// A pane the hub adopts later takes the same grant through HubOptions.Grant.
 func (h *Hub) AllowProviderEditForListener(addr string) bool {
 	if !isLoopbackHost(addr) {
 		return false
