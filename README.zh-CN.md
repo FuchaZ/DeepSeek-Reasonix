@@ -3,7 +3,7 @@
 </p>
 
 > [!NOTE]
-> 这是 [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) `studio`（2.x）分支的个人 fork。上游停在 v2.61.0；本仓库从这里继续，改动集中在 Reasonix Studio 桌面端：UI 布局、小缺陷修复，以及多 Agent 会话的 UI 基础。
+> **Reasonix Studio Agentic** —— [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) `studio`（2.x）分支的个人 fork。上游停在 v2.61.0；本仓库从这里继续，改动集中在 Reasonix Studio 桌面端：UI 布局、小缺陷修复，以及多 Agent 会话的 UI 基础。
 
 <p align="center">
   <a href="./README.md">English</a>
@@ -23,7 +23,7 @@
 
 ## 这个分支改了什么
 
-引擎部分保持上游原样，改动落在 Reasonix Studio 桌面端：
+本 fork 名为 **Reasonix Studio Agentic**。引擎部分保持上游原样，改动落在 Reasonix Studio 桌面端：
 
 - **UI 布局**：重排工作台、面板和输入区，把窗口更多空间留给对话和项目树，少留给人来看的壳子。
 - **小缺陷修复**：桌面外壳和网页界面里那些窄范围的问题逐个修掉，每个都带上对应的测试。

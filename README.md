@@ -3,7 +3,7 @@
 </p>
 
 > [!NOTE]
-> A personal fork of [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) on the `studio` (2.x) line. Upstream stopped at v2.61.0; this fork continues from there, focused on the Reasonix Studio desktop app: UI layout, small bug fixes, and the UI groundwork for multi-agent sessions.
+> **Reasonix Studio Agentic** — a personal fork of [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) on the `studio` (2.x) line. Upstream stopped at v2.61.0; this fork continues from there, focused on the Reasonix Studio desktop app: UI layout, small bug fixes, and the UI groundwork for multi-agent sessions.
 
 <p align="center">
   <strong>English</strong>
@@ -23,7 +23,7 @@
 
 ## What this fork changes
 
-The engine is kept as upstream left it. The work lands in Reasonix Studio, the desktop app:
+This fork is **Reasonix Studio Agentic**. The engine is kept as upstream left it; the work lands in Reasonix Studio, the desktop app:
 
 - **UI layout.** The workbench, panes and prompt area are rearranged so the conversation and the project tree get more of the window and the chrome gets less.
 - **Small bug fixes.** Narrow defects in the desktop shell and the web UI, fixed one at a time, each with the test that covers it.
