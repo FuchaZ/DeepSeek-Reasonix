@@ -579,3 +579,45 @@ func TestRemoveProviderLeavesNoRoleNamingIt(t *testing.T) {
 		t.Fatalf("saved config still names the removed provider:\n%s", saved)
 	}
 }
+
+// Adding a model writes a key into this machine's credential store, so the grant
+// a terminal frontend takes follows the listener's reach: loopback is the reader
+// sitting here, anything else is a client that must not write it.
+func TestProviderEditGrantFollowsTheListener(t *testing.T) {
+	for _, tc := range []struct {
+		addr  string
+		want  bool
+		label string
+	}{
+		{"127.0.0.1:8787", true, "loopback v4"},
+		{"[::1]:8787", true, "loopback v6"},
+		{"localhost:8787", true, "localhost"},
+		{"0.0.0.0:8787", false, "all interfaces"},
+		{"192.168.1.20:8787", false, "LAN address"},
+		{"", false, "unset"},
+	} {
+		s := newProviderEditServer(t)
+		if got := s.AllowProviderEditForListener(tc.addr); got != tc.want {
+			t.Fatalf("%s (%q): granted = %v, want %v", tc.label, tc.addr, got, tc.want)
+		}
+		if got := s.grants.providerEdit; got != tc.want {
+			t.Fatalf("%s (%q): providerEdit = %v after the grant call, want %v", tc.label, tc.addr, got, tc.want)
+		}
+	}
+}
+
+// The grant is what stands between a networked client and the credential store,
+// so a listener that did not earn it still answers 403.
+func TestProviderWriteStillRefusedWhenTheListenerDidNotEarnTheGrant(t *testing.T) {
+	s := newProviderEditServer(t)
+	if s.AllowProviderEditForListener("0.0.0.0:8787") {
+		t.Fatal("a listener on every interface granted provider edit")
+	}
+	srv := httptest.NewServer(s.Handler())
+	defer srv.Close()
+	resp := postProvider(t, srv.URL, "/providers", `{"name":"x","kind":"openai"}`)
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		t.Fatalf("POST /providers = %d, want 403", resp.StatusCode)
+	}
+}

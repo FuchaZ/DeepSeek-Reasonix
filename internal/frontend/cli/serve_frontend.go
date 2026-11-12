@@ -39,6 +39,7 @@ type serveHost interface {
 	RunGracefulListener(ctx context.Context, ln net.Listener) error
 	StartRecoveryGC(ctx context.Context)
 	EnableProviderSetupForListener(addr string) bool
+	AllowProviderEditForListener(addr string) bool
 	AllowHost(host string)
 }
 
@@ -148,6 +149,11 @@ func runServeFrontend(ctrl *control.Controller, srv serveHost, cfg config.ServeC
 	}
 	defer resources.release(false)
 	srv.EnableProviderSetupForListener(resources.displayAddr)
+	// Adding a model writes a key into this machine's credential store, so it
+	// follows the same loopback rule the setup surface above does: the reader at
+	// this terminal is the one whose keys these are, and a listener another
+	// machine can reach is not that reader.
+	srv.AllowProviderEditForListener(resources.displayAddr)
 	if public, err := url.Parse(strings.TrimSpace(opts.publicURL)); err == nil && public.Hostname() != "" {
 		srv.AllowHost(public.Hostname())
 	}

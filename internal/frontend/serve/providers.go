@@ -39,6 +39,18 @@ type hostGrants struct {
 // client do it. The desktop shell asks because its only client is its window.
 func (s *Server) AllowProviderEdit() { s.grants.providerEdit = true }
 
+// AllowProviderEditForListener grants the same routes only for a loopback
+// listener, the rule EnableProviderSetupForListener already holds the credential
+// surface to. The terminal reader this frontend serves is sitting at the machine
+// whose keys these are; a listener another machine can reach is not that reader.
+func (s *Server) AllowProviderEditForListener(addr string) bool {
+	if s == nil || !isLoopbackHost(addr) {
+		return false
+	}
+	s.grants.providerEdit = true
+	return true
+}
+
 func (s *Server) registerProviderRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /providers", s.providers)
 	mux.HandleFunc("GET /providers/protocols", s.providerProtocols)

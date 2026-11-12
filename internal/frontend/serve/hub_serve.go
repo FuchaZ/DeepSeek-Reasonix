@@ -53,6 +53,19 @@ func (h *Hub) EnableProviderSetupForListener(addr string) bool {
 	return true
 }
 
+// AllowProviderEditForListener opens the /providers writes on loopback only, for
+// every runtime that shares this listener. Same rule and same reason as the
+// setup surface above: the keys these routes write are this machine's.
+func (h *Hub) AllowProviderEditForListener(addr string) bool {
+	if !isLoopbackHost(addr) {
+		return false
+	}
+	for _, rt := range h.localRuntimes() {
+		rt.Server.AllowProviderEditForListener(addr)
+	}
+	return true
+}
+
 // adoptHostDecisions applies to a newly opened runtime whatever the host
 // already decided for the hub, so a pane opened an hour in is not quietly less
 // capable than the one the window started with.
