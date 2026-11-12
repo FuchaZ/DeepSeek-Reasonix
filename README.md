@@ -27,9 +27,10 @@ This fork is **Reasonix Studio Tweaks**. The engine is kept as upstream left it;
 
 - **UI layout.** The workbench, panes and prompt area are rearranged so the conversation and the project tree get more of the window and the chrome gets less.
 - **Small features.** Small conveniences that make the app nicer to live in, added one at a time.
+- **Multi-agent UI.** The desktop UI is being built out for sessions that run more than one agent, so each agent's work stays visible and attributable.
 - **Small bug fixes.** Narrow defects in the desktop shell and the web UI, fixed one at a time, each with the test that covers it.
 
-Changes stay small and reviewable. Nothing here is a rewrite. Multi-agent work is on the same branch, but it is not what this fork is named for.
+Changes stay small and reviewable. Nothing here is a rewrite.
 
 ## Versions
 
