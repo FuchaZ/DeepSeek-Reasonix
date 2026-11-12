@@ -3,7 +3,7 @@
 </p>
 
 > [!NOTE]
-> **Reasonix Studio Agentic** — a personal fork of [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) on the `studio` (2.x) line. Upstream stopped at v2.61.0; this fork continues from there, focused on the Reasonix Studio desktop app: UI layout, small bug fixes, and the UI groundwork for multi-agent sessions.
+> **Reasonix Studio Tweaks** — a personal fork of [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) on the `studio` (2.x) line. Upstream stopped at v2.61.0; this fork continues from there, focused on the Reasonix Studio desktop app: UI layout, small features and small bug fixes.
 
 <p align="center">
   <strong>English</strong>
@@ -23,19 +23,19 @@
 
 ## What this fork changes
 
-This fork is **Reasonix Studio Agentic**. The engine is kept as upstream left it; the work lands in Reasonix Studio, the desktop app:
+This fork is **Reasonix Studio Tweaks**. The engine is kept as upstream left it; the work lands in Reasonix Studio, the desktop app:
 
 - **UI layout.** The workbench, panes and prompt area are rearranged so the conversation and the project tree get more of the window and the chrome gets less.
+- **Small features.** Small conveniences that make the app nicer to live in, added one at a time.
 - **Small bug fixes.** Narrow defects in the desktop shell and the web UI, fixed one at a time, each with the test that covers it.
-- **Multi-agent UI.** The desktop UI is being built out for sessions that run more than one agent, so each agent's work stays visible and attributable.
 
-Changes stay small and reviewable. Nothing here is a rewrite.
+Changes stay small and reviewable. Nothing here is a rewrite. Multi-agent work is on the same branch, but it is not what this fork is named for.
 
 ## Versions
 
 This fork starts at **v2.6.1** and moves forward inside the `2.6.x` line: each release bumps the patch number — 2.6.1, 2.6.2, 2.6.3, and so on. There is no jump to 2.7; new behaviour ships as `2.6.x` patches.
 
-Releases are published from this repository's own [releases page](https://github.com/Oliver-Rui/DeepSeek-Reasonix/releases). v2.61.0 remains the last upstream release.
+Releases are published from this repository's own [releases page](https://github.com/Oliver-Rui/Reasonix-Studio-Tweaks/releases). v2.61.0 remains the last upstream release.
 
 ## Install
 
@@ -44,8 +44,8 @@ Reasonix Studio is the desktop app; the CLI, Studio and the editor integrations 
 Build it from source:
 
 ```sh
-git clone https://github.com/Oliver-Rui/DeepSeek-Reasonix.git
-cd DeepSeek-Reasonix
+git clone https://github.com/Oliver-Rui/Reasonix-Studio-Tweaks.git
+cd Reasonix-Studio-Tweaks
 git switch studio
 ```
 

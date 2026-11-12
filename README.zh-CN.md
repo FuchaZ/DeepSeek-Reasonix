@@ -3,7 +3,7 @@
 </p>
 
 > [!NOTE]
-> **Reasonix Studio Agentic** —— [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) `studio`（2.x）分支的个人 fork。上游停在 v2.61.0；本仓库从这里继续，改动集中在 Reasonix Studio 桌面端：UI 布局、小缺陷修复，以及多 Agent 会话的 UI 基础。
+> **Reasonix Studio Tweaks** —— [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) `studio`（2.x）分支的个人 fork。上游停在 v2.61.0；本仓库从这里继续，改动集中在 Reasonix Studio 桌面端：UI 布局、小功能和部分小缺陷修复。
 
 <p align="center">
   <a href="./README.md">English</a>
@@ -23,19 +23,19 @@
 
 ## 这个分支改了什么
 
-本 fork 名为 **Reasonix Studio Agentic**。引擎部分保持上游原样，改动落在 Reasonix Studio 桌面端：
+本 fork 名为 **Reasonix Studio Tweaks**。引擎部分保持上游原样，改动落在 Reasonix Studio 桌面端：
 
 - **UI 布局**：重排工作台、面板和输入区，把窗口更多空间留给对话和项目树，少留给人来看的壳子。
+- **小功能**：让应用更顺手的那些小改进，一项一项加。
 - **小缺陷修复**：桌面外壳和网页界面里那些窄范围的问题逐个修掉，每个都带上对应的测试。
-- **多 Agent UI**：为同时运行多个 Agent 的会话搭桌面端界面，让每个 Agent 的产出都看得见、认得出是谁做的。
 
-改动保持小而可审阅，不是重写。
+改动保持小而可审阅，不是重写。多 Agent 的工作也在同一个分支上，但这不是本 fork 名字的由来。
 
 ## 版本
 
 本 fork 从 **v2.6.1** 起步，在 `2.6.x` 线上一直往上走：每次发布加一位补丁号——2.6.1、2.6.2、2.6.3……不会跳到 2.7，新行为都以 `2.6.x` 补丁的形式发出。
 
-版本发布在本仓库自己的[发布页](https://github.com/Oliver-Rui/DeepSeek-Reasonix/releases)。上游最后一个版本仍是 v2.61.0。
+版本发布在本仓库自己的[发布页](https://github.com/Oliver-Rui/Reasonix-Studio-Tweaks/releases)。上游最后一个版本仍是 v2.61.0。
 
 ## 安装
 
@@ -44,8 +44,8 @@
 从源码构建：
 
 ```sh
-git clone https://github.com/Oliver-Rui/DeepSeek-Reasonix.git
-cd DeepSeek-Reasonix
+git clone https://github.com/Oliver-Rui/Reasonix-Studio-Tweaks.git
+cd Reasonix-Studio-Tweaks
 git switch studio
 ```
 
