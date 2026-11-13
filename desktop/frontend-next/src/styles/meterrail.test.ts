@@ -40,4 +40,34 @@ describe("status rail figures hold their width", () => {
     const speed = rail.find((r) => r.selector === ".studio-meterrail .studio-meter-speed b");
     expect(speed?.decls.get("min-width")).toBe("5ch");
   });
+
+  // The two sit side by side, so a leading that differs by a fraction of a pixel
+  // moves the turn count off the line the tariff is drawn on.
+  it("puts the turn count on the leading the tariff beside it is drawn with", () => {
+    const tariff = rail.find((r) => r.selector === ".studio-meterrail .studio-meter-tariff");
+    const leading = /var\(--fs-micro\)\s*\/\s*([\d.]+)/.exec(tariff?.decls.get("font") ?? "")?.[1];
+    expect(leading, "the tariff's line-height in its font shorthand").toBe("1.2");
+    const chip = rail.find((r) => r.selector.split(",").some((s) => s.trim() === ".studio-meterrail .studio-meter-turns"));
+    expect(chip?.decls.get("line-height")).toBe(leading);
+  });
+
+  // A label drawn heavier than the ones beside it reads as sunk even on the same
+  // baseline, so it takes the ink the context and cache labels already use.
+  it("draws the turn count's label in the ink its neighbours use", () => {
+    const inkOf = (selector: string) =>
+      rules(SHEET)
+        .filter((r) => r.decls.has("color") && r.selector.split(",").some((s) => s.trim() === selector))
+        .at(-1)?.decls.get("color");
+    const neighbour = inkOf(".studio-meter-cache > span");
+    expect(neighbour, "the ink the cache label is drawn in").toBeTruthy();
+    expect(inkOf(".studio-meter-turns > span")).toBe(neighbour);
+  });
+
+  // The rail's figure rule restates the font shorthand, which resets the leading
+  // to 1. Inside a chip whose label takes its neighbour's taller one, that shorter
+  // line box is rounded onto a lower row and the figure sinks under its label.
+  it("keeps the turn count's figure on its label's leading", () => {
+    const figure = rail.find((r) => r.selector.split(",").some((s) => s.trim() === ".studio-meterrail .studio-meter-turns > b"));
+    expect(figure?.decls.get("line-height"), "the figure's leading, which the rail's font shorthand otherwise resets to 1").toBe("1.2");
+  });
 });
