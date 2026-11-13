@@ -13,6 +13,11 @@ try {
     for (const [key, value] of Object.entries({ pref: "zh", ws: "2", sess: "6", turns: "1" })) url.searchParams.set(key, value);
     if (pack !== "default") url.searchParams.set("pack", pack);
     await page.goto(url.href, { waitUntil: "networkidle" });
+    // The rail shows only while the workspace column is shut, and a row is
+    // current while the settings page it names is open: close the column, then
+    // open 用量 from the rail and read that row.
+    await page.locator(".studio-collapse").click();
+    await page.locator(".nav").getByRole("button", { name: /^用量/ }).click();
     const current = page.locator('.navbtn[aria-current="page"]');
     await current.waitFor();
     const label = `${colorScheme}/${pack}`;
@@ -48,7 +53,7 @@ try {
     assert.ok(parseFloat(colors.marker) >= 2, `${label}: a side marker also identifies the current section`);
     await current.focus();
     assert.ok(await current.evaluate((button) => parseFloat(getComputedStyle(button).outlineWidth) >= 2), `${label}: keyboard focus stays visible`);
-    assert.equal(await current.getAttribute("aria-label"), "会话");
+    assert.ok((await current.getAttribute("aria-label") ?? "").startsWith("用量"));
     await page.close();
     console.log(`PASS navigation selection ${label}: quiet surface, contrast and focus`);
   }

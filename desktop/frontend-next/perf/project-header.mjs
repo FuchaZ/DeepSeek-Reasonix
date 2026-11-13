@@ -16,7 +16,7 @@ try {
     page.on("pageerror", (error) => failures.push(error.message));
     await page.goto(`${BASE}?pref=zh&turns=3`, { waitUntil: "networkidle" });
     const add = page.locator('.projects-header [data-action="workspace.add"]');
-    const recent = page.locator('.projects-header [data-action="session.recent"]');
+    const filter = page.locator('.projects-header .session-filter-trigger');
     const fold = page.locator('.projects-header [data-action="workspace.fold-all"]');
     await add.waitFor();
     await page.addStyleTag({ content: "*{transition:none!important;animation:none!important}" });
@@ -58,14 +58,27 @@ try {
     await page.mouse.move(900, 500);
     const after = await paint(add);
     check(`${scheme}: closing the dialog restores the resting background`, after.fill === rest.fill);
-    await recent.click();
-    const recentDialog = page.getByRole("dialog", { name: "最近的会话", exact: true });
-    await recentDialog.locator(".recent-session").first().waitFor();
-    check(`${scheme}: Recent opens saved session discovery`, await recentDialog.isVisible());
+    // The recent page is retired; 最近 now orders the same list the filter
+    // scopes narrow, as a row inside the filter menu rather than a header entry.
+    check(`${scheme}: the retired recent header entry is gone`,
+      await page.locator('.projects-header [data-action="session.recent"]').count() === 0);
+    await filter.click();
+    const filterMenu = page.locator('.session-filter-menu');
+    await filterMenu.waitFor();
+    const recentRow = filterMenu.locator('[data-action="session.filter"][data-value="recent"]');
+    check(`${scheme}: the filter menu offers 最近 beside the scopes it reorders`, await recentRow.isVisible());
+    // One row cycles newest → oldest → off, ending where it started so the
+    // long-list section below reads the resting order.
+    for (const arrow of ["↑", "↓", "⇅"]) {
+      await recentRow.click();
+      const shown = (await recentRow.locator(".rt").textContent())?.trim();
+      check(`${scheme}: picking 最近 cycles the order to ${arrow} and keeps the menu open`,
+        shown === arrow && await filterMenu.isVisible(), shown);
+    }
     await page.keyboard.press("Escape");
-    await recentDialog.waitFor({ state: "hidden" });
-    check(`${scheme}: closing Recent returns focus to its own header entry`,
-      await recent.evaluate((button) => button === document.activeElement));
+    await filterMenu.waitFor({ state: "hidden" });
+    check(`${scheme}: closing the filter returns focus to its own header entry`,
+      await filter.evaluate((button) => button === document.activeElement));
     await page.goto(`${BASE}?pref=zh&ws=20&sess=8&turns=3`, { waitUntil: "networkidle" });
     await add.waitFor();
     const headerTop = await add.evaluate((button) => button.getBoundingClientRect().top);

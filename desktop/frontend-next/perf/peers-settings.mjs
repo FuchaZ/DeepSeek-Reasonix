@@ -36,14 +36,17 @@ for (const scheme of ["light", "dark"]) {
     if (shotDir && width === 1280) await page.locator(".compose").screenshot({ path: `${shotDir}/${scheme}-held.png` });
 
     await page.evaluate(() => document.querySelector('[data-action="chrome.settings"]')?.click());
-    const section = (value) => page.evaluate((v) => document.querySelector(`[data-action="settings.section"][data-value="${v}"]`)?.click(), value);
-    await page.waitForSelector('[data-action="settings.section"][data-value="tools"]');
+    // The sheet's own tabs, not the sidebar rows: the sidebar also spells
+    // settings.section, but the sheet reads its section once at mount, so a
+    // sidebar row clicked while it is open would navigate nothing.
+    const section = (value) => page.evaluate((v) => document.querySelector(`.prefs-nav [role="tab"][data-action="settings.section"][data-value="${v}"]`)?.click(), value);
+    await page.waitForSelector('.prefs-nav [role="tab"][data-action="settings.section"][data-value="tools"]');
     await section("session");
-    await page.waitForTimeout(300);
+    await page.waitForSelector('[data-action="settings.page-index"][data-target="peers"]');
     check(`${tag}: session messages have a settings entry of their own`, (await page.locator('[data-action="settings.page-index"][data-target="peers"]').count()) === 1);
     await section("tools");
-    await page.waitForTimeout(300);
-    check(`${tag}: and no longer sit at the foot of tools and permissions`, (await page.locator('[role="switch"][aria-label="启用会话间消息"]').count()) === 0);
+    await page.waitForSelector('.prefs-main[data-sec="tools"]');
+    check(`${tag}: and no longer sit at the foot of tools and permissions`, (await page.locator('.prefs-main[data-sec="tools"] [role="switch"][aria-label="启用会话间消息"]').count()) === 0);
     await section("session");
     await page.locator('[data-action="settings.page-index"][data-target="peers"]').click();
     await page.waitForSelector('[role="switch"][aria-label="启用会话间消息"]', { timeout: 8000 });
