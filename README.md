@@ -39,9 +39,9 @@ Changes stay small and reviewable. Nothing here is a rewrite.
 
 ## Versions
 
-This fork starts at **v2.6.1** and moves forward inside the `2.6.x` line: each release bumps the patch number — 2.6.1, 2.6.2, 2.6.3, and so on. There is no jump to 2.7; new behaviour ships as `2.6.x` patches.
+This fork continues from upstream's **v2.61.0** — the point where upstream declared maintenance stopped. Releases move along the `studio` line: 2.62.0, 2.63.0, and so on.
 
-Releases are published from this repository's own [releases page](https://github.com/Oliver-Rui/Reasonix-Studio-Tweaks/releases). v2.61.0 remains the last upstream release.
+Releases are published from this repository's own [releases page](https://github.com/Oliver-Rui/DeepSeek-Reasonix-continued/releases). v2.61.0 remains the last upstream release.
 
 ## Install
 
@@ -50,8 +50,8 @@ Reasonix Studio is the desktop app; the CLI, Studio and the editor integrations 
 Build it from source:
 
 ```sh
-git clone https://github.com/Oliver-Rui/Reasonix-Studio-Tweaks.git
-cd Reasonix-Studio-Tweaks
+git clone https://github.com/Oliver-Rui/DeepSeek-Reasonix-continued.git
+cd DeepSeek-Reasonix-continued
 git switch studio
 ```
 

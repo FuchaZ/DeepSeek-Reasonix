@@ -2,7 +2,7 @@
 owner: @Oliver-Rui
 backup: @esengine
 status: active
-reviewed: 2026-11-13
+reviewed: 2026-11-14
 ---
 
 # Reasonix Studio Tweaks — handoff
@@ -210,4 +210,29 @@ installer's own 32-bit `resources/elevate.exe`.
   the only red in the packages this revision touched.
 - Only Windows was built here. `.deb`, `.rpm`, `.AppImage` and the macOS bundle still rely on
   `release-studio.yml` and its credentials.
+
+## 6. Revision 2.63.0
+
+The second release of this line. Four commits, all frontend (`desktop/frontend-next`), pushed to
+`studio` on `Oliver-Rui/DeepSeek-Reasonix-continued` — the remote was retargeted this revision; the
+`Reasonix-Studio-Tweaks` URL in older notes never existed on GitHub.
+
+| Commit | Change |
+| --- | --- |
+| `1e4451d` | The session tree carries two explicit groups — 项目 over the remembered projects, 任务 over the non-remembered folder(s). The partition is a pure helper (`workspaceGroups.ts`); a list, not a scalar, because `roots()` can list several unremembered folders. |
+| `75b11b9` | 新建会话 opens a 选择项目 card (search, local + remote projects, 创建项目, 不在项目中工作). The escape row sends **no root**, and `Hub.resolveRoot` falls back to the kernel's auto workspace (`<state>/workspaces/auto`) — the state-home path is never computed in the frontend. Per-project 新建 bypasses. |
+| `d5436da` | Three layout fixes, each live-measured first: the settings windowbar's buttons opt out of the drag region (最小化/最大化/关闭 were dead while 设置 was open); the scope pill's chevron opts back to `inline-block` against the deliberate global `.studio-icon { display: block }`; scope dropdown rows declare their grid positions so an exception chip cannot auto-place into column one. |
+| `17154c7` | `data.cloud_backup` — a key nothing had referenced since the feature left in 2.62.0's work. |
+
+The README open item from §5 is closed: both READMEs now tell the 2.61.0 handover, the
+`studio` line (2.62.0, 2.63.0, …), and point at this repository's releases page.
+
+### Checks run for this revision
+
+`tsc --noEmit` clean; full `vitest run` 6788/6788 (the two file-load failures under the session
+sandbox are `?worker&url` transform denials on `pdfjs-dist`/`maplibre-gl`, unrelated to the diff);
+`npm run census` and `census:verify` hold; `repolint -changed` clean; `vite build` clean.
+The picker, both groups, the pill, the dropdown rows and the windowbar were verified in the
+running app at 100% and 115% zoom; the windowbar's buttons additionally by computed
+`webkitAppRegion` with the platform attribute stubbed (the plain browser does not render them).
 
