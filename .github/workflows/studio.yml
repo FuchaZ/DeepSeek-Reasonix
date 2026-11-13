@@ -321,7 +321,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, windows-latest, macos-latest]
+        os: [ubuntu-22.04, windows-latest, macos-15]
     defaults:
       run:
         working-directory: desktop
@@ -417,7 +417,7 @@ jobs:
             fi
           fi
           legs='[
-            {"os":"macos-latest","arch":"arm64","platform":"darwin"},
+            {"os":"macos-15","arch":"arm64","platform":"darwin"},
             {"os":"ubuntu-22.04","arch":"amd64","platform":"linux"},
             {"os":"windows-latest","arch":"amd64","platform":"windows","ebarch":"x64"}
           ]'
