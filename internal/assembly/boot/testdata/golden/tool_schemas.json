@@ -184,13 +184,17 @@
   },
   {
     "Name": "dispatch_to_project",
-    "Description": "Hand a task to a session in another of the user's projects: name the project (its folder name or full path, as the user has it in their project list) and write what that session should do. A session is opened there if none of yours is already waiting. The user's dispatch switch is their consent: the receiving session's model reads the task at once, labelled as coming from you, and it works under permissions no wider than yours. A project the user has not trusted is refused. It is for passing a task and its context, not a way to write into that project yourself. You get the receiving session's key. When that session finishes the task, its final answer comes back to you on its own, labelled as data from that session; it can also write to you with send_peer_message. Do not include secrets.",
+    "Description": "Hand a task to a session in one of the user's projects: name the project (its folder name or full path, as the user has it in their project list) and write what that session should do. A session is opened there if none of yours is already waiting. Pass role to keep several sessions in the same project apart: each role gets its own window, and a second task to the same role goes to the window already waiting rather than opening another. Without a role, one task per project is the rule, and this session's own project is refused. The user's dispatch switch is their consent: the receiving session's model reads the task at once, labelled as coming from you, and it works under permissions no wider than yours. A project the user has not trusted is refused. It is for passing a task and its context, not a way to write into that project yourself. You get the receiving session's key. When that session finishes the task, its final answer comes back to you on its own, labelled as data from that session; it can also write to you with send_peer_message. Do not include secrets.",
     "ReadOnly": false,
     "Schema": {
       "additionalProperties": false,
       "properties": {
         "project": {
           "description": "The project's folder name or full path, as it appears in the user's project list",
+          "type": "string"
+        },
+        "role": {
+          "description": "Optional. A short name for the job this session is being opened to do, such as frontend or reviewer. It keeps several sessions in one project apart; the same role reuses the session already waiting.",
           "type": "string"
         },
         "text": {
