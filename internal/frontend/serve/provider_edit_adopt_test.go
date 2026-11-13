@@ -7,11 +7,8 @@ import (
 )
 
 // A pane opened after the host took the grant must be as capable as the one it
-// started with: a reader who adds a second project should not find the provider
-// form refusing in that project and working in the first.
-//
-// The two ways a pane is born take different roads — Adopt runs the Hub's Grant
-// callback, OpenWith runs it and then adoptHostDecisions — so both are checked.
+// started with: adding a second project must not find the provider form
+// refusing there. Adopt and OpenWith take different roads, so both are checked.
 func TestProviderEditGrantReachesAPaneOpenedLater(t *testing.T) {
 	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
 

@@ -168,9 +168,8 @@ func runServeFrontend(ctrl *control.Controller, srv serveHost, cfg config.ServeC
 	defer resources.release(false)
 	srv.EnableProviderSetupForListener(resources.displayAddr)
 	// Adding a model writes a key into this machine's credential store, so it
-	// follows the same loopback rule the setup surface above does: the reader at
-	// this terminal is the one whose keys these are, and a listener another
-	// machine can reach is not that reader.
+	// follows the same loopback rule the setup surface above does: the reader
+	// here is the one whose keys these are.
 	srv.AllowProviderEditForListener(resources.displayAddr)
 	// Recorded once here, read by every pane the hub adopts after this one: a
 	// project opened an hour in gets the same grant as the first.
@@ -268,45 +267,82 @@ func serveFrontendLoop(ctrl *control.Controller, srv serveHost, resources *serve
 	return 0
 }
 
-func runServeWithOptions(args []string, opts serveRunOptions) int {
-	if opts.command == "" {
-		opts.command = "serve"
-	}
+// serveFlags are what the two serve verbs parse. A struct rather than a dozen
+// locals so runServeWithOptions reads as the sequence of decisions it makes.
+type serveFlags struct {
+	model            *string
+	profileFlag      *string
+	presetFlag       *string
+	agentComposition *string
+	maxSteps         *int
+	addr             *string
+	resume           *string
+	sessionID        *string
+	auth             *string
+	token            *string
+	password         *string
+	passwordFile     *string
+	hashPassword     *bool
+	allowOpenNetwork *bool
+	behindProxy      *bool
+	publicURL        *string
+	portFile         *string
+	tokenFile        *string
+	pidFile          *string
+	page             *string
+	dir              *string
+	broker           brokerFlags
+	openBrowser      *bool
+	noOpen           *bool
+}
+
+// registerServeFlags declares the serve/web flags. sessionID is only declared
+// for web, so `serve --session-id` stays an unknown flag.
+func registerServeFlags(opts serveRunOptions) (*flag.FlagSet, *serveFlags) {
 	fs := flag.NewFlagSet(opts.command, flag.ContinueOnError)
-	model := fs.String("model", "", "provider name (default: config default_model)")
-	profileFlag := fs.String("profile", "", "deprecated: use --preset (economy|balanced|delivery)")
-	presetFlag := fs.String("preset", "balanced", presetFlagUsage())
-	agentComposition := fs.String("agent-composition", "", "Agent composition ID (builtin:, user: or project:)")
-	maxSteps := fs.Int("max-steps", 0, "one-off max tool-call rounds (0 = automatic)")
-	addr := fs.String("addr", "127.0.0.1:8787", "listen address")
-	resume := fs.String("resume", "", "resume a saved session file")
-	sessionID := new(string)
+	f := &serveFlags{}
+	f.model = fs.String("model", "", "provider name (default: config default_model)")
+	f.profileFlag = fs.String("profile", "", "deprecated: use --preset (economy|balanced|delivery)")
+	f.presetFlag = fs.String("preset", "balanced", presetFlagUsage())
+	f.agentComposition = fs.String("agent-composition", "", "Agent composition ID (builtin:, user: or project:)")
+	f.maxSteps = fs.Int("max-steps", 0, "one-off max tool-call rounds (0 = automatic)")
+	f.addr = fs.String("addr", "127.0.0.1:8787", "listen address")
+	f.resume = fs.String("resume", "", "resume a saved session file")
+	f.sessionID = new(string)
 	if opts.command == "web" {
-		sessionID = fs.String("session-id", "", "bind a fresh Web session identity (used by /web handoff)")
+		f.sessionID = fs.String("session-id", "", "bind a fresh Web session identity (used by /web handoff)")
 	}
 	authHelp := "auth mode: none, token, or password (default: config, else a generated token; none still requires the token for changes)"
 	if opts.command == "web" {
 		authHelp = "auth mode: none, token, or password (default: generated token)"
 	}
-	auth := fs.String("auth", "", authHelp)
-	token := fs.String("token", "", "pre-shared token for auth=token (auto-generated if empty)")
-	password := fs.String("password", "", "password for auth=password (use --hash-password to store a hash instead)")
-	passwordFile := fs.String("password-file", "", "read the auth=password password from this file (overrides --password; keeps the secret out of argv)")
-	hashPassword := fs.Bool("hash-password", false, "print a bcrypt hash of --password or --password-file and exit")
-	allowOpenNetwork := fs.Bool("allow-open-network", false, "allow --auth none on an address other machines can reach (anyone on the network can then read sessions and history)")
-	behindProxy := fs.Bool("behind-proxy", false, "trust X-Forwarded-For / X-Forwarded-Proto headers from a reverse proxy")
-	publicURL := fs.String("public-url", "", "the address a phone opens to reach this server, e.g. https://agent.example.com behind a TLS proxy; used for the share link and its QR code")
-	portFile := fs.String("port-file", "", "write the actual bound listen address (host:port) to this file after binding")
-	tokenFile := fs.String("token-file", "", "read the auth=token pre-shared token from this file (overrides --token; keeps the secret out of argv)")
-	pidFile := fs.String("pid-file", "", "write the server process id to this file")
-	page := fs.String("page", "", "directory holding a built Studio page, served under /_studio/ (default: look beside the binary)")
+	f.auth = fs.String("auth", "", authHelp)
+	f.token = fs.String("token", "", "pre-shared token for auth=token (auto-generated if empty)")
+	f.password = fs.String("password", "", "password for auth=password (use --hash-password to store a hash instead)")
+	f.passwordFile = fs.String("password-file", "", "read the auth=password password from this file (overrides --password; keeps the secret out of argv)")
+	f.hashPassword = fs.Bool("hash-password", false, "print a bcrypt hash of --password or --password-file and exit")
+	f.allowOpenNetwork = fs.Bool("allow-open-network", false, "allow --auth none on an address other machines can reach (anyone on the network can then read sessions and history)")
+	f.behindProxy = fs.Bool("behind-proxy", false, "trust X-Forwarded-For / X-Forwarded-Proto headers from a reverse proxy")
+	f.publicURL = fs.String("public-url", "", "the address a phone opens to reach this server, e.g. https://agent.example.com behind a TLS proxy; used for the share link and its QR code")
+	f.portFile = fs.String("port-file", "", "write the actual bound listen address (host:port) to this file after binding")
+	f.tokenFile = fs.String("token-file", "", "read the auth=token pre-shared token from this file (overrides --token; keeps the secret out of argv)")
+	f.pidFile = fs.String("pid-file", "", "write the server process id to this file")
+	f.page = fs.String("page", "", "directory holding a built Studio page, served under /_studio/ (default: look beside the binary)")
 	// The project this server works in. Every other verb takes it from the
 	// shared run flags; serve did not, and without it the only way to name a
 	// project was the process working directory.
-	dir := fs.String("dir", "", "change to this directory first (project root); config, sandbox and file tools resolve from here")
-	broker := registerBrokerFlags(fs)
-	openBrowser := fs.Bool("open", opts.openBrowser, "open the Web UI in the default browser")
-	noOpen := fs.Bool("no-open", false, "do not open the Web UI in the default browser")
+	f.dir = fs.String("dir", "", "change to this directory first (project root); config, sandbox and file tools resolve from here")
+	f.broker = registerBrokerFlags(fs)
+	f.openBrowser = fs.Bool("open", opts.openBrowser, "open the Web UI in the default browser")
+	f.noOpen = fs.Bool("no-open", false, "do not open the Web UI in the default browser")
+	return fs, f
+}
+
+func runServeWithOptions(args []string, opts serveRunOptions) int {
+	if opts.command == "" {
+		opts.command = "serve"
+	}
+	fs, f := registerServeFlags(opts)
 	if code, ok := parseCommandFlags(fs, args); !ok {
 		return code
 	}
@@ -316,25 +352,25 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 			authExplicit = true
 		}
 	})
-	if *resume != "" && *sessionID != "" {
+	if *f.resume != "" && *f.sessionID != "" {
 		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, "--resume and --session-id cannot be used together")
 		return 2
 	}
-	if *sessionID != "" {
-		if err := validateWebSessionID(*sessionID); err != nil {
+	if *f.sessionID != "" {
+		if err := validateWebSessionID(*f.sessionID); err != nil {
 			fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
 			return 2
 		}
 	}
-	workspaceRoot, code := enterProjectDir(*dir)
+	workspaceRoot, code := enterProjectDir(*f.dir)
 	if code != 0 {
 		return code
 	}
-	profileRaw := strings.TrimSpace(*profileFlag)
+	profileRaw := strings.TrimSpace(*f.profileFlag)
 	if profileRaw != "" {
 		warnProfileDeprecated()
 	} else {
-		profileRaw = strings.TrimSpace(*presetFlag)
+		profileRaw = strings.TrimSpace(*f.presetFlag)
 	}
 	profile, err := parseRuntimeProfile(profileRaw)
 	if err != nil {
@@ -342,7 +378,7 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 		return 2
 	}
 
-	if code, done := printPasswordHash(*hashPassword, *password, *passwordFile); done {
+	if code, done := printPasswordHash(*f.hashPassword, *f.password, *f.passwordFile); done {
 		return code
 	}
 
@@ -361,13 +397,13 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 
 	// Build serve config, merging CLI flags over config file.
 	serveCfg, code := serveConfigFromFlags(opts.command, authExplicit, cfg.Serve, serveFlagValues{
-		auth: *auth, token: *token, tokenFile: *tokenFile,
-		password: *password, passwordFile: *passwordFile, behindProxy: *behindProxy,
+		auth: *f.auth, token: *f.token, tokenFile: *f.tokenFile,
+		password: *f.password, passwordFile: *f.passwordFile, behindProxy: *f.behindProxy,
 	})
 	if code != 0 {
 		return code
 	}
-	if err := serve.OpenBindRefusal(serveCfg, *addr, *allowOpenNetwork); err != nil {
+	if err := serve.OpenBindRefusal(serveCfg, *f.addr, *f.allowOpenNetwork); err != nil {
 		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
 		return 2
 	}
@@ -378,8 +414,8 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 	leases := control.NewSessionLeaseKeeper()
 	defer leases.Release()
 	var resumeSession *sessionstore.Session
-	if *resume != "" {
-		if err := leases.Rebind(*resume); err != nil {
+	if *f.resume != "" {
+		if err := leases.Rebind(*f.resume); err != nil {
 			if errors.Is(err, sessionstore.ErrSessionLeaseHeld) {
 				fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, control.SessionInUseMessage(err)+"; "+control.SessionLeaseCloseHint)
 			} else {
@@ -388,7 +424,7 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 			return 1
 		}
 		var err error
-		resumeSession, err = loadResumableSession(*resume)
+		resumeSession, err = loadResumableSession(*f.resume)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
 			return 1
@@ -397,18 +433,18 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 	// A bootstrapped serve resolves providers over the tunnel back to the
 	// machine that started it, so this host needs no key and no egress of its
 	// own. Unset leaves boot on its ordinary config-backed path.
-	providerResolver, err := broker.resolver()
+	providerResolver, err := f.broker.resolver()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
 		return 2
 	}
-	*model = serveStartModel(*model, *resume, cfg, providerResolver != nil)
+	*f.model = serveStartModel(*f.model, *f.resume, cfg, providerResolver != nil)
 	// Keep the browser reachable when the selected provider has no saved key.
 	// The loopback-only provider setup surface stores the missing credential and
 	// rebuilds this controller in place before the normal web UI is exposed.
 	paneSink := reporter.Wrap(bc)
-	ctrl, err := setupProfileWithOverrides(ctx, *model, *maxSteps, false, paneSink, profile, cliBuildOverrides{
-		AgentComposition: freshCompositionName(*agentComposition, resumeSession), Composition: resumedComposition(resumeSession),
+	ctrl, err := setupProfileWithOverrides(ctx, *f.model, *f.maxSteps, false, paneSink, profile, cliBuildOverrides{
+		AgentComposition: freshCompositionName(*f.agentComposition, resumeSession), Composition: resumedComposition(resumeSession),
 		NativeSurfaces: true,
 		// The project named on the command line, empty when there was none: boot
 		// then falls back to the working directory exactly as before.
@@ -423,10 +459,10 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 	defer ctrl.Close()
 	SetTaskJobKiller(ctrlKillerAdapter{ctrl})
 
-	if *resume != "" {
-		_ = ctrl.Resume(resumeSession, *resume)
-	} else if *sessionID != "" {
-		freshPath, err := freshWebSessionPath(ctrl.SessionDir(), *sessionID)
+	if *f.resume != "" {
+		_ = ctrl.Resume(resumeSession, *f.resume)
+	} else if *f.sessionID != "" {
+		freshPath, err := freshWebSessionPath(ctrl.SessionDir(), *f.sessionID)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, i18n.M.ErrorPrefix, err)
 			return 1
@@ -441,24 +477,21 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 		return 1
 	}
 
-	// A hub, so this frontend drives several sessions at once the way the studio
-	// window does. The session this command was started for is the first pane.
-	// The listener's address is only known once it is bound, and a pane can be
-	// opened after that: the closure reads the address a pane is granted under,
-	// so a pane opened an hour in is as capable as the first one.
+	// A hub, so this frontend drives several sessions at once. The grant closure
+	// reads the address once it is bound, so a pane opened later takes it too.
 	grant := &serveHostGrant{}
 	hub := serve.NewHub(serve.HubOptions{
 		Serve: serveCfg, NativeSurfaces: true, DecorateSink: reporter.Wrap,
-		ProviderResolver: providerResolver, Page: pageOrWarn(*page),
+		ProviderResolver: providerResolver, Page: pageOrWarn(*f.page),
 		Grant: grant.apply,
 	})
 	adoptFirstPane(hub, ctrl, bc, paneSink, serveCfg, leases)
 	return runServeFrontend(ctrl, hub, serveCfg, serveFrontendOptions{
-		command: opts.command, address: *addr,
-		portFile: *portFile, tokenFile: *tokenFile, pidFile: *pidFile,
-		openBrowser: *openBrowser && !*noOpen, brokered: providerResolver != nil,
-		hasSession: *resume != "" || *sessionID != "",
-		publicURL:  *publicURL, grant: grant,
+		command: opts.command, address: *f.addr,
+		portFile: *f.portFile, tokenFile: *f.tokenFile, pidFile: *f.pidFile,
+		openBrowser: *f.openBrowser && !*f.noOpen, brokered: providerResolver != nil,
+		hasSession: *f.resume != "" || *f.sessionID != "",
+		publicURL:  *f.publicURL, grant: grant,
 	})
 }
 
