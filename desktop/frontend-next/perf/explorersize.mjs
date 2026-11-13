@@ -1,6 +1,7 @@
 // The explorer in the workbench is read at arm's length, next to a conversation set in a 14px reading size.
 // Its header, search field, file rows and the icons beside the count must stay big enough to read and to hit.
 import { chromium } from "playwright";
+import { openFiles } from "./files-entry.mjs";
 
 const BASE = process.env.PERF_URL ?? "http://localhost:4399/perf.html?pref=zh&ws=2&sess=6&turns=2";
 const fails = [];
@@ -16,7 +17,7 @@ try {
     await page.addInitScript(() => localStorage.setItem("rx-nav-rail", "on"));
     await page.goto(BASE, { waitUntil: "networkidle" });
     await page.waitForSelector(".app");
-    await page.locator('.navbtn[aria-label="文件"]').first().click();
+    await openFiles(page);
     await page.waitForSelector(".workbench-explorer-head");
     await page.waitForSelector(".workbench-filelist button");
     const read = await page.evaluate(() => {

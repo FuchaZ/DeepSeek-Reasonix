@@ -2,6 +2,7 @@
 // discard and commit, a push that is previewed before it is confirmed, and a history whose commits open into their
 // files; a folder of projects shows one section per repository, each acting on its own.
 import { chromium } from "playwright";
+import { openFiles } from "./files-entry.mjs";
 
 const BASE = process.env.PERF_URL ?? "http://localhost:4399/perf.html";
 const shotDir = process.env.SHOTS;
@@ -22,7 +23,7 @@ try {
         await page.addInitScript(() => localStorage.setItem("rx-nav-rail", "on"));
         await page.goto(`${BASE}?pref=zh&ws=2&sess=3&turns=2${query}`, { waitUntil: "networkidle" });
         await page.waitForSelector(".app");
-        await page.locator('.navbtn[aria-label="文件"]').first().click();
+        await openFiles(page);
         await page.waitForSelector(".workbench-changes");
         return page;
       };
