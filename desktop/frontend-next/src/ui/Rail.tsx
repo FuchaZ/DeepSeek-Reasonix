@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, 
 import { t } from "../i18n";
 import { renderedBox } from "./findland";
 import { StudioIcon } from "./StudioIcon";
-import { fold, grow, HEAD, nearest, place, viewBand, within, type RailView } from "./railgeom";
+import { fold, HEAD, nearest, place, viewBand, within, type RailView } from "./railgeom";
 
 export interface RailMark {
   id: string;
@@ -269,9 +269,11 @@ export function Rail({ marks, total, scroll, flow, onJump, bound, scope, earlier
   };
 
   if (marks.length < 3) return null;
-  const shown = opened === null && at >= 0 && at < view.length && view[at].single ? view[at] : null;
-  const peek = shown ? marks[shown.from] : null;
+
   const run = opened !== null ? view[opened] : undefined;
+  // The one drawn thing the pointer or the keys are on, as a single message.
+  // A run already opens its own list of rows, so it never gets a card as well.
+  const hot = at >= 0 && view[at]?.single ? { slot: at, at: (view[at].top + view[at].bottom) / 2 } : null;
   const clamp = (y: number, edge: number) => Math.min(Math.max(y, edge), Math.max(edge, geom.current.rail - edge));
 
   return (
@@ -301,14 +303,14 @@ export function Rail({ marks, total, scroll, flow, onJump, bound, scope, earlier
           onJump(marks[within(tops, view[at], railLocalY(e.clientY, rect.top, rect.height, geom.current.rail))]);
         }}
       >
-        {band && <div className="srail-band" style={{ top: band.top, height: band.height }} />}
+        {band && <i className="srail-now" style={{ top: band.top + band.height / 2 }} aria-hidden="true" />}
         {view.map((v, i) => {
           const m = marks[v.from];
           const folded = !v.single;
           let lit = starred(m);
           for (let k = v.from + 1; !lit && k <= v.to; k++) lit = starred(marks[k]);
           const seen = band !== null && v.bottom >= band.top && v.top <= band.top + band.height;
-          const base = folded ? 12 : m.files > 0 ? 14 : 10;
+          const base = folded ? 9 : m.files > 0 ? 10 : 7;
           const tall = Math.max(4, v.bottom - v.top);
           return (
             <button
@@ -345,11 +347,23 @@ export function Rail({ marks, total, scroll, flow, onJump, bound, scope, earlier
                 star(m.msgIndex);
               }}
             >
-              <i style={{ "--w": `${base + (at >= 0 && !folded ? grow(Math.abs(i - at)) : 0)}px`, ...(folded ? { "--h": `${tall}px` } : {}) } as CSSProperties} />
+              <i style={{ "--w": `${base}px`, ...(folded ? { "--h": `${tall}px` } : {}) } as CSSProperties} />
             </button>
           );
         })}
       </nav>
+      {/* What the pointer is over, said beside the column rather than on the
+          transcript: the rail only has room for a tick, and the tick itself
+          stretches into the dark bar the card hangs from. It is on the right,
+          so the card runs leftwards — mirrored from a left-edge list. */}
+      {hot && (
+        <div className="srail-card" style={{ top: clamp(hot.at, 60) }} aria-hidden="true">
+          <p>{marks[view[hot.slot].from].text}</p>
+          {marks[view[hot.slot].from].files > 0 && (
+            <small>{t("chat.changed_n_files", { n: marks[view[hot.slot].from].files })}</small>
+          )}
+        </div>
+      )}
       {run && !run.single && (
         <div className="srail-sub" style={{ top: clamp((run.top + run.bottom) / 2, 150) }} onMouseEnter={hold} onMouseLeave={release}>
           <div className="srail-subhd">{t("chat.questions_a_to_b", { a: run.from + 1, b: run.to + 1 })}</div>
@@ -360,16 +374,6 @@ export function Rail({ marks, total, scroll, flow, onJump, bound, scope, earlier
               {starred(mk) && <StarGlyph />}
             </button>
           ))}
-        </div>
-      )}
-      {shown && peek && (
-        <div className="srail-peek" style={{ top: clamp(shown.top, 44) }} role="tooltip">
-          <div className="hd">
-            <span>{t("chat.your_message_n", { n: shown.from + 1 })}</span>
-            {peek.files > 0 && <><span className="dot">·</span><span>{t("chat.changed_n_files", { n: peek.files })}</span></>}
-          </div>
-          <div className="tx">{peek.text}</div>
-          <div className="keys">{t("chat.click_to_jump_right_click")}</div>
         </div>
       )}
     </div>

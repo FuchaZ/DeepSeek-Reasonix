@@ -1,14 +1,23 @@
-.rail .studio-new-task { margin-top: 8px; height: 32px; padding: 0 12px; gap: 8px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--raised); color: var(--text); font: var(--w-reg) var(--fs-ui) var(--ui); }
-.rail .studio-new-task kbd, .rail .studio-search kbd { margin-left: auto; color: var(--faint); font: var(--w-reg) var(--fs-micro) var(--ui); }
+/* No card, no fill: these two read as the same kind of thing as the settings
+   row below — an icon and a word on the rail's own background. The shortcut is
+   the only thing that moves to the right. */
+.rail .studio-new-task { margin-top: 8px; height: 32px; padding: 0 8px; gap: 8px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); font: var(--w-reg) var(--fs-ui) var(--ui); }
+.rail .studio-new-task:hover { background: var(--overlay); color: var(--text); }
 .rail .studio-new-task > span { color: var(--text); font-size: inherit; }
-.rail .studio-search { margin: 6px 0 4px; height: 30px; padding: 0 10px; gap: 8px; border: 1px solid var(--hair); border-radius: var(--r-sm); background: var(--surface); color: var(--faint); font: var(--w-reg) var(--fs-ui) var(--ui); }
+.rail .studio-search { margin: 0 0 4px; height: 30px; padding: 0 8px; gap: 8px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); font: var(--w-reg) var(--fs-ui) var(--ui); }
+.rail .studio-search:hover { background: var(--overlay); color: var(--text); }
 .rail .studio-label { flex: 1; text-align: left; font-weight: var(--w-reg); }
-.rail .studio-new-task { border: 1px solid var(--border); box-shadow: none; box-sizing: border-box; width: 100%; }
-.rail .studio-search { box-sizing: border-box; width: 100%; border: 1px solid var(--hair); }
-.rail .studio-new-task .studio-icon { color: var(--text); }
-.rail .studio-search .studio-icon { color: var(--faint); }
+.rail .studio-new-task,
+.rail .studio-search { box-shadow: none; box-sizing: border-box; width: 100%; }
+.rail .studio-new-task .studio-icon,
+.rail .studio-search .studio-icon { color: var(--muted); }
+.rail :is(.studio-new-task, .studio-search):hover .studio-icon { color: var(--text); }
 .rail .studio-search { margin-inline: 0; }
 .rail .studio-rail-head { padding: 0 10px 4px; }
+/* The brand row is the window's own grip on the left, the way the top bar is on
+   the right. The collapse button inside it stays clickable. */
+[data-titlebar="app"] .rail .studio-brand { -webkit-app-region: drag; }
+[data-titlebar="app"] .rail .studio-brand > :is(button, a[href]) { -webkit-app-region: no-drag; }
 .rail .studio-brand { height: var(--chrome-h); padding: 0 4px 0 8px; gap: 8px; margin: 0; }
 .rail .studio-brand-lockup { gap: 8px; }
 .rail .studio-brand-logo { margin-left: -9px; }
@@ -17,15 +26,40 @@
 .rail .studio-collapse:hover { background: var(--overlay); color: var(--text); }
 .rail .studio-collapse .studio-icon { width: 16px; height: 16px; }
 .rail .studio-new-task, .rail .studio-search { margin-inline: 0; }
-.rail .projects-header { height: 30px; min-height: 30px; padding: 0 2px 0 4px; margin: 4px 0 0; display: flex; align-items: center; }
+/* The icon rail's places, spelled out under the column's own two rows. Same
+   weight and height as those rows, so the list reads as one block. */
+/* Eight below the list and the header's own 4px margin put the hairline in the
+   middle of the gap: the bar sits as far from the rows above it as from the
+   words inside it, which is 8px either way once the header's flex centring is
+   counted. */
+.rail .studio-navlist { display: flex; flex-direction: column; gap: 0; margin: 0 0 8px; }
+.rail .studio-navrow {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: 30px; padding: 0 8px; box-sizing: border-box;
+  border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted);
+  font: var(--w-reg) var(--fs-ui) var(--ui); text-align: left; cursor: pointer;
+}
+.rail .studio-navrow:hover { background: var(--overlay); color: var(--text); }
+.rail .studio-navrow:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }
+.rail .studio-navrow > span { display: inline-grid; place-items: center; flex: none; color: var(--muted); }
+.rail .studio-navrow:hover > span { color: var(--text); }
+.rail .studio-navrow > small { margin-left: auto; color: var(--faint); font: var(--w-reg) var(--fs-micro)/1.4 var(--ui); }
+/* The bar above the tree starts a new block, the way the settings row is
+   separated at the foot: one hairline, inset like the column's own rows. */
+.rail .projects-header { height: 30px; min-height: 30px; padding: 0 2px 0 4px; margin: 4px 0 0; display: flex; align-items: center; position: relative; }
+.rail .projects-header::before { content: ""; position: absolute; left: 10px; right: 10px; top: -4px; height: 1px; background: var(--hair); }
 .rail .projects-tabs { display: flex; align-items: center; gap: 2px; width: 100%; }
-.rail .vtabs { display: inline-flex; gap: 2px; padding: 2px; border-radius: var(--r-sm); background: var(--overlay); }
-.rail .vtab { height: 22px; padding: 0 8px; border: 0; border-radius: var(--r-xs); background: transparent; color: var(--muted); font: var(--w-reg) var(--fs-meta) var(--ui); cursor: pointer; }
-.rail .vtab[aria-pressed="true"] { background: var(--raised); color: var(--text); font-weight: var(--w-med); }
+/* No pill, no fill: the view's name is a word on the column's own background,
+   the way the rows above it are. Only the current view is inked. */
+.rail .vtabs { display: inline-flex; gap: 2px; padding: 0; border-radius: var(--r-sm); background: transparent; }
+.rail .vtab { height: 22px; padding: 0 6px; border: 0; border-radius: var(--r-xs); background: transparent; color: var(--muted); font: var(--w-reg) var(--fs-meta) var(--ui); cursor: pointer; }
+.rail .vtab[aria-pressed="true"] { background: transparent; color: var(--text); font-weight: var(--w-med); }
 .rail .projects-spacer { flex: 1; }
 .rail .session-filter-trigger { height: 24px; padding: 0 8px; gap: 3px; border-radius: var(--r-sm); font: var(--w-reg) var(--fs-meta) var(--ui); color: var(--muted); background: transparent; }
 .rail .projects-add { width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); display: inline-grid; place-items: center; flex: none; }
 .rail .projects-add:hover { background: var(--overlay); color: var(--text); }
+/* Fold-all is a pair of straight chevrons, drawn smaller than the plus beside
+   it: the button is a control over the list, not a destination. */
+.rail .projects-fold .studio-icon { width: 14px; height: 14px; }
 .rail .vtabs { flex: none; width: auto; }
 .rail .vtab { flex: none; width: auto; }
 .rail .projects-add:disabled { opacity: .4; cursor: default; }
@@ -38,3 +72,11 @@
 [data-titlebar="app"][data-platform="darwin"] .rail .studio-brand-lockup { margin-left: calc(var(--lights-w) - 10px); }
 @container (max-width: 300px) { [data-titlebar="app"][data-platform="darwin"] .rail .studio-brand-sub { display: none; } }
 .rail .wsnode { padding: 0; }
+/* 任务 is the folder the window itself opened in, not a project someone added.
+   A quiet standing label says so above its rows; the rows themselves stay
+   ordinary project rows, because that folder is still a folder. */
+.rail .wsgroup {
+  display: flex; align-items: center; gap: 8px; height: 28px; margin-top: 6px; padding: 0 8px;
+  box-sizing: border-box; color: var(--faint); font: var(--w-med) var(--fs-micro)/1 var(--ui);
+}
+.rail .wsgroup .studio-icon { width: 13px; height: 13px; flex: none; }

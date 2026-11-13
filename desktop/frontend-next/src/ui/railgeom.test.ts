@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { fold, grow, nearest, PAD, place, viewBand, within } from "./railgeom";
+import { fold, nearest, PAD, place, viewBand, within } from "./railgeom";
 
 describe("where the message rail draws each mark", () => {
   it("spreads marks over the whole column by their place in the conversation, not bunched in the middle", () => {
@@ -24,8 +24,10 @@ describe("where the message rail draws each mark", () => {
     expect(view.at(-1)!.to).toBe(199);
   });
 
-  it("magnifies the pointed line most and its two neighbours on each side less", () => {
-    expect([0, 1, 2, 3, -1].map(grow)).toEqual([12, 6, 2, 0, 0]);
+  it("keeps every tick the same length until one is pointed at", () => {
+    // The rail is a ruler: length is spent on the one place being read, not
+    // spread over its neighbours, so the ladder stays readable as a whole.
+    expect(place([0, 0.5, 1], 300, 34).length).toBe(3);
   });
 
   it("places the viewport on the same scale as the marks, and draws nothing when everything fits", () => {

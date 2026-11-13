@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { MockHub } from "../port/mock_hub";
@@ -10,7 +10,7 @@ import { Sidebar } from "./Sidebar";
 import { NO_PAGING } from "./treewindow";
 import { NavEntriesSection } from "./NavEntriesSection";
 
-const props = { at: null, onGo: vi.fn(), onFiles: vi.fn(), onHome: vi.fn(), onRail: vi.fn(), onFeedback: vi.fn(), onNew: vi.fn(), feedbackUnread: 0, shown: true };
+const props = { at: null, onGo: vi.fn(), onFiles: vi.fn(), onFeedback: vi.fn(), onNew: vi.fn(), feedbackUnread: 0, shown: true, wallet: "", approval: undefined, online: 0, hideAmounts: false, onSearch: vi.fn() };
 
 beforeEach(() => { localStorage.clear(); localStorage.setItem("rx-nav-rail", "on"); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); });
@@ -23,7 +23,7 @@ function both() {
 
 it("draws the rail in the declared order until this machine chooses otherwise", () => {
   both();
-  expect(rail()).toEqual(["新建会话", "会话", "用量", "文件", "工具与权限", "扩展", "记忆", "远程"]);
+  expect(rail()).toEqual(["新建会话", "搜索会话与操作", "用量", "文件", "工具与权限", "扩展", "记忆", "远程", "定时运行"]);
 });
 
 it("hides a destination from the rail when its switch is turned off, and brings it back", async () => {
@@ -39,15 +39,16 @@ it("moves a destination up and down, and the rail follows", async () => {
   both();
   await userEvent.click(screen.getByRole("button", { name: "上移：远程" }));
   await userEvent.click(screen.getByRole("button", { name: "上移：远程" }));
-  expect(rail()).toEqual(["新建会话", "会话", "用量", "文件", "工具与权限", "远程", "扩展", "记忆"]);
+  expect(rail()).toEqual(["新建会话", "搜索会话与操作", "用量", "文件", "工具与权限", "远程", "扩展", "记忆", "定时运行"]);
   await userEvent.click(screen.getByRole("button", { name: "下移：远程" }));
-  expect(rail().slice(-3)).toEqual(["扩展", "远程", "记忆"]);
+  expect(rail().slice(-3)).toEqual(["远程", "记忆", "定时运行"]);
 });
 
 it("cannot move the first entry up or the last one down", () => {
   both();
-  expect((screen.getByRole("button", { name: "上移：用量" }) as HTMLButtonElement).disabled).toBe(true);
-  expect((screen.getByRole("button", { name: "下移：远程" }) as HTMLButtonElement).disabled).toBe(true);
+  // Search leads the list now that New session is fixed and out of it.
+  expect((screen.getByRole("button", { name: "上移：搜索会话与操作" }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole("button", { name: "下移：定时运行" }) as HTMLButtonElement).disabled).toBe(true);
 });
 
 it("restores the arrangement, and offers that only after a change", async () => {
@@ -77,7 +78,7 @@ function sidebar() {
   );
 }
 
-const shortcuts = () => [...document.querySelectorAll(".studio-quicknav > button:not(.studio-settings)")].map((b) => b.getAttribute("aria-label"));
+const shortcuts = () => [...document.querySelectorAll(".studio-navrow")].map((b) => b.getAttribute("aria-label"));
 
 it("keeps a named Settings row when every optional shortcut is hidden", async () => {
   render(<NavEntriesSection />);
@@ -90,53 +91,56 @@ it("keeps a named Settings row when every optional shortcut is hidden", async ()
 it("gives the sidebar the same order and the same hidden entries as the rail", async () => {
   render(<NavEntriesSection />);
   sidebar();
-  expect(shortcuts()).toEqual(["用量", "文件", "工具与权限", "扩展", "记忆", "远程"]);
+  expect(shortcuts()).toEqual(["用量", "文件", "工具与权限", "扩展", "记忆", "远程", "定时运行"]);
   await userEvent.click(screen.getByRole("button", { name: "上移：远程" }));
   await userEvent.click(screen.getByRole("button", { name: "上移：远程" }));
   await userEvent.click(screen.getByRole("switch", { name: "显示：记忆" }));
-  expect(shortcuts()).toEqual(["用量", "文件", "工具与权限", "远程", "扩展"]);
+  expect(shortcuts()).toEqual(["用量", "文件", "工具与权限", "远程", "扩展", "定时运行"]);
 });
 
 it("takes the wallet row out of the sidebar when Usage is hidden", async () => {
   render(<NavEntriesSection />);
   sidebar();
-  expect(document.querySelector(".studio-wallet:not(.studio-feedback)")).not.toBeNull();
+  expect(document.querySelector('.studio-navrow[data-value="spend"]')).not.toBeNull();
   await userEvent.click(screen.getByRole("switch", { name: "显示：用量" }));
-  expect(document.querySelector(".studio-wallet:not(.studio-feedback)")).toBeNull();
+  expect(document.querySelector('.studio-navrow[data-value="spend"]')).toBeNull();
 });
 
-it("opens the named tools card with the keyboard and returns focus on Escape", async () => {
-  vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(() => 0);
+it("opens the arrangement panel from the bar's right press, and closes it on Escape", async () => {
   render(<NavEntriesSection />);
   sidebar();
-  const trigger = screen.getByRole("button", { name: "侧栏入口" });
-  trigger.focus();
-  await userEvent.keyboard("{ArrowDown}");
-  const bar = screen.getByRole("menu", { name: "侧栏入口" });
-  const buttons = [...bar.querySelectorAll<HTMLButtonElement>(":scope > button")];
-  expect(buttons.at(-1)!.getAttribute("aria-label")).toBe("远程");
-  expect(buttons.map((button) => button.querySelector("span")?.textContent)).toEqual(["用量", "文件", "工具与权限", "扩展", "记忆", "远程"]);
-  expect(document.activeElement).toBe(buttons[0]);
-  await userEvent.keyboard("{ArrowRight}");
-  expect(document.activeElement).toBe(buttons[1]);
-  await userEvent.keyboard("{ArrowLeft}{ArrowLeft}");
-  expect(document.activeElement).toBe(buttons.at(-1));
-  await userEvent.keyboard("{Home}");
-  expect(document.activeElement).toBe(buttons[0]);
-  await userEvent.keyboard("{End}");
-  expect(document.activeElement).toBe(buttons.at(-1));
-  await userEvent.keyboard("{Escape}");
-  expect(screen.queryByRole("menu", { name: "侧栏入口" })).toBeNull();
-  expect(document.activeElement).toBe(trigger);
+  // No row of its own: the bar is the trigger, so nothing here opens a menu.
+  expect(screen.queryByRole("button", { name: "更多" })).toBeNull();
+  const bar = document.querySelector(".studio-navlist") as HTMLElement;
+  fireEvent.contextMenu(bar);
+  // Two steps: the right press offers a menu, and choosing the one item opens
+  // the panel. A stray right press must not throw the window's middle open.
+  expect(screen.queryByRole("dialog", { name: "自定义导航栏" })).toBeNull();
+  await userEvent.click(screen.getByRole("menuitem", { name: "自定义导航栏" }));
+  const panel = screen.getByRole("dialog", { name: "自定义导航栏" });
+  // One flat list: the two commands first, then every place the bar goes, in
+  // the order the bar draws them.
+  const rows = () => [...panel.querySelectorAll<HTMLElement>(".studio-navbar-row")];
+  expect(rows().map((row) => row.querySelector(".studio-navbar-go span")?.textContent)).toEqual([
+    "新建会话", "搜索会话与操作", "用量", "文件", "工具与权限", "扩展", "记忆", "远程", "定时运行",
+  ]);
+  // New session is the bar's way out of anything, so it has no switch; every
+  // other row — search included — can be hidden.
+  expect(within(rows()[0]!).queryByRole("switch")).toBeNull();
+  expect(within(rows()[1]!).getByRole("switch")).toBeTruthy();
+  // The grip reorders without a drag, because a drag is not a keyboard gesture.
+  const grip = screen.getByRole("button", { name: "拖动排序：远程" });
+  grip.focus();
   await userEvent.keyboard("{ArrowUp}");
-  expect(document.activeElement).toBe(buttons.at(-1));
+  // One step up from the end: 定时运行 is the last row, 记忆 follows 远程.
+  expect(rows().at(-3)!.querySelector(".studio-navbar-go span")?.textContent).toBe("远程");
   await userEvent.keyboard("{Escape}");
-  expect(document.activeElement).toBe(trigger);
+  expect(screen.queryByRole("dialog", { name: "自定义导航栏" })).toBeNull();
 });
 
 it("names the approval mode on the tools entry once the session reports one", () => {
   sidebar();
-  const tools = () => document.querySelector('.studio-quicknav [data-value="tools"]')!.getAttribute("aria-label");
+  const tools = () => document.querySelector('.studio-navrow[data-value="tools"]')!.getAttribute("aria-label");
   expect(tools()).toBe("工具与权限");
   cleanup();
   const noop = vi.fn();
@@ -151,5 +155,5 @@ it("names the approval mode on the tools entry once the session reports one", ()
     />,
   );
   expect(tools()).toBe("工具与权限 · 询问");
-  expect(document.querySelector(".studio-quicknav .studio-wallet")!.getAttribute("aria-label")).toBe("用量 · ¥110.00");
+  expect(document.querySelector('.studio-navrow[data-value="spend"]')!.getAttribute("aria-label")).toBe("用量 · ¥110.00");
 });

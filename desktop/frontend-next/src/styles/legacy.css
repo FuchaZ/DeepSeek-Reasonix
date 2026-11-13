@@ -27,7 +27,6 @@
 @import "./feedback.css" layer(legacy);
 @import "./community.css" layer(legacy);
 @import "./themes.css" layer(legacy);
-@import "./sponsor.css" layer(legacy);
 @import "./chart.css" layer(legacy);
 @import "./versions.css" layer(legacy);
 @import "./changedpill.css" layer(legacy);

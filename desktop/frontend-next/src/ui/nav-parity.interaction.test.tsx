@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import "./testkit";
 import { MockHub } from "../port/mock_hub";
 import type { TreeWorkspace } from "../port/hub";
@@ -27,7 +27,7 @@ function sidebar(onSettings = vi.fn()) {
 }
 
 const railNames = () => {
-  const props = { at: null, onGo: vi.fn(), onFiles: vi.fn(), onHome: vi.fn(), onRail: vi.fn(), onFeedback: vi.fn(), onNew: vi.fn(), feedbackUnread: 0, shown: true };
+  const props = { at: null, onGo: vi.fn(), onFiles: vi.fn(), onFeedback: vi.fn(), onNew: vi.fn(), feedbackUnread: 0, shown: true, wallet: "", approval: undefined, online: 0, hideAmounts: false, onEdit: vi.fn(), onSearch: vi.fn() };
   const { container, unmount } = render(<Nav {...props} />);
   const names = [...container.querySelectorAll("button[aria-label]")].map((b) => b.getAttribute("aria-label")!);
   unmount();
@@ -38,8 +38,11 @@ it("offers in the sidebar every destination the icon rail offers, under the same
   const names = railNames();
   expect(names).toContain("扩展");
   sidebar();
-  fireEvent.click(screen.getByRole("button", { name: "侧栏入口" }));
-  const shown = [...screen.getAllByRole("button"), ...screen.getAllByRole("menuitem")].map((b) => `${b.getAttribute("aria-label") ?? ""} ${b.textContent ?? ""}`);
-  const missing = names.filter((n) => !["会话", "新建会话", "账号"].includes(n)).filter((n) => !shown.some((s) => s.includes(n)));
+  // The column spells the same rows out under its brand row: one list, drawn
+  // twice, so every place the rail offers is offered here too.
+  const shown = [...screen.getAllByRole("button")].map((b) => `${b.getAttribute("aria-label") ?? ""} ${b.textContent ?? ""}`);
+  const destinations = names.filter((n) => !["设置"].includes(n));
+  expect(destinations.length).toBeGreaterThan(0);
+  const missing = destinations.filter((n) => !shown.some((s) => s.includes(n)));
   expect(missing).toEqual([]);
 });

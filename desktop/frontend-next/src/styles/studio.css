@@ -136,7 +136,6 @@ body { background: var(--page); }
 }
 .studio-new-task:hover { background: var(--overlay); border-color: var(--faint); }
 .studio-new-task > span { color: var(--faint); font-size: var(--fs-title); }
-.studio-new-task kbd { margin-left: auto; color: var(--ghost); font: var(--w-reg) var(--fs-micro)/1 var(--mono); }
 .wsfind {
   width: calc(100% - 24px);
   margin: 2px 12px 10px;
@@ -477,9 +476,6 @@ body { background: var(--page) !important; }
   box-shadow: none;
 }
 .studio-new-task:hover { background: var(--raised); border-color: var(--border); color: var(--text); }
-.studio-new-task kbd,
-.studio-search kbd { margin-left: auto; color: var(--faint); font: var(--w-reg) var(--fs-micro)/1 var(--mono); }
-.studio-new-task kbd { color: var(--muted); }
 .studio-search {
   width: calc(100% + 8px); height: 32px; display: flex; align-items: center; gap: 9px;
   padding: 0 8px; margin: 3px 0 10px -8px; border: 0; border-radius: var(--r-sm);
@@ -512,10 +508,6 @@ body { background: var(--page) !important; }
 .session-filter-clear:hover { background: var(--overlay); color: var(--text); }
 .session-filter-clear .studio-icon { width: 11px; height: 11px; }
 .session-filter-menu { min-width: 200px; }
-@container (max-width: 219px) {
-  .studio-new-task kbd,
-.studio-search kbd { display: none; }
-}
 .rail .wsfind {
   position: absolute; z-index: 4; left: 19px; right: 19px; width: auto; height: 31px; margin: 0;
   transform: translateY(-40px); opacity: 0; pointer-events: none; border: 0; background: var(--surface);
@@ -1777,12 +1769,12 @@ button, input, textarea { font-size: var(--fs-ui); }
   display: -webkit-box;
   overflow: hidden;
   color: var(--text);
-  font: var(--w-med) var(--fs-micro)/1.5 var(--ui);
+  font: var(--w-med) var(--fs-ui)/1.5 var(--ui);
   overflow-wrap: anywhere;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
 }
-.session-pop-head small { display: block; margin-top: 5px; overflow: hidden; color: var(--faint); font: var(--w-reg) var(--fs-micro)/1.4 var(--ui); text-overflow: ellipsis; white-space: nowrap; }
+.session-pop-head small { display: block; margin-top: 5px; overflow: hidden; color: var(--faint); font: var(--w-reg) var(--fs-meta)/1.4 var(--ui); text-overflow: ellipsis; white-space: nowrap; }
 .session-pop-head .session-pop-path { overflow-wrap: anywhere; text-overflow: clip; white-space: normal; }
 .session-pop-group { display: flex; flex-direction: column; gap: 1px; }
 .session-pop-group > button {
@@ -1797,20 +1789,20 @@ button, input, textarea { font-size: var(--fs-ui); }
   color: var(--muted);
   text-align: left;
   cursor: pointer;
-  font: var(--w-reg) var(--fs-micro)/1.2 var(--ui);
+  font: var(--w-reg) var(--fs-ui)/1.2 var(--ui);
 }
-.session-pop-group > button > .studio-icon { width: 14px; height: 14px; flex: 0 0 14px; color: var(--faint); }
+.session-pop-group > button > .studio-icon { width: 16px; height: 16px; flex: 0 0 16px; color: var(--faint); }
 .session-pop-group > button > span { flex: 1; }
-.session-pop-group > button > small { margin-left: auto; color: var(--faint); font: var(--w-reg) var(--fs-micro)/1 var(--ui); }
+.session-pop-group > button > small { margin-left: auto; color: var(--faint); font: var(--w-reg) var(--fs-meta)/1 var(--ui); }
 .session-pop-group > button:hover,
 .session-pop-group > button:focus-visible { background: var(--overlay); color: var(--text); outline: none; }
 .session-pop-group > button:disabled { opacity: .55; cursor: wait; }
 .session-pop-divider { height: 1px; margin: 5px 7px; background: var(--hair); }
 .session-pop-group > button > span > .session-pop-why { display: block; margin: 2px 0 0; color: var(--faint); font: var(--w-reg) var(--fs-meta)/1.4 var(--ui); }
 .session-pop-export { display: flex; align-items: center; gap: 9px; padding: 8px 9px; min-height: 35px; box-sizing: border-box; }
-.session-pop-export > .studio-icon { width: 14px; height: 14px; flex: 0 0 14px; color: var(--faint); }
-.session-pop-export > span { flex: 1; white-space: nowrap; color: var(--text); font: var(--w-reg) var(--fs-micro)/1.2 var(--ui); }
-.session-pop-export > button { flex: none; height: 20px; padding: 0 7px; border: 0; border-radius: var(--r-pill); background: var(--overlay); color: var(--muted); font: var(--w-reg) var(--fs-micro) var(--ui); cursor: pointer; }
+.session-pop-export > .studio-icon { width: 16px; height: 16px; flex: 0 0 16px; color: var(--faint); }
+.session-pop-export > span { flex: 1; white-space: nowrap; color: var(--text); font: var(--w-reg) var(--fs-ui)/1.2 var(--ui); }
+.session-pop-export > button { flex: none; height: 22px; padding: 0 8px; border: 0; border-radius: var(--r-pill); background: var(--overlay); color: var(--muted); font: var(--w-reg) var(--fs-meta) var(--ui); cursor: pointer; }
 .session-pop-export > button:hover:not(:disabled), .session-pop-export > button:focus-visible { background: var(--border); color: var(--text); outline: none; }
 .session-pop-export > button:disabled { opacity: .55; cursor: wait; }
 .session-pop-group > button.danger { color: var(--err-ink); }
@@ -2470,7 +2462,6 @@ button, input, textarea { font-size: var(--fs-ui); }
 .studio-section-label,
 .studio-section-label button { color: var(--muted); }
 .studio-search { color: var(--text); }
-.studio-search kbd,
 .rail .wsmeta { color: var(--ghost); }
 .studio-search > span { color: var(--accent); }
 .session-pop,
@@ -3616,3 +3607,17 @@ svg.studio-icon[data-kind="image"] { color: var(--ok); }
 .workbench-launcher-recent .studio-icon { width: 14px; height: 14px; flex: none; color: var(--faint); }
 .workbench-launcher-recent button > span { flex: none; max-width: 55%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .workbench-launcher-recent button > i { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--faint); font-style: normal; font-size: var(--fs-micro); }
+
+/* The session filter's own menu. Kept at the foot of the sheet so it wins
+   against the port-menu rules above, which fill a chosen row with --hair: this
+   list is read against the conversation rows that opened it, so a chosen scope
+   is inked and ticked rather than painted as a block, and its words are the
+   size of those rows.
+   One word, 最近, carries the order in both directions; the arrow on the right
+   says which way round it is, so it is a choice row, not a switch. */
+.portmenu.session-filter-menu .mi { min-height: 30px; padding: 5px 8px; gap: 8px; border-radius: var(--r-sm); }
+.portmenu.session-filter-menu .mi .lb { font: var(--w-med) var(--fs-ui)/1.35 var(--ui); }
+.portmenu.session-filter-menu .mi .rt { color: var(--muted); font: var(--w-reg) var(--fs-ui)/1 var(--ui); }
+.portmenu.session-filter-menu .mi[data-on],
+.portmenu.session-filter-menu .mi[data-on]:hover { background: transparent !important; }
+.portmenu.session-filter-menu .mi[data-on] .lb { color: var(--text); font-weight: var(--w-semi); }

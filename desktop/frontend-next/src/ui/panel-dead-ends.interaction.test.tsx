@@ -2,7 +2,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import "./testkit";
-import { Account } from "./Account";
 import { Settings } from "./Settings";
 import { MockHub } from "../port/mock_hub";
 import userEvent from "@testing-library/user-event";
@@ -67,18 +66,6 @@ describe("a read the kernel refuses", () => {
     expect(screen.queryByText("无法读取记忆。")).toBeNull();
   });
 
-  it("says why on the account panel instead of checking forever", () => {
-    const why = said("account.signin_disabled");
-    render(<Account port={new MockPort() as unknown as AgentPort} state={null} unread={why} reload={() => {}} />);
-    expect(screen.getByText(why)).toBeTruthy();
-    expect(screen.queryByText("正在检查登录状态…")).toBeNull();
-  });
-
-  // Unknown and refused are different states, and the wait is still the wait.
-  it("still waits while the answer is genuinely on its way", () => {
-    render(<Account port={new MockPort() as unknown as AgentPort} state={null} unread="" reload={() => {}} />);
-    expect(screen.getByText("正在检查登录状态…")).toBeTruthy();
-  });
 });
 
 describe("a store with nothing in it", () => {

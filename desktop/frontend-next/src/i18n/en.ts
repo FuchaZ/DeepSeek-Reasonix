@@ -23,8 +23,6 @@ import { EN_USAGE } from "./en_usage";
 import { EN_COMPOSER } from "./en_composer";
 import { EN_BACKUP } from "./en_backup";
 import { EN_FEEDBACK } from "./en_feedback";
-import { EN_COMMUNITY } from "./en_community";
-import { EN_SPONSOR } from "./en_sponsor";
 import { EN_MEMORY } from "./en_memory";
 
 export const EN: Record<string, string> = {
@@ -89,8 +87,6 @@ export const EN: Record<string, string> = {
   ...EN_SETTINGS,
   ...EN_TOOL_BLURBS,
   ...EN_PERSONA,
-  ...EN_COMMUNITY,
-  ...EN_SPONSOR,
   ...EN_MEMORY,
   ...EN_METRICS,
   ...EN_FIND,
@@ -902,7 +898,6 @@ export const EN: Record<string, string> = {
   "明暗、配色、字体、壁纸": "Light or dark, colours, fonts, wallpaper",
   "记忆、用量、存储、备份": "Memory, usage, storage, backup",
   "网络、远程机器、手机": "Network, remote machines, phone",
-  "账号、版本、日志、社区": "Account, version, logs, community",
   "常用": "Common",
   "最常改的": "Most changed",
   "最近打开": "Recently opened",

@@ -130,15 +130,20 @@ export function setEffectsMode(mode: EffectsMode): void {
 // unreadable or unset is the default, "off".
 const NAV_RAIL_KEY = "rx-nav-rail";
 
-export type NavRailMode = "on" | "collapsed" | "off";
-export const NAV_RAIL_MODES: readonly NavRailMode[] = ["on", "collapsed", "off"];
+// Two answers, not three: the icon column exists while the workspace column is
+// shut, and is gone while it is open. A standing "always" put the same six
+// entries on screen twice, which is what the sidebar's own tool card is for.
+export type NavRailMode = "collapsed" | "off";
+export const NAV_RAIL_MODES: readonly NavRailMode[] = ["collapsed", "off"];
 
 const navRailListeners = new Set<() => void>();
 
 export function navRailMode(): NavRailMode {
   try {
     const raw = localStorage.getItem(NAV_RAIL_KEY);
-    return raw === "collapsed" || raw === "on" ? raw : "off";
+    // A stored "on" was the standing answer this no longer offers; it reads back
+    // as "collapsed", which is the same column, shown when it is useful.
+    return raw === "collapsed" || raw === "on" ? "collapsed" : "off";
   } catch {
     return "off";
   }

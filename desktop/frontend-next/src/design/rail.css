@@ -2,40 +2,58 @@
 [data-fold~="rail"][data-fold~="side"] .railhost { display: none; }
 
 .srail { position: absolute; top: 0; right: 8px; width: 30px; height: var(--rail-h, 0px); pointer-events: auto; }
-.srail-band {
-  position: absolute; right: 2px; width: 26px; border-radius: var(--r-sm); background: var(--overlay); pointer-events: none;
-  transition: top 300ms cubic-bezier(.2, 0, 0, 1), height 300ms cubic-bezier(.2, 0, 0, 1);
-}
 
+/* Right edges line up on one axis; only the left end moves, the way a ruler's
+   ticks do. The step is tight so the ladder reads as one dense column. */
 .srail-m {
-  position: absolute; right: 2px; width: 26px; height: 12px; margin-top: -6px; z-index: 1;
+  position: absolute; right: 2px; width: 26px; height: 8px; margin-top: -4px; z-index: 1;
   display: flex; align-items: center; justify-content: flex-end;
-  padding: 0 4px 0 0; border: 0; border-radius: var(--r-xs); background: none; cursor: pointer;
+  padding: 0 3px 0 0; border: 0; border-radius: var(--r-xs); background: none; cursor: pointer;
 }
 .srail-m > i {
-  width: var(--w, 10px); height: 2px; flex: none; border-radius: 1px; background: var(--border);
+  width: var(--w, 7px); height: 1.5px; flex: none; border-radius: 1px; background: var(--border);
   transition: width var(--t-line) cubic-bezier(.2, 0, 0, 1), background-color var(--t-line);
+}
+
+/* Where the viewport is: one tick, darker than its neighbours, not a block.
+   It shares the ticks' right edge and only runs a little longer, so the column
+   still reads as one ruler rather than a bar laid across it. */
+.srail-now {
+  position: absolute; right: 5px; width: 12px; height: 2px; margin-top: -1px; z-index: 2;
+  border-radius: 1px; background: var(--text); opacity: .75; pointer-events: none;
+  transition: top 300ms cubic-bezier(.2, 0, 0, 1);
 }
 .srail-m[data-folded] > i { height: var(--h, 4px); border-radius: var(--r-xs); opacity: .9; }
 .srail-m[data-seen] > i { background: var(--muted); }
 .srail-m[data-starred] > i { background: var(--warn); }
-.srail-m[data-on] > i { background: var(--text); }
+/* The tick under the pointer or the keys stops being a tick: it stretches
+   leftwards into the dark bar the card hangs from. Its right edge never moves,
+   so the ladder keeps its axis while one place in it is being read. */
+.srail-m[data-on] > i,
+.srail-m[data-keyed] > i { width: 22px; height: 3px; background: var(--text); }
+.srail-m[data-on][data-folded] > i { height: var(--h, 4px); }
 .srail-m:focus-visible, .srail-m[data-keyed] { outline: none; box-shadow: 0 0 0 2px var(--focus); }
 
-.srail-peek, .srail-sub {
+/* What that tick stands for, read beside the column instead of on the
+   transcript. The rail lives on the right, so the card runs leftwards: its
+   right edge sits just outside the ticks and its body grows away from them. */
+.srail-card {
+  position: absolute; right: 46px; z-index: 5; width: 264px; box-sizing: border-box;
+  padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--float); box-shadow: var(--shadow-float);
+  transform: translateY(-50%); pointer-events: none;
+}
+.srail-card > p {
+  margin: 0; max-height: calc(1.5em * 4); overflow: hidden;
+  color: var(--text); font: var(--w-reg) var(--fs-meta)/1.5 var(--ui);
+}
+.srail-card > small { display: block; margin-top: 4px; color: var(--faint); font: var(--w-reg) var(--fs-micro)/1.4 var(--ui); }
+
+.srail-sub {
   position: absolute; right: 46px; z-index: 5; width: 250px; box-sizing: border-box;
   border: 1px solid var(--border); border-radius: var(--r-md); background: var(--float); box-shadow: var(--shadow-float);
   transform: translateY(-50%);
 }
-.srail-peek { padding: 9px 11px; pointer-events: none; animation: srail-peek var(--t-line) cubic-bezier(.16, 1, .3, 1) both; }
-@keyframes srail-peek { from { opacity: 0; transform: translate(6px, -50%); } }
-.srail-peek .hd { display: flex; align-items: center; gap: 6px; color: var(--muted); font: var(--w-semi) var(--fs-meta)/1.4 var(--ui); }
-.srail-peek .hd .dot { color: var(--faint); }
-.srail-peek .tx {
-  margin-top: 3px; color: var(--text); font: var(--w-med) var(--fs-ui)/1.55 var(--ui);
-  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
-}
-.srail-peek .keys { margin-top: 6px; color: var(--faint); font: var(--w-med) var(--fs-micro)/1.4 var(--ui); }
 
 .srail-sub { z-index: 6; max-height: 300px; overflow-y: auto; padding: 5px; pointer-events: auto; }
 .srail-subhd { padding: 4px 8px 6px; color: var(--muted); font: var(--w-semi) var(--fs-meta)/1.4 var(--ui); }

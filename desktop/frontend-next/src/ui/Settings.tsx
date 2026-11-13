@@ -71,7 +71,7 @@ const homeFor = (section: Section, anchor: string): Section => {
 const SOLO: Record<string, Section | undefined> = { extensions: "ext", spend: "usage" };
 const SOLO_TITLE: Record<string, string> = { ext: "ext.extension", usage: "app.usage" };
 
-export function Settings({ hub, onError, port, networkPort, localWorkspacePort, networkHost, status, theme, onTheme, contrast, onContrast, weight, onWeight, look, onLook, onClose, onChanged, onSessionsRecovered, reloadThemes, at: opened, account: acct, accountUnread, reloadAccount, workspaceRoot }: Props) {
+export function Settings({ hub, onError, port, networkPort, localWorkspacePort, networkHost, status, theme, onTheme, contrast, onContrast, weight, onWeight, look, onLook, onClose, onChanged, onSessionsRecovered, reloadThemes, at: opened, account: acct, workspaceRoot }: Props) {
   const navigation = useSettingsLeave();
   const close = useCallback(() => navigation.leave(onClose), [navigation.leave, onClose]);
   const homePort = networkPort ?? port;
@@ -563,7 +563,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
             <ConnectSettings port={port} networkPort={networkPort ?? port} host={networkHost ?? ""} hub={hub} onError={onError} remote={shown("remote")} />
           )}
 
-          {at === "account" && <AccountSettings port={port} homePort={homePort} state={acct} unread={accountUnread} reload={reloadAccount} />}
+          {at === "account" && <AccountSettings port={port} homePort={homePort} />}
           {at === "storage" && (
             <DataSettings port={port} homePort={homePort} localPort={localPort} hub={hub} workspace={workspaceRoot ?? (homePort === port ? status?.workspaceRoot ?? "" : "")} cwd={status?.cwd} busy={busy}
               signedIn={!!acct?.signedIn && !!acct.user} onIsolate={() => run("isolate", () => port.isolateWorkspace())} onChanged={onChanged} onRecovered={() => { onChanged(); onSessionsRecovered?.(); }} />

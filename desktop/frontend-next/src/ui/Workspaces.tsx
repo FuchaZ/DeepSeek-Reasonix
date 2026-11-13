@@ -2,6 +2,7 @@ import { inScope, sessionRuntime, type SessionScope } from "./sessionScope";
 import { Fragment, type ReactNode, memo, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { hidesLegacySessions, onHidesLegacySessionsChange } from "../state/prefs";
 import { onSessionQuickActionsChange, showsSessionQuickActions } from "../state/sessionQuick";
+import { onRecencySortChange, recencySort } from "../state/recencySort";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
 import type { HubPort, RuntimeView, TreeSession, TreeWorkspace } from "../port/hub";
@@ -25,7 +26,7 @@ import { WorkspaceReveal } from "./WorkspaceReveal";
 import { SessionMenu } from "./SessionMenu";
 import { useSessionMove } from "./useSessionMove";
 import { useSessionMoveTo } from "./useSessionMoveTo";
-import { pinnedFirst } from "./pinorder"; import { Hit } from "./Hit"; import { WsMark } from "./WsMark"; import { ProjectMenuExtras } from "./ProjectMenuExtras";
+import { pinnedFirst } from "./pinorder"; import { Hit } from "./Hit"; import { WsMark } from "./WsMark";
 import { Confirm, removeHint, sessionDeleteHint } from "./WorkspaceConfirm";
 import { LeadDot, UnreadCount } from "./UnreadMark";
 import { PeerThreadMark } from "./peerthreads";
@@ -56,7 +57,6 @@ interface Props {
   paging?: TreePaging;
   previewLimit?: number;
   onToggleAll?: () => void;
-  onRecent?: () => void;
   allFolded?: boolean;
   canFold?: boolean;
   // The session path being opened, or empty. The row shows it selected and busy
@@ -91,7 +91,7 @@ interface Props {
 const rowLabel = (session: TreeSession) =>
   session.title || (session.runtimeId && !session.turns ? t("common.new_session") : session.name);
 
-function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active, folded, reload, retry, paging = NO_PAGING, previewLimit = Infinity, onFold, onToggleAll, onRecent, allFolded, canFold, opening = "", onOpen, onFocus, onClose, liveIds, listedIds = liveIds, runs, scope = "all", pinned = new Set(), onPin = () => {}, onPause = () => {}, onBranch, onArchive = async () => {}, onRename, onError, adder, children, hasOtherRows }: Props) {
+function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active, folded, reload, retry, paging = NO_PAGING, previewLimit = Infinity, onFold, onToggleAll, allFolded, canFold, opening = "", onOpen, onFocus, onClose, liveIds, listedIds = liveIds, runs, scope = "all", pinned = new Set(), onPin = () => {}, onPause = () => {}, onBranch, onArchive = async () => {}, onRename, onError, adder, children, hasOtherRows }: Props) {
   const [busy, setBusy] = useState("");
   const [confirm, setConfirm] = useState("");
   // The project whose folder an open just found gone: the question is asked about it, not about a removal chosen from the menu.
@@ -100,7 +100,6 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
     if (e instanceof HttpError && e.reason?.code === "workspace.folder_missing") { setGone(ws.root); setConfirm(ws.root); } else onError(e);
   };
   const [selection, setSelection] = useState<Set<string> | null>(null);
-  const selectFrom = useRef("");
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
   // The row a Delete key asked about. The question replaces that row, so focus
   // goes back to it once the question is gone, or a keyboard is left nowhere.
@@ -118,6 +117,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
   const [editing, setEditing] = useState("");
   const hideLegacy = useSyncExternalStore(onHidesLegacySessionsChange, hidesLegacySessions, hidesLegacySessions);
   const quickActions = useSyncExternalStore(onSessionQuickActionsChange, showsSessionQuickActions, showsSessionQuickActions);
+  const recency = useSyncExternalStore(onRecencySortChange, recencySort, recencySort);
   const [sessionMenu, setSessionMenu] = useState("");
   const order = useSessionMove(hub, reload, onError, !!needle);
   const moveTo = useSessionMoveTo(hub, tree, reload, rowLabel, () => adder.add());
@@ -332,14 +332,32 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
     const sessions = ws.sessions.filter(named);
     return sessions.length || ws.countsComplete === false ? { ...ws, sessions } : null;
   };
+  /** The newest stamp in a project, for ordering projects among themselves. */
+  const newest = (ws: TreeWorkspace) => ws.sessions.reduce((at, session) => Math.max(at, session.lastActiveAt ?? 0), 0);
   const searchedTree = needle ? (tree.map(hit).filter(Boolean) as TreeWorkspace[]) : tree;
   const shownTree = searchedTree
     .map((ws) => ({
       ...ws,
-      sessions: pinnedFirst(ws.sessions.filter((session) =>
-        inScope(session, scope, !!needle, !!session.runtimeId && listedIds([session.runtimeId]).length > 0, pinned.has(session.path), hideLegacy, !!session.runtimeId && runs[session.runtimeId]?.run === "halt")), pinned),
+      sessions: pinnedFirst(ws.sessions
+        .filter((session) => inScope(session, scope, !!needle, !!session.runtimeId && listedIds([session.runtimeId]).length > 0, pinned.has(session.path), hideLegacy, !!session.runtimeId && runs[session.runtimeId]?.run === "halt"))
+        // 最近 reorders the rows the kernel sent, newest first or the other way
+        // round; pinned rows still lead. Unsorted leaves the kernel's order be.
+        .sort((a, b) => {
+          const d = (b.lastActiveAt ?? 0) - (a.lastActiveAt ?? 0);
+          return recency === "newest" ? d : recency === "oldest" ? -d : 0;
+        }), pinned),
     }))
-    .filter((ws) => scope === "all" || ws.sessions.length > 0 || ws.countsComplete === false);
+    .filter((ws) => scope === "all" || ws.sessions.length > 0 || ws.countsComplete === false)
+    // 最近 orders the projects too, each by the newest conversation inside it:
+    // a project is as recent as the last thing said in it.
+    .sort((a, b) => {
+      const d = newest(b) - newest(a);
+      return recency === "newest" ? d : recency === "oldest" ? -d : 0;
+    })
+    // 任务 is the folder the window itself opened in, not a project the person
+    // added: the kernel marks only chosen folders with `remembered`. It sits at
+    // the foot so the projects stay one unbroken run above it.
+    .sort((a, b) => Number(!!b.remembered) - Number(!!a.remembered));
   // A fold is a resting-state preference: while a word is being typed it would
   // hide the very rows that word just found.
   const searching = !!needle;
@@ -360,6 +378,19 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
   const pagedScope = scope === "all" || scope === "archived";
   const visibleSessions = (ws: TreeWorkspace) => needle || scope !== "all" || selection || expanded.has(ws.root)
     ? ws.sessions : ws.sessions.filter((session, index) => index < previewLimit || session.runtimeId === active || session.path === opening);
+  /** The project row's checkbox is the folder, not a fold control: picking it
+   *  picks every row the folder shows, and picking it again clears them. */
+  const pickProject = (ws: TreeWorkspace) => setSelection((current) => {
+    if (!current) return current;
+    const rows = visibleSessions(ws);
+    const next = new Set(current);
+    const all = rows.length > 0 && rows.every((row) => next.has(row.path));
+    for (const row of rows) {
+      if (all) next.delete(row.path);
+      else next.add(row.path);
+    }
+    return next;
+  });
   const displayed = shownTree.filter((ws) => needle || !folded.has(ws.root))
     .flatMap(visibleSessions);
   const selected = useSelectedRows(displayed, selection, setSelection);
@@ -369,10 +400,18 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
     <>
       {moveTo.dialog}
       <SessionBatch hub={hub} selection={selection} selected={selected} displayed={displayed} onSelect={setSelection}
-        onExit={() => document.querySelector<HTMLElement>(`[data-action="workspace.menu"][data-target="${CSS.escape(selectFrom.current)}"]`)?.focus()}
+        onExit={() => {
+          // Back to the control that started the selection. When every project
+          // is folded that control has nothing to offer, so it is disabled and
+          // cannot take focus; the list's own way in does.
+          const entry = document.querySelector<HTMLElement>('[data-action="session.selection"][data-value="start"]');
+          const target = entry && !entry.hasAttribute("disabled") ? entry : document.querySelector<HTMLElement>('[data-action="workspace.add"]');
+          target?.focus();
+        }}
         onBusy={(pending) => { setBusy(pending ? "batch" : ""); if (pending) { setSessionMenu(""); setEditing(""); setConfirm(""); } }}
         onClose={onClose} onArchive={onArchive} liveIds={liveIds} reload={reload} onError={onError} />
-      <ProjectsHeader adder={adder} onRecent={onRecent} onToggleAll={onToggleAll} allFolded={needle ? false : allFolded} canFold={canFold} searching={!!needle} />
+      <ProjectsHeader adder={adder} onToggleAll={onToggleAll} allFolded={needle ? false : allFolded} canFold={canFold} searching={!!needle}
+        onSelect={() => setSelection(new Set())} selecting={selection !== null} canSelect={displayed.length > 0} />
       <div className="scroll">
         <div role="tree" aria-label={t("session.projects_and_conversations")} aria-multiselectable={selection !== null} inert={busy === "batch"} data-action-keydown="tree.navigate" ref={treeKeys.ref} onKeyDown={treeKeys.onKeyDown}>
           {shownTree.map((ws) => {
@@ -387,6 +426,15 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
             const busyPanes = liveIds(doomed).length;
             return (
               <div className="wsnode" key={ws.root} data-current={panesOf(ws.root).includes(active) ? "" : undefined} data-missing={ws.missing ? "" : undefined}>
+                {/* 任务 is announced over its rows rather than replacing them:
+                    the folder is not a project someone added, but it is still
+                    a folder, and its row keeps working like any other. */}
+                {!ws.remembered && (
+                  <div className="wsgroup">
+                    <StudioIcon name="tasks" />
+                    <span>{t("session.tasks")}</span>
+                  </div>
+                )}
                 {confirm === ws.root ? (
                   <Confirm
                     what={gone === ws.root ? t("session.folder_gone_remove_from_list", { name: ws.name }) : t("session.remove_name_from_the_list", { name: ws.name })}
@@ -420,7 +468,13 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                     aria-level={1}
                     aria-haspopup="menu"
                     aria-expanded={hasChildren ? !shut : undefined}
-                    onClick={() => { if (hasChildren) onFold(ws.root, !shut); }}
+                    aria-selected={selection ? visible.length > 0 && visible.every((s) => selection.has(s.path)) : undefined}
+                    onClick={() => {
+                      // Picking a project picks what it holds: the checkbox on
+                      // its row is the whole folder, not a fold control.
+                      if (selection) { pickProject(ws); return; }
+                      if (hasChildren) onFold(ws.root, !shut);
+                    }}
                     onContextMenu={(ev) => {
                       if ((ev.target as HTMLElement).closest("input, textarea, [role='menu']")) return;
                       ev.preventDefault();
@@ -435,6 +489,11 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                       openRowMenu(ws.root, ev.currentTarget);
                     }}
                   >
+                    {selection && <input type="checkbox" className="session-select" tabIndex={-1}
+                      aria-label={t("session.select_session_name", { name: ws.name })}
+                      data-action-change="session.selection" data-target={ws.root}
+                      checked={visible.length > 0 && visible.every((s) => selection.has(s.path))}
+                      onClick={(ev) => ev.stopPropagation()} onChange={() => pickProject(ws)} />}
                     <WsMark open={hasChildren ? !shut : undefined} />
                     <span className="wsname ds-title" title={ws.root}>
                       {ws.name}
@@ -491,7 +550,6 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                         <WorkspaceReveal ws={ws} hub={hub} dismiss={dismissMenu} onError={onError} />
                         {ws.remembered && <WorkspaceOrder root={ws.root} position={tree.filter((w) => w.remembered).findIndex((w) => w.root === ws.root)} total={tree.filter((w) => w.remembered).length}
                           hub={hub} reload={reload} dismiss={dismissMenu} onError={onError} />}
-                        <ProjectMenuExtras canSelect={displayed.length > 0} selecting={selection !== null} onSelect={() => { selectFrom.current = ws.root; setSelection(new Set()); }} dismiss={dismissMenu} />
                         <div className="session-pop-group">
                           <button className="danger" role="menuitem" data-action="workspace.remove" onClick={() => { setConfirm(ws.root); dismissMenu(); }}>
                             <StudioIcon name="close" /><span>{t("common.remove_from_the_list")}</span><small>{t("common.keeps_files")}</small>

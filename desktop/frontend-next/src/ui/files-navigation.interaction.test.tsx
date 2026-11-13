@@ -11,7 +11,7 @@ import { refresh } from "./viewport";
 beforeEach(() => {
   sessionStorage.clear();
   localStorage.clear();
-  localStorage.setItem("rx-nav-rail", "on");
+  localStorage.setItem("rx-nav-rail", "collapsed");
   localStorage.setItem(STORAGE, "zh");
   boot();
   vi.spyOn(document.body, "clientWidth", "get").mockReturnValue(1440);
@@ -56,9 +56,19 @@ it.each(["rail", "sidebar", "palette"])("opens only the focused pane's files fro
   const { ports } = await mount();
   const openFiles = async () => {
     if (entry === "palette") return palette("文件");
-    if (entry === "sidebar") await userEvent.click(screen.getByRole("button", { name: "侧栏入口" }));
-    const scope = document.querySelector<HTMLElement>(entry === "rail" ? ".nav" : ".studio-quicknav")!;
-    await userEvent.click(within(scope).getByRole(entry === "rail" ? "button" : "menuitem", { name: "文件" }));
+    if (entry === "rail") {
+      // The icon column is drawn only while the workspace column is shut.
+      if (document.querySelector(".app")!.getAttribute("data-rail") === "on") fireEvent.keyDown(window, { key: "b", ctrlKey: true });
+    }
+    if (entry === "sidebar") {
+      // With the column open its rows are spelled out, so there is nothing to
+      // open first. Scoped to the column: the workbench has a Files button too.
+      const row = document.querySelector<HTMLElement>('.rail .studio-navrow[data-action="files.open"]')!;
+      await userEvent.click(row);
+      return;
+    }
+    const scope = document.querySelector<HTMLElement>(".nav")!;
+    await userEvent.click(within(scope).getByRole("button", { name: "文件" }));
   };
   await openFiles();
   await waitFor(() => expect(filesShown()).toBe(true));
@@ -94,7 +104,7 @@ it("closes the phone-width sidebar drawer after choosing files", async () => {
   await mount();
   fireEvent.click(document.querySelector(".studio-menu")!);
   expect(document.querySelector(".app")!.getAttribute("data-rail")).toBe("on");
-  fireEvent.click(document.querySelector('.studio-quicknav [data-action="files.open"]')!);
+  fireEvent.click(document.querySelector('.studio-navrow[data-action="files.open"]')!);
   await waitFor(() => expect(filesShown()).toBe(true));
   expect(document.querySelector(".app")!.getAttribute("data-rail")).toBe("off");
 });
@@ -124,41 +134,46 @@ it("does not replay a Files request into a newly focused session", async () => {
   expect(filesShown()).toBe(kept);
 });
 
-const railFiles = () => within(document.querySelector<HTMLElement>(".nav")!).getByRole("button", { name: "文件" });
+// The icon column is drawn only while the workspace column is shut, so this
+// opens it first: the rail's Files button is what these cases are about.
+async function railFiles() {
+  if (document.querySelector(".app")!.getAttribute("data-rail") === "on") fireEvent.keyDown(window, { key: "b", ctrlKey: true });
+  return within(document.querySelector<HTMLElement>(".nav")!).getByRole("button", { name: /^文件/ });
+}
 
 it("folds the open files panel when the Files button is pressed again", async () => {
   await mount();
-  await userEvent.click(railFiles());
+  await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(true));
-  await userEvent.click(railFiles());
+  await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(false));
-  await userEvent.click(railFiles());
+  await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(true));
 });
 
 it("reads whether the panel is open from the workbench, so a panel closed elsewhere opens on the next press", async () => {
   await mount();
-  await userEvent.click(railFiles());
+  await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(true));
   await userEvent.click(focused().querySelector<HTMLElement>("[data-action=\"workbench.files\"]")!);
   expect(filesShown()).toBe(false);
-  await userEvent.click(railFiles());
+  await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(true));
 });
 
 it("folds only the focused session's panel, and a press after switching session opens that session's", async () => {
   localStorage.setItem("rx-show-session-tabs", "on");
   await mount();
-  await userEvent.click(railFiles());
+  await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(true));
   const first = focused();
   fireEvent.click(document.querySelector('.ptab[data-pane="r1"]')!);
   expect(focused()).not.toBe(first);
   expect(filesShown()).toBe(false);
-  await userEvent.click(railFiles());
+  await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(true));
   expect(filesShown(first)).toBe(true);
-  await userEvent.click(railFiles());
+  await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(false));
   expect(filesShown(first)).toBe(true);
 });

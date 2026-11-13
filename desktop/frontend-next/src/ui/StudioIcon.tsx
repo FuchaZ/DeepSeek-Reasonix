@@ -1,7 +1,7 @@
 import type { SVGProps } from "react";
 import {
   Activity, Archive, ArrowDown, ArrowRight, ArrowUp, Ban, BarChart3, BookOpen, Bookmark, Bot, Brain,
-  Check, ChevronDown, ChevronRight, ChevronUp, Circle, CircleCheck, CircleDashed, CircleHelp,
+  Check, ChevronDown, ChevronRight, ChevronUp, ChevronsDownUp, ChevronsUpDown, Circle, CircleCheck, CircleDashed, CircleHelp,
   CirclePlay, CircleX, Clock, CodeXml, Coins, Copy, Download, Eclipse, Ellipsis, Eraser,
   ExternalLink, Eye, EyeOff, FileCode, FilePenLine, FileSearch, FileText, Folder, FolderInput,
   FolderOpen, Galaxy, GitBranch, GitFork, Globe, HardDrive, History, Image, Info, Keyboard,
@@ -19,6 +19,7 @@ const ICONS = {
   search: Search, chevron: ChevronRight, down: ChevronDown, up: ChevronUp, minus: Minus,
   brain: Brain, plus: Plus, arrow: ArrowUp, arrowDown: ArrowDown, arrowRight: ArrowRight,
   close: X, expand: Maximize2, collapseAll: Minimize2, expandAll: Maximize2, check: Check,
+  foldAll: ChevronsDownUp, unfoldAll: ChevronsUpDown,
   globe: Globe, code: CodeXml, settings: Settings, sliders: SlidersHorizontal, more: Ellipsis,
   menu: Menu, panel: PanelLeft, panelClose: PanelLeftClose, panelOpen: PanelLeftOpen,
   panelRight: PanelRight, lock: Lock, shield: Shield, shieldCheck: ShieldCheck,

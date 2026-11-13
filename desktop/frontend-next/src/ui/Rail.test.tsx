@@ -47,37 +47,46 @@ describe("conversation overview rail", () => {
     expect(view.container.querySelector(".srail")).toBeNull();
   });
 
-  it("shades the stretch on screen and draws the marks inside it darker", async () => {
+  it("marks where the viewport sits with a darker tick, not a block", async () => {
     const { view } = draw(three(), { scrollTop: 1000, scrollHeight: 2400 });
-    await waitFor(() => expect(view.container.querySelector(".srail-band")).not.toBeNull());
+    await waitFor(() => expect(view.container.querySelector(".srail-now")).not.toBeNull());
+    // The marks inside the viewport still read as seen.
     expect(lines(view).map((b) => b.hasAttribute("data-seen"))).toEqual([false, true, false]);
-  });
-
-  it("draws no band when the whole conversation fits", async () => {
-    const { view } = draw(three(), { scrollHeight: 600 });
-    await waitFor(() => expect(lines(view)[0].style.top).toBe("18px"));
+    // No block is painted behind them any more.
     expect(view.container.querySelector(".srail-band")).toBeNull();
   });
 
-  it("draws a message that changed files longer, and magnifies the pointed one and its neighbours", async () => {
+  it("draws no now-tick when the whole conversation fits", async () => {
+    const { view } = draw(three(), { scrollHeight: 600 });
+    await waitFor(() => expect(lines(view)[0].style.top).toBe("18px"));
+    expect(view.container.querySelector(".srail-now")).toBeNull();
+  });
+
+  it("draws a message that changed files longer, and says the pointed one beside the column", async () => {
     const { view } = draw([mark("a", 0, "一"), mark("b", 25, "二"), { ...mark("c", 50, "三"), files: 2 }, mark("d", 75, "四"), mark("e", 99, "五")]);
     await waitFor(() => expect(lines(view)[4].style.top).toBe("582px"));
     const width = () => lines(view).map((b) => (b.firstElementChild as HTMLElement).style.getPropertyValue("--w"));
-    expect(width()).toEqual(["10px", "10px", "14px", "10px", "10px"]);
+    expect(width()).toEqual(["7px", "7px", "10px", "7px", "7px"]);
     const nav = view.container.querySelector(".srail") as HTMLElement;
     nav.getBoundingClientRect = () => ({ top: 0, height: 600, left: 0, width: 30, right: 30, bottom: 600, x: 0, y: 0, toJSON: () => ({}) });
     fireEvent.mouseMove(nav, { clientY: parseFloat(lines(view)[1].style.top) });
-    expect(width()).toEqual(["16px", "22px", "20px", "12px", "10px"]);
+    // Pointing no longer stretches the neighbours: the pointed tick turns into
+    // a bar by itself (CSS) and the card beside the column names the message.
+    expect(width()).toEqual(["7px", "7px", "10px", "7px", "7px"]);
+    const card = view.container.querySelector(".srail-card");
+    expect(card, "a pointed message is read beside the column").not.toBeNull();
+    expect(card!.textContent).toContain("二");
   });
 
-  it("says which of your messages it is and how many files it changed, with no spaces round the numbers", async () => {
+  it("names the pointed message on its tick without a floating card", async () => {
     const { view } = draw(three());
     await waitFor(() => expect(lines(view)[2].style.top).toBe("582px"));
     const nav = view.container.querySelector(".srail") as HTMLElement;
     nav.getBoundingClientRect = () => ({ top: 0, height: 600, left: 0, width: 30, right: 30, bottom: 600, x: 0, y: 0, toJSON: () => ({}) });
     fireEvent.mouseMove(nav, { clientY: parseFloat(lines(view)[1].style.top) });
-    expect(view.container.querySelector(".srail-peek .hd")?.textContent).toBe("你的第2条·改了3个文件");
-    expect(view.container.querySelector(".srail-peek .tx")?.textContent).toBe("第二条");
+    // The card that used to follow the pointer is gone; the tick itself says it.
+    expect(view.container.querySelector(".srail-peek")).toBeNull();
+    expect(lines(view)[1].getAttribute("aria-label")).toContain("第二条");
   });
 
   it("marks the earlier messages still on disk at the top, and loads them on a press", async () => {
@@ -90,13 +99,13 @@ describe("conversation overview rail", () => {
     expect(onLoadEarlier).toHaveBeenCalledTimes(1);
   });
 
-  it("walks your messages with Ctrl and the arrow keys, ringing the one it is on and showing its card", async () => {
+  it("walks your messages with Ctrl and the arrow keys, ringing the one it is on", async () => {
     const { view, onJump } = draw(three());
     await waitFor(() => expect(lines(view)[0].style.top).toBe("18px"));
     fireEvent.keyDown(document.body, { key: "ArrowDown", ctrlKey: true });
     expect(onJump).toHaveBeenLastCalledWith(expect.objectContaining({ id: "b" }));
     expect(lines(view)[1].hasAttribute("data-keyed")).toBe(true);
-    expect(view.container.querySelector(".srail-peek .tx")?.textContent).toBe("第二条");
+    expect(lines(view)[1].getAttribute("aria-label")).toContain("第二条");
     fireEvent.keyDown(document.body, { key: "ArrowDown", ctrlKey: true });
     expect(onJump).toHaveBeenLastCalledWith(expect.objectContaining({ id: "c" }));
   });

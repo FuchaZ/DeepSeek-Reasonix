@@ -18,6 +18,7 @@ import { useFirstRunRead, useLaunchHealth } from "./launchhealth";
 import { Nav } from "./Nav";
 import { useTreeWindow, type TreePaging } from "./treewindow";
 import { useNavRail } from "./navrail";
+import { useHidesAmounts } from "./wallet";
 import { feedbackEntryTab } from "./feedbackentry";
 import { FEEDBACK_RETIRED } from "../feedbackchannel";
 import { noteFault } from "./fault";
@@ -37,6 +38,7 @@ import { useDrawerCloses } from "./drawer";
 import { RenameSession } from "./RenameSession";
 import { RemoteAsk } from "./RemoteAsk";
 import { useFeedbackUnread } from "./useFeedbackUnread";
+import { useScheduledCount } from "./useScheduledCount";
 import { Feedback, type FeedbackTab } from "./Feedback";
 import { usePaneForSheets } from "./usePaneForSheets";
 import { BrowserLogin } from "./BrowserLogin";
@@ -295,6 +297,10 @@ export function App({ hub }: { hub: HubPort }) {
 
   useFirstRunRead(activePort, setSetup, setWelcomed);
 
+  // How many scheduled runs exist, so 定时运行 can say so on the bar. Read from
+  // the machine's own kernel: a schedule outlives the conversation on screen.
+  const schedules = useScheduledCount(machinePort);
+
   // A kernel that does not carry sign-in refuses this with a code and a
   // sentence. Dropping it left the panel saying "checking…" for the rest of
   // the session about a question that had already been answered.
@@ -399,6 +405,8 @@ export function App({ hub }: { hub: HubPort }) {
 
   useFoldAway("rail", setRail);
   const navRail = useNavRail(rail);
+  const hidesAmounts = useHidesAmounts();
+  const [palette, setPalette] = useState(false);
   useDrawerCloses(setRail, active, settings);
   useEffect(() => onRoomWidth((width) => setDockLimit(dockMax(width))), []);
   const shownDockW = Math.min(dockW, dockLimit);
@@ -590,15 +598,19 @@ export function App({ hub }: { hub: HubPort }) {
             at={settings === false ? null : settings === true ? "" : settings}
             onGo={showPrefs}
             onFiles={openFiles}
-            onHome={hidePrefs}
-            onRail={() => setRail((v) => !v)}
             onFeedback={() => setFeedback(feedbackEntryTab(feedbackUnread))}
+            onSearch={() => setPalette(true)}
             onNew={() => {
               hidePrefs();
               void startConversation().catch(fail);
             }}
             feedbackUnread={feedbackUnread}
             shown={navRail.shown}
+            wallet={report.wallet}
+            approval={report.status?.toolApprovalMode}
+            online={(remotes ?? []).filter((h) => h.status === "connected" || h.status === "degraded").length}
+            hideAmounts={hidesAmounts}
+            schedules={schedules}
           />
         )}
         <Sidebar
@@ -637,6 +649,7 @@ export function App({ hub }: { hub: HubPort }) {
           onRename={renameSession}
           onCollapse={() => setRail(false)}
           wallet={report.wallet}
+          schedules={schedules}
           approval={report.status?.toolApprovalMode}
           onSettings={showPrefs}
           onFiles={openFiles}
@@ -644,6 +657,7 @@ export function App({ hub }: { hub: HubPort }) {
           onReferenceSession={panePorts.has(active) ? referenceSession : undefined}
           onFeedback={(tab) => setFeedback(tab ?? "send")}
           feedbackUnread={feedbackUnread}
+          palette={[palette, setPalette]}
           onFind={find.open}
           onError={fail}
         />

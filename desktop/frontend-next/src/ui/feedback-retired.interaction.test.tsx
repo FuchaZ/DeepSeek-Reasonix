@@ -13,7 +13,7 @@ describe("the retired feedback channel", () => {
   });
 
   it("leaves no feedback entry on the nav rail", () => {
-    render(<Nav at="" onGo={vi.fn()} onFiles={vi.fn()} onHome={vi.fn()} onRail={vi.fn()} onFeedback={vi.fn()} onNew={vi.fn()} feedbackUnread={3} shown />);
+    render(<Nav at="" onGo={vi.fn()} onFiles={vi.fn()}  onFeedback={vi.fn()} onNew={vi.fn()} feedbackUnread={3} shown wallet="" approval={undefined} online={0} hideAmounts={false} onSearch={vi.fn()} />);
     expect(document.querySelector('[data-action="feedback.open"]')).toBeNull();
   });
 

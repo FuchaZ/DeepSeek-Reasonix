@@ -38,15 +38,14 @@ it("without the icon rail has one way into the remote settings, and it opens tha
   draw(false, onSettings);
   expect(remoteEntries()).toHaveLength(1);
   expect(screen.queryByRole("button", { name: /连接与机器/ })).toBeNull();
-  await userEvent.click(screen.getByRole("button", { name: "侧栏入口" }));
-  await userEvent.click(screen.getByRole("menuitem", { name: "远程" }));
+  await userEvent.click(screen.getByRole("button", { name: "远程" }));
   expect(onSettings).toHaveBeenCalledWith("remote");
 });
 
-it("shows the shortcut of new session and search beside their label", () => {
+it("keeps the shortcut out of the label and names it on hover instead", () => {
   draw(false);
-  expect(document.querySelector(".studio-new-task kbd")?.textContent).toBe("Alt N");
-  expect(document.querySelector(".studio-search kbd")?.textContent).toBe("Ctrl K");
+  expect(document.querySelector(".studio-new-task kbd")).toBeNull();
+  expect(document.querySelector(".studio-search kbd")).toBeNull();
   expect(document.querySelector(".studio-new-task")?.getAttribute("title")).toBe("Alt N");
   expect(document.querySelector(".studio-search")?.getAttribute("title")).toBe("Ctrl K");
 });

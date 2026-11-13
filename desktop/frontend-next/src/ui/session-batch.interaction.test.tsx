@@ -39,8 +39,7 @@ function draw(rows = sessions, scope: "all" | "archived" = "all", folded = new S
 }
 
 async function startSelection() {
-  await userEvent.click(screen.getByRole("button", { name: "项目操作：Project" }));
-  await userEvent.click(screen.getByRole("menuitem", { name: "选择本机会话" }));
+  await userEvent.click(screen.getByRole("button", { name: "选择本机会话" }));
 }
 
 async function selectAll() {
@@ -48,26 +47,21 @@ async function selectAll() {
   await userEvent.click(screen.getByRole("button", { name: "全选当前显示的会话" }));
 }
 
-it("keeps the batch entry in the project list menu without occupying an idle toolbar", async () => {
+it("keeps the batch entry in the project list header without occupying an idle toolbar", async () => {
   draw();
   expect(document.querySelector(".session-batch-entry, .session-batch")).toBeNull();
+  // The entry is a header control beside fold-all, not a row in a project's
+  // menu: picking conversations is about the whole list.
+  const entry = screen.getByRole("button", { name: "选择本机会话" });
   expect(screen.queryByRole("menuitem", { name: "选择本机会话" })).toBeNull();
-  const more = screen.getByRole("button", { name: "项目操作：Project" });
-  await userEvent.click(more);
-  expect(document.activeElement).toBe(screen.getByRole("menuitem", { name: "选择本机会话" }));
-  await userEvent.keyboard("{Escape}");
-  expect(screen.queryByRole("menuitem", { name: "选择本机会话" })).toBeNull();
-  expect(document.activeElement).toBe(more);
-  await startSelection();
-  expect(screen.queryByRole("menu")).toBeNull();
+  await userEvent.click(entry);
   expect(screen.getByText("已选 0 个会话")).toBeTruthy();
   expect(document.activeElement).toBe(screen.getByRole("button", { name: "完成选择" }));
 });
 
 it.each([{ rows: [] }, { rows: sessions }])("disables selection when no local sessions are displayed: $rows", async ({ rows }) => {
   draw(rows, "all", new Set(["/w"]));
-  await userEvent.click(screen.getByRole("button", { name: "项目操作：Project" }));
-  expect((screen.getByRole("menuitem", { name: "选择本机会话" }) as HTMLButtonElement).disabled).toBe(true);
+  expect((screen.getByRole("button", { name: "选择本机会话" }) as HTMLButtonElement).disabled).toBe(true);
 });
 
 it("keeps opening projects and the list menu outside the project tree", async () => {
@@ -95,7 +89,7 @@ it("selects rows with clicks and the keyboard without opening or focusing a pane
   expect(pane.onOpen).not.toHaveBeenCalled();
   expect(pane.onFocus).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole("button", { name: "完成选择" }));
-  expect(document.activeElement).toBe(screen.getByRole("button", { name: "项目操作：Project" }));
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "选择本机会话" }));
   await userEvent.click(beta);
   expect(pane.onOpen).toHaveBeenCalledWith({ root: "/w", sessionPath: "/sessions/b.jsonl" });
 });
@@ -249,7 +243,9 @@ it("removes hidden selections when projects are folded", async () => {
   expect((screen.getByRole("button", { name: "删除所选会话" }) as HTMLButtonElement).disabled).toBe(true);
   expect(pane.onArchive).not.toHaveBeenCalled();
   await userEvent.click(screen.getByRole("button", { name: "完成选择" }));
-  expect(document.activeElement).toBe(screen.getByRole("button", { name: "项目操作：Project" }));
+  // Every project is folded, so there is nothing left to select and the entry
+  // is disabled; focus lands on the list's own way in instead.
+  expect(document.activeElement).toBe(screen.getByRole("button", { name: "打开项目" }));
 });
 
 it("selects every loaded row of a search matching the project name, and only those", async () => {

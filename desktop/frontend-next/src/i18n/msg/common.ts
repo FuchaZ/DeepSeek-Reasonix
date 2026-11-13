@@ -33,7 +33,6 @@ export const COMMON: Messages = {
   "common.close": { zh: "关闭", en: "Close" },
   "common.collapse": { zh: "收起", en: "Collapse" },
   "common.collapse_the_workspace_rail": { zh: "收起工作区栏", en: "Collapse the workspace rail" },
-  "common.community_and_contributors": { zh: "社区与贡献者", en: "Community and contributors" },
   "common.compacting": { zh: "正在压缩…", en: "Compacting…" },
   "common.completions": { zh: "补全", en: "Completions" },
   "common.confirm": { zh: "确认", en: "Confirm" },

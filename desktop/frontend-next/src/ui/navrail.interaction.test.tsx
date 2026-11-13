@@ -25,7 +25,7 @@ beforeEach(async () => {
   sessionStorage.clear();
   localStorage.clear();
   localStorage.setItem(STORAGE, "zh");
-  localStorage.setItem(KEY, "on");
+  localStorage.setItem(KEY, "collapsed");
   boot();
   vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(null);
   HTMLElement.prototype.setPointerCapture = vi.fn();
@@ -72,8 +72,10 @@ const pressed = (name: string) => choice(name).getAttribute("aria-pressed");
 
 it("offers the tools destination only through the navigation entries, not a second button in the top bar", async () => {
   await open();
+  await toggleSidebar();
   expect(screen.queryByRole("button", { name: "沙盒" })).toBeNull();
-  expect(within(screen.getByRole("navigation", { name: "主导航" })).getByRole("button", { name: "工具与权限" })).toBeTruthy();
+  // The entry names its reading too ("工具与权限 · 询问"), as the sidebar's does.
+  expect(within(screen.getByRole("navigation", { name: "主导航" })).getByRole("button", { name: /^工具与权限/ })).toBeTruthy();
 });
 
 it("draws no rail until one is chosen", async () => {
@@ -85,17 +87,20 @@ it("draws no rail until one is chosen", async () => {
 
 it("draws the rail when it is chosen, with every entry in it", async () => {
   await open();
+  await toggleSidebar();
   expect(nav()).not.toBeNull();
   expect(app().dataset.nav).toBe("on");
   expect(document.querySelector(".railfoot")).toBeNull();
-  for (const name of ["会话", "用量", "文件", "工具与权限", "扩展", "记忆", "远程", "发送反馈", "账号", "设置"]) {
+  for (const name of ["新建会话", "搜索会话与操作", "用量", "文件", "工具与权限", "扩展", "记忆", "远程", "发送反馈", "设置"]) {
     expect(within(navEl()!).getByRole("button", { name: new RegExp(`^${name}`) }), name).toBeTruthy();
   }
+  // The conversation item is gone: the sidebar's own collapse button does that.
+  expect(within(navEl()!).queryByRole("button", { name: /^会话$/ })).toBeNull();
 });
 
 it.each([
   [null, "off"],
-  ["on", "on"],
+  ["on", "collapsed"],
   ["off", "off"],
   ["collapsed", "collapsed"],
   ["true", "off"],
@@ -105,11 +110,21 @@ it.each([
   else localStorage.setItem(KEY, stored);
   await open();
   await openAppearance();
-  const label = { on: "始终显示", collapsed: "仅侧栏收起时显示", off: "不显示" }[mode as "on"];
+  const label = { collapsed: "仅侧栏收起时显示", off: "不显示" }[mode as "collapsed"];
   expect(pressed(label)).toBe("true");
 });
 
-it("moves between the three states at once and keeps the choice across a reload", async () => {
+it("offers two states, and the standing one is gone", async () => {
+  await open();
+  await openAppearance();
+  // No third choice is drawn: showing the same six entries twice was the thing
+  // the sidebar's own tool card already does.
+  expect(screen.queryByRole("button", { name: "始终显示" })).toBeNull();
+  expect(choice("仅侧栏收起时显示")).toBeTruthy();
+  expect(choice("不显示")).toBeTruthy();
+});
+
+it("moves between the two states at once and keeps the choice across a reload", async () => {
   const first = await open();
   await openAppearance();
   await userEvent.click(choice("不显示"));
@@ -118,13 +133,8 @@ it("moves between the three states at once and keeps the choice across a reload"
   expect(localStorage.getItem(KEY)).toBe("off");
   await userEvent.click(choice("仅侧栏收起时显示"));
   expect(localStorage.getItem(KEY)).toBe("collapsed");
-  await userEvent.click(choice("始终显示"));
-  expect(nav()).not.toBeNull();
-  expect(localStorage.getItem(KEY)).toBe("on");
-  await userEvent.click(choice("仅侧栏收起时显示"));
   first.view.unmount();
   await open();
-  expect(app().dataset.nav).toBe("off");
   expect(localStorage.getItem(KEY)).toBe("collapsed");
 });
 
@@ -149,11 +159,13 @@ it("in collapsed mode follows the sidebar without remounting the rail", async ()
   expect(navEl()).toBe(el);
 });
 
-it("always mode keeps the rail beside an open sidebar and a closed one", async () => {
+it("keeps the rail element across the sidebar toggle rather than rebuilding it", async () => {
   await open();
-  const el = navEl()!;
   await toggleSidebar();
-  expect(app().dataset.nav).toBe("on");
+  const el = navEl()!;
+  expect(el).not.toBeNull();
+  await toggleSidebar();
+  expect(app().dataset.nav).toBe("off");
   expect(navEl()).toBe(el);
 });
 
@@ -169,16 +181,14 @@ it("still reaches settings with the rail off", async () => {
   expect(pressed("不显示")).toBe("true");
 });
 
-it.each(["on", "off"])("reaches usage, account, and settings with the rail %s", async (mode) => {
+it.each(["collapsed", "off"])("reaches usage, account, and settings with the rail %s", async (mode) => {
   localStorage.setItem(KEY, mode);
   await open();
-  const entries = mode === "on" ? navEl()! : document.querySelector<HTMLElement>(".railfoot")!;
-  const account = mode === "on" ? [["账号", "account", "chrome.account"]] : [];
-  if (mode === "off") expect(entries.querySelector('[data-action="chrome.account"]')).toBeNull();
-  for (const [label, section, action] of [["用量", "storage"], ...account, ["设置", "session", "chrome.settings"]]) {
-    const menuEntry = mode === "off" && label === "用量";
-    if (menuEntry) await userEvent.click(screen.getByRole("button", { name: "侧栏入口" }));
-    const button = within(menuEntry ? screen.getByRole("menu") : entries).getByRole(menuEntry ? "menuitem" : "button", { name: new RegExp(`^${label}`) });
+  const railShown = mode === "collapsed";
+  if (railShown) await toggleSidebar();
+  const entries = railShown ? navEl()! : document.querySelector<HTMLElement>(".rail")!;
+  for (const [label, section, action] of [["用量", "storage"], ["设置", "session", "chrome.settings"]]) {
+    const button = within(entries).getByRole("button", { name: new RegExp(`^${label}`) });
     if (action) expect(entries.querySelector(`[data-action="${action}"]`)).toBe(button);
     await userEvent.click(button);
     expect((await screen.findByRole("tabpanel")).getAttribute("data-sec")).toBe(section);
@@ -188,20 +198,20 @@ it.each(["on", "off"])("reaches usage, account, and settings with the rail %s", 
 });
 
 it("never draws the rail under the scene fold, in any state, and restores it after", async () => {
-  for (const mode of ["on", "collapsed", "off"]) {
+  for (const mode of ["collapsed", "off"]) {
     cleanup();
     localStorage.setItem(KEY, mode);
     room(1440);
     await open();
     await toggleSidebar();
-    expect(nav() !== null, mode).toBe(mode !== "off");
+    expect(nav() !== null, mode).toBe(mode === "collapsed");
     act(() => room(390));
     await waitFor(() => expect(nav()).toBeNull());
     expect(navEl()).toBeNull();
     expect(document.querySelector(".railfoot")).not.toBeNull();
     expect(localStorage.getItem(KEY)).toBe(mode);
     act(() => room(1440));
-    await waitFor(() => expect(nav() !== null).toBe(mode !== "off"));
+    await waitFor(() => expect(nav() !== null).toBe(mode === "collapsed"));
     expect(document.querySelector(".railfoot") !== null).toBe(mode === "off");
   }
 });
@@ -221,36 +231,31 @@ it("opens feedback from the rail like the sidebar entry does, badge included", a
   };
   render(<App hub={hub} />);
   await screen.findByRole("combobox", { name: "任务输入" });
+  await toggleSidebar();
   const entry = await within(navEl()!).findByRole("button", { name: /发送反馈.*3 项待查看/ });
   expect(entry.querySelector(".fbk-badge")?.textContent).toBe("3");
   await userEvent.click(entry);
   expect(await screen.findByRole("tab", { name: "我的反馈", selected: true })).toBeTruthy();
 });
 
-it("the conversation item opens and closes the workspace column, and from settings it goes home", async () => {
+it("the rail starts a session and opens the palette, the same two the sidebar leads with", async () => {
   await open();
-  const item = () => within(navEl()!).getByRole("button", { name: /^会话/ });
-  expect(app().dataset.rail).toBe("on");
-  await userEvent.click(item());
+  await toggleSidebar();
   expect(app().dataset.rail).toBe("off");
-  await userEvent.click(item());
-  expect(app().dataset.rail).toBe("on");
-  await userEvent.click(within(navEl()!).getByRole("button", { name: /^用量/ }));
-  expect(item().getAttribute("aria-current")).toBeNull();
-  await userEvent.click(item());
-  expect(item().getAttribute("aria-current")).toBe("page");
-  expect(item().hasAttribute("aria-pressed")).toBe(false);
-  expect(app().dataset.rail).toBe("on");
+  await userEvent.click(within(navEl()!).getByRole("button", { name: /^搜索会话与操作/ }));
+  expect(await screen.findByRole("dialog", { name: "搜索与快捷操作" })).toBeTruthy();
+  await userEvent.keyboard("{Escape}");
+  await userEvent.click(within(navEl()!).getByRole("button", { name: /^设置/ }));
+  expect((await screen.findByRole("tabpanel")).getAttribute("data-sec")).toBe("session");
 });
 
 it("keeps desktop navigation usable after closing settings without a top toggle", async () => {
   await open();
+  await toggleSidebar();
   await userEvent.click(within(navEl()!).getByRole("button", { name: /^用量/ }));
   expect(document.querySelector(".studio-menu") !== null).toBe(app().dataset.rail === "off");
-  expect(app().dataset.rail).toBe("on");
-  await userEvent.keyboard("{Escape}");
-  await toggleSidebar();
   expect(app().dataset.rail).toBe("off");
+  await userEvent.keyboard("{Escape}");
   await toggleSidebar();
   expect(app().dataset.rail).toBe("on");
 });
@@ -272,7 +277,7 @@ it("uses only the divider to collapse and reopen the desktop sidebar", async () 
   const toggles = screen.queryAllByRole("button", { name: /收起工作区栏|展开工作区栏/ }).filter((b) => b.tabIndex !== -1);
   expect(toggles).toHaveLength(0);
   expect(document.querySelector(".studio-menu") !== null).toBe(app().dataset.rail === "off");
-  expect(document.querySelector(".studio-quicknav")).toBeNull();
+  expect(document.querySelector(".studio-navlist") ?? document.querySelector(".nav")).toBeTruthy();
   await toggleSidebar();
   expect(app().dataset.rail).toBe("off");
   expect(screen.getByRole("separator", { name: "调整工作区栏宽度" }).getAttribute("aria-valuenow")).toBe("0");
@@ -328,7 +333,7 @@ it.each(["on", "off"])("keeps one drawer entry at the scene boundary with the ic
 it("with the rail off the sidebar keeps its own quick entries", async () => {
   localStorage.setItem(KEY, "off");
   await open();
-  expect(document.querySelector(".studio-quicknav")).not.toBeNull();
+  expect(document.querySelector(".studio-navlist")).not.toBeNull();
 });
 
 it("collapses and reopens the sidebar from Ctrl+B, and a collapsed sidebar is reopened by an icon that names the shortcut", async () => {

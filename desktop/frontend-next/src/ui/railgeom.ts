@@ -15,7 +15,6 @@ export const HEAD = 34;
 const CLUSTER_AT = 5;
 // A run longer than this stops reading as one place in the conversation.
 const MAX_RUN = 56;
-const GROW = [12, 6, 2];
 
 /** Where each mark sits, from its place in the whole conversation (0..1) to a
  *  y on a rail `rail` tall, with `head` reserved above the first. */
@@ -34,11 +33,6 @@ export function fold(tops: number[]): RailView[] {
     i = j + 1;
   }
   return out;
-}
-
-/** How much longer a line draws for being `d` drawn things from the pointer. */
-export function grow(d: number): number {
-  return d >= 0 && d < GROW.length ? GROW[d] : 0;
 }
 
 /** The stretch of the rail the viewport is showing, or null when the whole

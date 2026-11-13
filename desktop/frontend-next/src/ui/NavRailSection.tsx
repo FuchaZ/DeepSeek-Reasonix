@@ -3,7 +3,7 @@ import { t } from "../i18n";
 import { NAV_RAIL_MODES, navRailMode, onNavRailChange, setNavRailMode, type NavRailMode } from "../state/prefs";
 import { Group } from "./Group";
 
-const LABEL: Record<NavRailMode, string> = { on: "settings.always", collapsed: "settings.only_when_the_sidebar_is", off: "settings.never" };
+const LABEL: Record<NavRailMode, string> = { collapsed: "settings.only_when_the_sidebar_is", off: "settings.never" };
 
 export function NavRailSection() {
   const mode = useSyncExternalStore(onNavRailChange, navRailMode, navRailMode);

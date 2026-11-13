@@ -15,7 +15,7 @@ const REGISTERED: Record<string, string> = {
   "plan-spin-stem": "Chat-Plan", "plan-spin-bowl": "Chat-Plan", "plan-spin-leg": "Chat-Plan", "plan-open": "Chat-Plan", "plan-close": "Chat-Plan",
   "es-flow": "Chat-Composer", "sheet-up": "Chat-Composer", "ph-run": "Run-Phases",
   "workbench-tab-in": "WB-Frame", "workbench-live": "WB-Frame",
-  "srail-flash": "Sess-States", "srail-peek": "Sess-States", rowsweep: "Sess-States", "agent-live": "Subagent",
+  "srail-flash": "Sess-States", rowsweep: "Sess-States", "agent-live": "Subagent",
   "sel-tools-in": "Chat-Reply", "sel-tools-under": "Chat-Reply",
   "compose-sweep": "Chat-Composer", sendsheen: "Chat-Composer", chromesweep: "Chat-Composer",
   "studio-io-up": "Chat-Composer", "studio-io-down": "Chat-Composer", "studio-io-tick": "Chat-Composer",
