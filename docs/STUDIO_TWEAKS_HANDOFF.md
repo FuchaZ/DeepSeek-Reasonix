@@ -229,10 +229,12 @@ The README open item from §5 is closed: both READMEs now tell the 2.61.0 handov
 
 ### Checks run for this revision
 
-`tsc --noEmit` clean; full `vitest run` 6788/6788 (the two file-load failures under the session
-sandbox are `?worker&url` transform denials on `pdfjs-dist`/`maplibre-gl`, unrelated to the diff);
-`npm run census` and `census:verify` hold; `repolint -changed` clean; `vite build` clean.
-The picker, both groups, the pill, the dropdown rows and the windowbar were verified in the
-running app at 100% and 115% zoom; the windowbar's buttons additionally by computed
-`webkitAppRegion` with the platform attribute stubbed (the plain browser does not render them).
+| Check | Result |
+| --- | --- |
+| `tsc --noEmit` | clean |
+| `vitest run` (full) | 6788/6788 across 914 files; two files fail to load under the session sandbox (`?worker&url` transform denials on `pdfjs-dist`/`maplibre-gl`), unrelated to the diff |
+| `npm run census` + `census:verify` | sealed; fixture reports identical |
+| `repolint -changed` | clean |
+| `vite build` | clean |
+| The running app at 100% and 115% zoom | the picker, both groups, the pill, the dropdown rows and the windowbar verified; the windowbar's buttons also by computed `webkitAppRegion` with the platform attribute stubbed (the plain browser does not render them) |
 
