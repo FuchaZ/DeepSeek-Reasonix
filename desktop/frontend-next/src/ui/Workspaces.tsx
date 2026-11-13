@@ -1,14 +1,13 @@
-import { inScope, sessionRuntime, type SessionScope } from "./sessionScope";
-import { Fragment, type ReactNode, memo, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
+import { inScope, sessionRuntime } from "./sessionScope";
+import { Fragment, memo, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { hidesLegacySessions, onHidesLegacySessionsChange } from "../state/prefs";
 import { onSessionQuickActionsChange, showsSessionQuickActions } from "../state/sessionQuick";
 import { onRecencySortChange, recencySort } from "../state/recencySort";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
-import type { HubPort, RuntimeView, TreeSession, TreeWorkspace } from "../port/hub";
+import type { TreeSession, TreeWorkspace } from "../port/hub";
 import { workspaceContains } from "../port/hub";
 import { HttpError } from "../port/http_error";
-import type { Adder } from "./addws";
 import { pinToViewport } from "./place";
 import { useRailQuery } from "./railsearch";
 import { StudioIcon } from "./StudioIcon";
@@ -30,7 +29,8 @@ import { pinnedFirst } from "./pinorder"; import { Hit } from "./Hit"; import { 
 import { Confirm, removeHint, sessionDeleteHint } from "./WorkspaceConfirm";
 import { LeadDot, UnreadCount } from "./UnreadMark";
 import { PeerThreadMark } from "./peerthreads";
-import { NO_PAGING, atCap, answers, unloaded, type TreePaging, type TreeView } from "./treewindow";
+import { NO_PAGING, atCap, answers, unloaded } from "./treewindow";
+import type { WorkspacesProps } from "./workspaceprops";
 import { SessionBatch, useSelectedRows } from "./SessionBatch";
 import { ProjectsHeader } from "./ProjectsHeader";
 import { useWorkspaceDrag } from "./useWorkspaceDrag";
@@ -40,58 +40,13 @@ import { useSessionMutation, type SessionMutation } from "./useSessionMutation";
 
 const parentOf = (root: string) => root.replace(/[/\\]+$/, "").split(/[/\\]/).slice(-2, -1)[0] ?? "";
 
-interface Props {
-  hub: HubPort;
-  tree: TreeWorkspace[];
-  // False until the kernel first answers; an empty tree before then is unread.
-  treeRead: boolean;
-  answered?: TreeView | null;
-  runtimes: RuntimeView[];
-  active: string;
-  // Collapsed workspaces are the window's own state, not the kernel's, so the
-  // sidebar keeps them here rather than asking for them back every reload.
-  folded: Set<string>;
-  onFold: (root: string, folded: boolean) => void;
-  reload: () => Promise<void>;
-  retry?: () => void;
-  paging?: TreePaging;
-  previewLimit?: number;
-  onToggleAll?: () => void;
-  allFolded?: boolean;
-  canFold?: boolean;
-  // The session path being opened, or empty. The row shows it selected and busy
-  // before the kernel answers; the owner clears it on failure.
-  opening?: string;
-  onOpen: (req: { root?: string; sessionPath?: string }) => Promise<void>;
-  onFocus: (id: string) => void;
-  onClose: (ids: string[]) => Promise<void>;
-  // Which of these panes are mid-turn. A callback rather than a prop: run state
-  // changes constantly and this is only ever asked at confirmation time.
-  liveIds: (ids: string[]) => string[];
-  // Which of these belong in the running list: the live ones, and the ones that finished within the chosen grace.
-  listedIds?: (ids: string[]) => string[];
-  runs: Record<string, { run: string; live: boolean }>;
-  scope?: SessionScope;
-  pinned?: Set<string>;
-  onPin?: (path: string) => void;
-  onPause?: (runtimeId: string) => void;
-  onBranch?: (runtimeId: string, name: string) => Promise<void>;
-  onArchive?: (path: string, archived: boolean, runtimeId?: string) => Promise<void>;
-  onRename: (path: string, title: string, mode?: "inline" | "dialog") => void;
-  onError: (e: unknown) => void;
-  // 打开项目这个动作归 App —— 首启那条横幅按的是同一个它。
-  adder: Adder;
-  // Remote projects share the same tree and keyboard navigation as local ones.
-  children?: ReactNode;
-  hasOtherRows?: (needle: string, hideLegacy: boolean) => boolean;
-}
 
 // A conversation a pane holds before its first turn is written has only a file
 // name; calling it that would show a timestamp where every other row shows words.
 const rowLabel = (session: TreeSession) =>
   session.title || (session.runtimeId && !session.turns ? t("common.new_session") : session.name);
 
-function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active, folded, reload, retry, paging = NO_PAGING, previewLimit = Infinity, onFold, onToggleAll, allFolded, canFold, opening = "", onOpen, onFocus, onClose, liveIds, listedIds = liveIds, runs, scope = "all", pinned = new Set(), onPin = () => {}, onPause = () => {}, onBranch, onArchive = async () => {}, onRename, onError, adder, children, hasOtherRows }: Props) {
+function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active, folded, reload, retry, paging = NO_PAGING, previewLimit = Infinity, onFold, onToggleAll, allFolded, canFold, opening = "", onOpen, onFocus, onClose, liveIds, listedIds = liveIds, runs, scope = "all", pinned = new Set(), onPin = () => {}, onPause = () => {}, onBranch, onArchive = async () => {}, onRename, onError, adder, children, hasOtherRows }: WorkspacesProps) {
   const [busy, setBusy] = useState("");
   const [confirm, setConfirm] = useState("");
   // The project whose folder an open just found gone: the question is asked about it, not about a removal chosen from the menu.

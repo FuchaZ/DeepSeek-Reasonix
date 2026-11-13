@@ -29,6 +29,25 @@ export interface PaneReport {
   surfaces: number;
 }
 
+// What the window shows before any pane has reported, and after the focused
+// pane reports nothing: idle, empty, and no view chosen.
+export const NO_REPORT: PaneReport = {
+  status: null,
+  workspace: null,
+  title: "",
+  steer: 0,
+  run: "idle",
+  live: false,
+  cost: "",
+  contextPercent: null,
+  context: null,
+  mcp: [],
+  wallet: "",
+  view: "flow",
+  rows: 0,
+  surfaces: 0,
+};
+
 export interface PaneProps {
   port: AgentPort;
   // Kernel-wide calls the window owns; the file panel uses them to open the project elsewhere.
