@@ -877,6 +877,10 @@ what exists.
 - Settings fills the application window and owns a draggable header with a
   labelled return action and native window controls. The header remains outside
   the settings scroller and search results, inside its focus boundary.
+- The windowbar's controls opt out of the drag region by the chrome's
+  interactive-membership rule (`:is(button, …)` on `.prefs-windowbar`), not by
+  naming the controls there today: whatever the markup calls interactive stays
+  clickable while the rest of the bar keeps dragging.
 - Desktop navigation stays 240px wide. Content uses the remaining width with
   fixed 24px side gutters; every section card fills one column without a cap.
   Phone navigation becomes a horizontal strip with 14px content gutters.
@@ -933,6 +937,15 @@ to absorb horizontal overflow.
   says the state, with the accent left for things that actually need you.
 - Remove is the one irreversible action in a row, so it does not look like the
   other buttons and appears only on hover.
+
+## Scope pill and picker
+
+- `.studio-icon` is a block box. A pill that holds text and a chevron in one
+  line opts the icon back to `inline-block` (`.spill .cv svg`); left block, the
+  chevron takes its own line and the pill renders two lines tall.
+- A `.pk` row is a two-column grid: name in column 1 row 1, path in column 1
+  row 2, the exception chip in column 2 spanning both rows. With the chip left
+  to auto-placement it takes column 1 ahead of the name and the row inverts.
 
 ## Community
 

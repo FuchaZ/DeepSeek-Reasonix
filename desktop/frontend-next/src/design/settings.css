@@ -2,6 +2,7 @@
 .prefs-screen > .prefs-sheet { flex: 1; min-height: 0; width: 100%; height: auto; border: 0; border-radius: 0; box-shadow: none; }
 .prefs-windowbar { flex: none; display: flex; align-items: center; justify-content: space-between; min-height: var(--chrome-h, 48px); padding: 0 12px; border-bottom: 1px solid var(--hair); background: var(--page); -webkit-app-region: drag; }
 .prefs-back { display: inline-flex; align-items: center; gap: 8px; min-height: 32px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); font: var(--w-med) var(--fs-ui)/1.4 var(--ui); cursor: pointer; -webkit-app-region: no-drag; }
+.prefs-windowbar :is(button, a[href], input, select, textarea, summary, .picker, [role="button"], [role="tab"], [role="menuitem"], [role="switch"]) { -webkit-app-region: no-drag; }
 .prefs-back:hover:not(:disabled) { background: var(--overlay); color: var(--text); }
 .prefs-back:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 .prefs-back:disabled { opacity: .5; cursor: default; }
@@ -59,6 +60,7 @@
 .spill { height: 24px; padding: 0 10px; border: 1px solid var(--border); border-radius: 999px; background: transparent; color: var(--text); font: var(--w-reg) var(--fs-meta) var(--ui); white-space: nowrap; cursor: pointer; }
 .spill:hover:not(:disabled) { background: var(--overlay); }
 .spill:disabled { opacity: .5; cursor: default; }
+.spill .cv svg { display: inline-block; }
 .keybind { box-sizing: border-box; width: 220px; height: 28px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-sm); background: transparent; color: var(--text); font: var(--w-reg) var(--fs-meta) var(--mono); }
 .keybind::placeholder { color: var(--faint); }
 .keybind:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; }
