@@ -258,8 +258,11 @@ func TestAnOpenedSessionNeverOutranksTheOneThatOpenedIt(t *testing.T) {
 	}
 }
 
-func TestWhileTheSwitchIsOnAnyOfTheUsersSessionsIsTakenWithoutACard(t *testing.T) {
-	f := newDispatchFixture(t, dispatchOn)
+// incoming = "always" is the answer that takes any of the user's sessions in
+// without a card; the dispatch switch alone no longer does, and "ask" is what
+// puts the card back (TestChoosingAskBeforeTheReceiverReadsPutsTheCardBack).
+func TestWhileTheIncomingAnswerSaysAlwaysAnyOfTheUsersSessionsIsTakenWithoutACard(t *testing.T) {
+	f := newDispatchFixture(t, dispatchOn+"incoming = \"always\"\n")
 	f.project("billing", true)
 	sender := f.sender(f.project("alpha", true))
 	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key", "")

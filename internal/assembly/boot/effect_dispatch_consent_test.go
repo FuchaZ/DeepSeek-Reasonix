@@ -39,7 +39,10 @@ func TestEffectADispatchedTaskReachesTheModelWithoutACardAndAStrangerIsNotCalled
 		{"paired", "ROTATE-THE-KEY-TASK", secret, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			rec, ctrl, peersDir, seen := buildPeerToolSession(t, true, "nobody", "hello", "dispatch = true\n")
+			// always is what takes a sender this session has no dispatch pair with;
+			// under the default (dispatch) the forged case is held for a card, which
+			// is what TestChoosingAskBeforeTheReceiverReadsPutsTheCardBack covers.
+			rec, ctrl, peersDir, seen := buildPeerToolSession(t, true, "nobody", "hello", "dispatch = true\nincoming = \"always\"\n")
 			t.Setenv("REASONIX_HOME", filepath.Dir(peersDir))
 			receiver := ctrl.PeerKey()
 			if receiver == "" {

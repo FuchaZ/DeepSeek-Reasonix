@@ -309,10 +309,11 @@ func (c *Controller) noteUnreadFromPeer(path string) {
 	c.sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Audience: event.NoticeAudienceOperator, Code: event.NoticeCodePeerMessageArrived})
 }
 
-// releaseHeldPeerMessages approves what just arrived without showing the card,
-// as far as peers.incoming allows: ask holds everything, dispatch takes a paired
-// session, always takes any, and a released project is taken either way. Only
-// the asking is skipped; what it starts runs under this session's approvals.
+// releaseHeldPeerMessages approves what just arrived without a card, as far as
+// peers.incoming allows: ask holds everything, always takes any, dispatch takes
+// a paired session. A paired sender is named as paired either way, because that
+// is what the session knows about it, not what let it in. Only the asking is
+// skipped; what it starts runs under this session's approvals.
 func (c *Controller) releaseHeldPeerMessages(ids []string) {
 	if len(ids) == 0 {
 		return
@@ -325,10 +326,12 @@ func (c *Controller) releaseHeldPeerMessages(ids []string) {
 		switch {
 		case projectReleased:
 			consent = peermail.ConsentProject
+		case incoming == config.IncomingAsk:
+			continue
+		case c.dispatchPartner(c.heldPeerMessageBody(id)):
+			consent = peermail.ConsentDispatch
 		case incoming == config.IncomingAlways:
 			consent = peermail.ConsentSwitch
-		case incoming == config.IncomingDispatch && c.dispatchPartner(c.heldPeerMessageBody(id)):
-			consent = peermail.ConsentDispatch
 		default:
 			continue
 		}

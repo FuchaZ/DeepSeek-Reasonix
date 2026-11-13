@@ -67,6 +67,25 @@ func (c *Config) PeersIncoming() string {
 	return IncomingDispatch
 }
 
+// SetPeersIncoming records what this session takes from another of the user's
+// sessions without a card. Only the three answers are legal, and anything else
+// is refused rather than defaulted: one of them widens what arrives unattended,
+// so a value nobody meant must not quietly become it. An empty answer is the
+// default, dispatch.
+func (c *Config) SetPeersIncoming(answer string) error {
+	switch strings.ToLower(strings.TrimSpace(answer)) {
+	case IncomingAsk:
+		c.Peers.Incoming = IncomingAsk
+	case "", IncomingDispatch:
+		c.Peers.Incoming = IncomingDispatch
+	case IncomingAlways:
+		c.Peers.Incoming = IncomingAlways
+	default:
+		return fmt.Errorf("incoming %q: must be ask|dispatch|always", answer)
+	}
+	return nil
+}
+
 // Defaults of the two ceilings above.
 const (
 	DefaultMaxDispatchDepth      = 1
