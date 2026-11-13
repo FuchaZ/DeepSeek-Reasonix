@@ -3,6 +3,7 @@
 // neither is a size written into a stylesheet as a bare pixel count, which the
 // text-size setting could never reach.
 import { chromium } from "playwright";
+import { openFiles } from "./files-entry.mjs";
 
 const BASE = process.env.PERF_URL ?? "http://localhost:4399/perf.html";
 const fails = [];
@@ -13,7 +14,7 @@ const check = (name, ok, detail = "") => {
 
 const SCENES = [
   { name: "conversation", q: "?pref=zh&ws=2&sess=6&turns=3" },
-  { name: "files panel", q: "?pref=zh&ws=2&sess=6&turns=2", act: async (p) => { await p.locator('.navbtn[aria-label="文件"]').first().click(); await p.waitForSelector(".workbench-filelist button"); } },
+  { name: "files panel", q: "?pref=zh&ws=2&sess=6&turns=2", act: async (p) => { await openFiles(p); await p.waitForSelector(".workbench-filelist button"); } },
   { name: "side panel", q: "?pref=zh&turns=2", act: async (p) => { await p.locator('[data-action="side.toggle"]').click(); await p.waitForSelector(".sidepanel"); } },
   { name: "narrow", q: "?pref=zh&ws=2&sess=6&turns=2", w: 390 },
   { name: "settings", q: "?pref=zh&turns=2", tabs: true },

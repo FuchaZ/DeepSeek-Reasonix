@@ -3,6 +3,7 @@
 // above it, whether the file panel is open or not and at any width.
 import { chromium } from "playwright";
 import { mkdir } from "node:fs/promises";
+import { openFiles } from "./files-entry.mjs";
 
 const PAGE = process.env.PERF_URL ?? "http://localhost:4399/perf.html?pref=zh&ws=2&sess=6&turns=3";
 const fails = [];
@@ -24,7 +25,7 @@ for (const scheme of ["light", "dark"]) {
     await page.goto(`${PAGE}&zoom=${zoom}`, { waitUntil: "networkidle" });
     await page.waitForSelector(".compose");
     if (files) {
-      await page.locator('.navbtn[aria-label="文件"]').first().click();
+      await openFiles(page);
       await page.waitForSelector(".workbench-filelist button");
     }
     const more = page.locator(".compose .turn-more");

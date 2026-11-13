@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { mkdir } from "node:fs/promises";
 import { chromium } from "playwright";
+import { openFiles } from "./files-entry.mjs";
 
 const base = new URL(process.env.PERF_URL ?? "http://localhost:4399/perf.html");
 const browser = await chromium.launch();
@@ -87,7 +88,7 @@ try {
     url.searchParams.set("agentpage", "web");
     await page.goto(url.href, { waitUntil: "networkidle" });
     assert.deepEqual(errors, []);
-    await page.locator('.navbtn[aria-label="文件"]').first().click();
+    await openFiles(page);
     await page.locator('[data-action-click="workbench.tab"][data-target="browser:view-a"]').click();
     const buttons = page.locator(".bnav .bbtn");
     await buttons.first().waitFor();

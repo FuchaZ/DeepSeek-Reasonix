@@ -1,5 +1,6 @@
 // The code editor's text and its search field follow the interface text size, like the rest of the page.
 import { chromium } from "playwright";
+import { openFiles } from "./files-entry.mjs";
 
 const BASE = process.env.PERF_URL ?? "http://localhost:4399/perf.html?pref=zh&ws=2&sess=6&turns=2";
 const SHOTS = process.env.SHOTS_DIR;
@@ -16,7 +17,7 @@ try {
     await page.addInitScript(() => localStorage.setItem("rx-nav-rail", "on"));
     await page.goto(BASE, { waitUntil: "networkidle" });
     await page.waitForSelector(".app");
-    await page.locator('.navbtn[aria-label="文件"]').first().click();
+    await openFiles(page);
     await page.waitForSelector(".workbench-filelist button");
     await page.getByText("README.md").first().click();
     await page.getByRole("button", { name: "编辑", exact: true }).click();

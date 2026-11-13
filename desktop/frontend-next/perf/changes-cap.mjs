@@ -1,6 +1,7 @@
 // A workspace with a hundred thousand changed files keeps the page light: the Git panel draws a page of rows and
 // says how many it left out, and the rest comes on request.
 import { chromium } from "playwright";
+import { openFiles } from "./files-entry.mjs";
 
 const BASE = process.env.PERF_URL ?? "http://localhost:4399/perf.html";
 const CHANGES = Number(process.env.PERF_CHANGES ?? 100000);
@@ -21,7 +22,7 @@ try {
     await ctx.addInitScript(() => localStorage.setItem("rx-nav-rail", "on"));
     await page.goto(`${BASE}?pref=zh&ws=2&sess=3&turns=2&changes=${CHANGES}`, { waitUntil: "networkidle" });
     await page.waitForSelector(".app");
-    await page.locator('.navbtn[aria-label="文件"]').first().click();
+    await openFiles(page);
     await page.waitForSelector(".workbench-changes");
     const nodes = await page.evaluate(() => document.getElementsByTagName("*").length);
     const rows = await page.locator(".workbench-change-row").count();
