@@ -128,9 +128,9 @@ on any other branch is unchecked until it lands there.
 A candidate release can be published as a prerelease by using a pre-release version, which
 also keeps it off the GitHub latest slot.
 
-Note the version baseline: the branch's `release-notes/studio/` already carries `2.61.0.md`,
-while the highest `studio-v*` tag on the remote is `studio-v2.50.0`. Choose the first tag with
-that in mind.
+Note the version baseline: `release-notes/studio/` now carries `2.62.0.md`, while the highest
+`studio-v*` tag on the remote is `studio-v2.50.0`. The first tag this fork pushes should
+therefore be `studio-v2.62.0`.
 
 ## 4. Open items
 
@@ -141,3 +141,73 @@ that in mind.
   into `SidebarDestinations.tsx`.
 - Nothing in the 任务 group idea from earlier discussions was implemented: the tree has no
   session that belongs to no workspace, so "非项目会话" has no data to stand on.
+
+## 5. Revision 2.62.0
+
+The first release of this line is **2.62.0**, and the notes now carry that name. Everything on
+this page above describes the first revision; these six commits are what it took to make the
+branch buildable and releasable as 2.62.0.
+
+| Commit | Change |
+| --- | --- |
+| `e5591df` | Goldens refreshed to the dispatch schema in the tree (`role`, "one of the user's projects"). Before this the branch tip failed `internal/assembly/boot` on a difference the tree had already decided. |
+| `3ff9d07` | `peers.incoming` decides what arrives without a card: `ask` holds, `dispatch` takes a paired session, `always` takes any. `SetPeersIncoming` refuses anything else, and the setting is writable from the settings sheet. |
+| `08d63b8` | Cloud-backup row and the account/market search intents removed; 备份 lands on the local file backup. |
+| `d788646` | A scope row's picker opens from the row's left edge instead of hanging off the right. |
+| `1e1734d` | Six perf scripts reach 文件 through `openFiles`, as the ones fixed in `466dbfd` do. |
+| `54b53eb` | Release notes renamed to `2.62.0.md`, upstream handover line, `peers.incoming` upgrade note. |
+
+### Windows build on this machine
+
+Installed 2026-11-13 at `%LOCALAPPDATA%\Programs\Reasonix Studio`; `logs/shell.log` records
+`version=2.62.0 packaged=true platform=win32/x64` and a kernel handshake. The installer is
+unsigned (`no code signing certificate configured`), so SmartScreen will warn on first run.
+
+| Step | Command |
+| --- | --- |
+| SPA | `cd desktop/frontend-next && pnpm install --frozen-lockfile && pnpm build` |
+| kernel | `PATH=<go>/bin:$PATH CGO_ENABLED=0 go build -ldflags "-s -w -X main.version=v2.62.0" -o desktop/electron/bin/ ./cmd/reasonix-studio-host` |
+| bundle | `pnpm exec electron-builder --dir -c.extraMetadata.version=2.62.0 -c.electronDist=<local electron-v45.2.3-win32-x64.zip>` |
+| installer | `pnpm exec electron-builder --prepackaged ../../dist/win-unpacked --win nsis -c.extraMetadata.version=2.62.0` |
+
+Three environment facts the CI recipe does not meet here:
+
+- **No Go on PATH.** A portable go1.26.11 lives at `D:\Tools\gotool\go\bin`.
+- **`build:host` cannot fetch the CUA driver.** Its GitHub fetch carries a 120s timeout and the
+  line runs at ~40 KB/s. Fetch the lock file's artifact by hand, verify its sha256, and put
+  `cua-driver.exe` in `desktop/electron/bin`.
+- **electron-builder re-downloads Electron even when it is cached, and can hang for ten
+  minutes.** Pass `-c.electronDist` pointing at a local zip.
+- **Toolset downloads hit GitHub too.** Set
+  `ELECTRON_BUILDER_BINARIES_MIRROR=https://npmmirror.com/mirrors/electron-builder-binaries/`,
+  or pre-seed `<LOCALAPPDATA>/electron-builder/Cache/<release>/<archive>`.
+
+Artifact: `dist/ReasonixStudio-windows-amd64-installer.exe`, sha256
+`d4e12da2e193fc916ed81ff792d11c90b71f5544c6a2740e8fba52dbc02256a9`, 135 MB. It installs per user
+(HKCU uninstall entry `Reasonix Studio 2.62.0`), and every PE file is amd64 except the
+installer's own 32-bit `resources/elevate.exe`.
+
+### Checks run for this revision
+
+| Check | Result |
+| --- | --- |
+| `gofmt -l` on the changed Go files | clean |
+| `go vet` on the affected packages | clean |
+| `go run ./tools/repolint -changed` (what `make check` runs; `make` is not installed here) | clean, after shortening a six-line comment and a 362-column paragraph |
+| `go test ./internal/contract/... ./internal/session/control/ ./internal/frontend/serve/` | pass |
+| `vitest run` on the four touched test files | 47 pass |
+| `pnpm typecheck` | clean |
+| `go test ./internal/assembly/boot/` | the goldens pass; two tests fail on this machine (`TestEffectBundledSkillReferenceReachesProviderAfterCopyInstall`, `TestEffectChangedFileEditAfterTheReadIsKept`, the latter panicking on an empty request list). Both fail the same way on `HEAD` without these commits, so they are not this revision's. |
+
+### Open items for this revision
+
+- **`README.md` and `README.zh-CN.md` still describe a 2.6.x line** ("2.6.1, 2.6.2, 2.6.3 … no jump
+  to 2.7"). The release is 2.62.0. One of the two has to move before a tag is pushed.
+- `internal/contract/tool/peer.go` and `internal/session/control/peer_dispatch.go` still say
+  "another of the user's projects" while the tool now accepts this session's own project when a
+  role is given. The model-facing description is right; these two comments are not.
+- The two failing boot tests above need a clean-machine run (CI on Linux) before a tag; they are
+  the only red in the packages this revision touched.
+- Only Windows was built here. `.deb`, `.rpm`, `.AppImage` and the macOS bundle still rely on
+  `release-studio.yml` and its credentials.
+
