@@ -17,7 +17,6 @@ it("says in one line when extension changes take effect, with no card of its own
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}}
     onClose={() => {}} onChanged={() => {}} onError={() => {}} at="ext:installed"
-    account={null} accountUnread="" reloadAccount={() => {}}
   />);
   const foot = await screen.findByRole("note");
   expect(foot.textContent).toContain("从下一轮开始生效");

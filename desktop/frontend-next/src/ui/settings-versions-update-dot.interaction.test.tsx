@@ -13,7 +13,7 @@ const settings = (port: MockPort) => (
   <Settings hub={new MockHub()} onError={() => {}} port={port} networkPort={port}
     status={null} theme="" reloadThemes={() => {}} onTheme={() => {}} contrast="" onContrast={() => {}}
     weight="" onWeight={() => {}} look={{}} onLook={() => {}} onClose={() => {}} onChanged={() => {}}
-    at="versions" account={null} accountUnread="" reloadAccount={() => {}} />
+    at="versions" />
 );
 
 const watch = async (newer: boolean) => {

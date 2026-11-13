@@ -9,7 +9,7 @@ import { useWindowNotices } from "./useWindowNotices";
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { reason } from "../i18n/kernel";
 import { t } from "../i18n";
-import type { AccountState, AgentPort, ProviderSetup } from "../port/port";
+import type { AgentPort, ProviderSetup } from "../port/port";
 import type { HubPort, RuntimeView } from "../port/hub";
 import { workspaceContains } from "../port/hub";
 import { Chrome } from "./Chrome";
@@ -131,8 +131,6 @@ export function App({ hub }: { hub: HubPort }) {
   const [setup, setSetup] = useState<ProviderSetup | null | undefined>(undefined);
   // undefined until asked; false means the opening sequence is still owed.
   const [welcomed, setWelcomed] = useState<boolean | undefined>(undefined);
-  const [account, setAccount] = useState<AccountState | null>(null);
-  const [accountUnread, setAccountUnread] = useState("");
   // Bumped when a pane is rebound to another transcript. It rides the Pane key,
   // so the takeover remounts it: every bit of what is on screen belonged to the
   // conversation it just left.
@@ -286,23 +284,6 @@ export function App({ hub }: { hub: HubPort }) {
   // the machine's own kernel: a schedule outlives the conversation on screen.
   const schedules = useScheduledCount(machinePort);
 
-  // A kernel that does not carry sign-in refuses this with a code and a
-  // sentence. Dropping it left the panel saying "checking…" for the rest of
-  // the session about a question that had already been answered.
-  const reloadAccount = useCallback(() => {
-    activePort
-      ?.account()
-      .then((a) => {
-        setAccount(a);
-        setAccountUnread("");
-      })
-      .catch((e) => {
-        setAccount(null);
-        setAccountUnread(reason(e));
-      });
-  }, [activePort]);
-  useEffect(reloadAccount, [reloadAccount]);
-
   useEffect(() => {
     if (setup !== undefined && welcomed !== undefined) markSettled();
   }, [setup, welcomed]);
@@ -434,10 +415,9 @@ export function App({ hub }: { hub: HubPort }) {
     // Removing the last model source is a setting too, and it has to land the
     // window back on connecting one rather than on a composer with no model.
     activePort?.providerSetup().then(setSetup).catch(() => {});
-    reloadAccount();
     setSettingsPulse((n) => n + 1);
     void reloadPanes();
-  }, [activePort, reloadAccount, reloadPanes]);
+  }, [activePort, reloadPanes]);
 
   // A pane's label comes from the tree row it opened, so the sidebar and the
   // tab never disagree. An unnamed session gets a number rather than a third
@@ -567,7 +547,6 @@ export function App({ hub }: { hub: HubPort }) {
         workspace={report.workspace}
         title={tabs.find((tab) => tab.rt.id === active)?.title ?? report.title}
         steer={report.steer}
-        account={account}
         theme={scheme}
         onTheme={() => setTheme(scheme === "dark" ? "light" : "dark")}
         onFind={find.toggle}
@@ -778,9 +757,6 @@ export function App({ hub }: { hub: HubPort }) {
             onSessionsRecovered={() => void reloadTree()}
             reloadThemes={reloadThemes}
             at={typeof settings === "string" ? settings : undefined}
-            account={account}
-            accountUnread={accountUnread}
-            reloadAccount={reloadAccount}
             workspaceRoot={localRt?.root ?? ""}
           />
         </Suspense>

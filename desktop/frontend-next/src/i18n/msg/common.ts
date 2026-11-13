@@ -120,7 +120,6 @@ export const COMMON: Messages = {
   "common.no_thanks": { zh: "不用了", en: "No thanks" },
   "common.not_connected": { zh: "未连接", en: "Not connected" },
   "common.not_declared": { zh: "未声明", en: "Not declared" },
-  "common.not_signed_in": { zh: "未登录", en: "Not signed in" },
   "common.nothing_matches": { zh: "没有匹配的会话", en: "Nothing matches" },
   "common.notifications": { zh: "通知", en: "Notifications" },
   "common.now": { zh: "当前", en: "Now" },

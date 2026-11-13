@@ -22,31 +22,10 @@ function draw(at?: string, port = new MockPort() as unknown as AgentPort) {
       look={{} as never} onLook={() => {}} reloadThemes={() => {}}
       onClose={onClose} onChanged={() => {}} onError={() => {}}
       at={at}
-      account={null} accountUnread="" reloadAccount={() => {}}
     />,
   );
   return { onClose };
 }
-
-it("opens the installed tab after a market install and keeps keyboard focus there", async () => {
-  const port = new MockPort() as unknown as AgentPort;
-  const install = port.installMarket.bind(port);
-  port.installMarket = async (req) => {
-    const out = await install(req);
-    return { ...out, actions: [{ kind: "plugin", action: "install_plugin_package", status: "done", riskLevel: "high", name: "manifest-kit" }, ...(out.actions ?? [])] };
-  };
-  const packages = port.plugins.bind(port);
-  port.plugins = async () => (await packages()).map((p) => p.name === "review-kit" ? { ...p, name: "manifest-kit" } : p);
-  draw("ext:market", port);
-  await userEvent.click(await screen.findByRole("button", { name: /review-kit/ }));
-  await userEvent.click(await screen.findByRole("button", { name: "查看将安装的内容" }));
-  await userEvent.click(screen.getByRole("checkbox", { name: "我已看过这 3 个技能，全部安装" }));
-  await userEvent.click(screen.getByRole("button", { name: "安装" }));
-  await userEvent.click(await screen.findByRole("button", { name: "查看已安装能力" }));
-  const installed = screen.getByRole("tab", { name: "已安装" });
-  await waitFor(() => expect(installed.getAttribute("aria-selected")).toBe("true"));
-  await waitFor(() => expect(document.activeElement?.closest("[data-extension-name='manifest-kit']")).toBeTruthy());
-});
 
 describe("a package's inline update", () => {
   it("keeps focus where the user moved after a failed update when the inventory refreshes", async () => {
@@ -135,11 +114,8 @@ describe("a package's inline update", () => {
     const close = document.querySelector<HTMLButtonElement>('[data-action="settings.close"]')!;
     expect(close.disabled).toBe(true);
     const section = document.querySelector<HTMLButtonElement>('[data-action="settings.section"][data-value="session"]')!;
-    const market = screen.getByRole<HTMLButtonElement>("tab", { name: "发现" });
     expect(section.disabled).toBe(true);
-    expect(market.disabled).toBe(true);
     await userEvent.click(section);
-    await userEvent.click(market);
     await userEvent.click(close);
     await userEvent.click(document.querySelector<HTMLElement>(".prefs")!);
     await userEvent.click(cancel);
@@ -172,7 +148,6 @@ describe("a package's inline update", () => {
     expect(document.querySelector(".addpkg")).toBeTruthy();
     expect(close.disabled).toBe(false);
     expect(section.disabled).toBe(false);
-    expect(market.disabled).toBe(false);
     expect(within(row).getByRole<HTMLButtonElement>("switch", { name: "关闭 review-kit" }).disabled).toBe(true);
     await userEvent.click(screen.getByRole("button", { name: "添加…" }));
     expect(screen.queryByRole("menuitem", { name: /从仓库地址安装/ })).toBeNull();
@@ -182,7 +157,6 @@ describe("a package's inline update", () => {
     expect(within(row).getByRole<HTMLButtonElement>("switch", { name: "关闭 review-kit" }).disabled).toBe(false);
     expect(close.disabled).toBe(false);
     expect(section.disabled).toBe(false);
-    expect(market.disabled).toBe(false);
   });
 });
 
@@ -235,7 +209,6 @@ describe("where focus is when the sheet goes", () => {
         theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
         look={{} as never} onLook={() => {}} reloadThemes={() => {}}
         onClose={() => {}} onChanged={() => {}} onError={() => {}}
-        account={null} accountUnread="" reloadAccount={() => {}}
       />,
     );
     expect(document.activeElement).not.toBe(opener);

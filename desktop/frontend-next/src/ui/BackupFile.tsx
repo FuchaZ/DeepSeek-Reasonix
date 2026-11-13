@@ -2,8 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { t } from "../i18n";
 import { reason } from "../i18n/kernel";
 import type { AgentPort, BackupCategory, BackupFileCatalog } from "../port/port";
-import { BackupRestore, CATEGORY_LABEL, type RestoreSource } from "./BackupRestore";
-import { CATEGORY_NOTE } from "./Backup";
+import { BackupRestore, CATEGORY_LABEL, CATEGORY_NOTE, type RestoreSource } from "./BackupRestore";
 import { StudioIcon } from "./StudioIcon";
 
 // The same sealed envelope the account keeps, written to a file the person

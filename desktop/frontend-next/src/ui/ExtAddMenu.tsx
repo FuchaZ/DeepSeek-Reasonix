@@ -3,10 +3,9 @@ import { t } from "../i18n";
 import { useDismiss } from "./dismiss";
 import { StudioIcon, type StudioIconName } from "./StudioIcon";
 
-export type ExtAddWay = "market" | "source" | "folder" | "service";
+export type ExtAddWay = "source" | "folder" | "service";
 
 const WAYS: [ExtAddWay, StudioIconName, string, string][] = [
-  ["market", "spark", "ext.add_from_market", "ext.add_from_market_hint"],
   ["source", "link", "ext.add_from_source", "ext.add_from_source_hint"],
   ["folder", "folder", "ext.add_from_folder", "ext.add_from_folder_hint"],
   ["service", "plug", "ext.add_service", "ext.add_service_hint"],

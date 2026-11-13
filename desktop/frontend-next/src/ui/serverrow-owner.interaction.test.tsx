@@ -162,7 +162,6 @@ it("dismisses removal confirmation when choosing another managed project", async
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}}
     onClose={() => {}} onChanged={() => {}} onError={() => {}} at="ext:installed"
-    account={null} accountUnread="" reloadAccount={() => {}}
   />);
   await userEvent.click(await screen.findByRole("button", { name: "移除 docs" }));
   expect(screen.getByRole("button", { name: "取消" })).toBeTruthy();

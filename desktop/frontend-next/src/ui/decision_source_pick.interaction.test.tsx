@@ -58,7 +58,6 @@ it("the settings table reads every source, then gives each job only what it can 
       theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
       look={{} as never} onLook={() => {}} reloadThemes={() => {}}
       onClose={() => {}} onChanged={() => {}} onError={() => {}} at="model:model"
-      account={null} accountUnread="" reloadAccount={() => {}}
     />,
   );
   const main = (await screen.findByRole("combobox", { name: t("common.default_model") })) as HTMLSelectElement;

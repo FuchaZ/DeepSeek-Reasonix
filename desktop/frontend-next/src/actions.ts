@@ -1,4 +1,3 @@
-import { MARKET_ACTIONS } from "./actions_market";
 import { SCHEDULE_ACTIONS } from "./actions_schedule";
 import { DOCUMENT_ACTIONS } from "./actions_document";
 import { FEEDBACK_ACTIONS } from "./actions_feedback";
@@ -313,14 +312,11 @@ export const ACTIONS: UIAction[] = [
   { id: "model.group-clear", kind: "view", target: "none", proof: "interaction" },
   { id: "paste.save", kind: "kernel-mutation", target: "none", proof: "interaction" },
   { id: "backup.category", kind: "view", target: "entity", proof: "interaction" },
-  { id: "backup.label", kind: "view", target: "none", proof: "interaction" },
   { id: "backup.passphrase", kind: "view", target: "optional", proof: "interaction" },
-  { id: "backup.create", kind: "kernel-mutation", target: "none", proof: "interaction" },
   { id: "backup.file-export", kind: "kernel-mutation", target: "none", proof: "interaction" },
   { id: "backup.file-import", kind: "view", target: "none", proof: "interaction" },
   { id: "backup.file-choose", kind: "view", target: "none", proof: "interaction" },
   { id: "backup.restore", kind: "view", target: "entity", proof: "interaction" },
-  { id: "backup.delete", kind: "destructive", target: "entity", proof: "interaction" },
   { id: "backup.preview", kind: "repeatable", target: "none", proof: "interaction" },
   { id: "backup.cancel", kind: "view", target: "none", proof: "interaction" },
   { id: "backup.pick", kind: "view", target: "entity", proof: "interaction" },
@@ -378,10 +374,8 @@ export const ACTIONS: UIAction[] = [
   { id: "extensions.export", kind: "repeatable", target: "none", proof: "interaction" },
   { id: "extensions.enabled", kind: "kernel-mutation", target: "entity", proof: "authority-effect" },
   { id: "extensions.remove", kind: "destructive", target: "entity", proof: "authority-effect" },
-  { id: "extensions.tab", kind: "view", target: "none", proof: "interaction" },
   { id: "extensions.search", kind: "view", target: "none", proof: "interaction" },
   { id: "extensions.clear-search", kind: "view", target: "none", proof: "interaction" },
-  ...MARKET_ACTIONS,
   // Taking back the innermost open thing: a popover, an inline form. One
   // intent, reached by pressing away and by Escape.
   { id: "layer.dismiss", kind: "navigation", target: "none", proof: "interaction" },

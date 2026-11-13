@@ -20,7 +20,6 @@ function draw(port: AgentPort) {
       look={{} as never} onLook={() => {}} reloadThemes={() => {}}
       onClose={() => {}} onChanged={() => {}} onError={() => {}}
       at="model:model"
-      account={null} accountUnread="" reloadAccount={() => {}}
     />,
   );
 }

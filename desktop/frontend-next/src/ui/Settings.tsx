@@ -33,8 +33,6 @@ import { Packages } from "./Packages";
 import { ExtAddMenu, type ExtAddWay } from "./ExtAddMenu";
 import { ExtDetail, ExtSplit, firstPick } from "./ExtDetail";
 import type { ExtPicked } from "./extpick";
-import { ExtTabs, MarketGroup } from "./Market";
-import { InstalledLocation } from "./InstalledLocation";
 import { ModelSettings } from "./ModelSettings";
 import { ServerRow } from "./ServerRow";
 import { SkillGroups } from "./SkillRow";
@@ -71,7 +69,7 @@ const homeFor = (section: Section, anchor: string): Section => {
 const SOLO: Record<string, Section | undefined> = { extensions: "ext", spend: "usage" };
 const SOLO_TITLE: Record<string, string> = { ext: "ext.extension", usage: "app.usage" };
 
-export function Settings({ hub, onError, port, networkPort, localWorkspacePort, networkHost, status, theme, onTheme, contrast, onContrast, weight, onWeight, look, onLook, onClose, onChanged, onSessionsRecovered, reloadThemes, at: opened, account: acct, workspaceRoot }: Props) {
+export function Settings({ hub, onError, port, networkPort, localWorkspacePort, networkHost, status, theme, onTheme, contrast, onContrast, weight, onWeight, look, onLook, onClose, onChanged, onSessionsRecovered, reloadThemes, at: opened, workspaceRoot }: Props) {
   const navigation = useSettingsLeave();
   const close = useCallback(() => navigation.leave(onClose), [navigation.leave, onClose]);
   const homePort = networkPort ?? port;
@@ -116,8 +114,6 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
   const [remoteBook, setRemoteBook] = useState<RemoteHost[] | null>(null);
   const [packages, setPackages] = useState<PluginPackage[]>([]);
   const [addingPkg, setAddingPkg] = useState<false | "source" | "folder">(false);
-  const [extTab, setExtTab] = useState<"installed" | "market">(openedAnchor === "market" ? "market" : "installed");
-  const [installedTarget, setInstalledTarget] = useState<{ kind: string; name: string } | null>(null);
   const [extRefreshing, setExtRefreshing] = useState(false);
   const [extErrors, setExtErrors] = useState<Partial<Record<"mcp" | "packages" | "skills", string>>>({});
   const extRefresh = useRef(0);
@@ -296,7 +292,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
     memory: memCount ? t("common.n_2", { n: memCount }) : "",
     usage: tally.usage ?? "",
     storage: tally.storage ?? "",
-    account: acct === null ? "" : acct.signedIn ? (acct.user?.label ?? t("settings.signed_in")) : t("common.not_signed_in"),
+    account: "",
     versions: tally.versions ?? "",
     appearance: t(SCHEMES.find(([id]) => id === theme)?.[1] ?? ""),
     advanced: ELSEWHERE.length ? `${ELSEWHERE.length}` : "",
@@ -326,7 +322,6 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
       if (target) setPages((p) => ({ ...p, [section]: target }));
       setQuery("");
       setLanded(anchor);
-      if (section === "ext") setExtTab(anchor === "market" ? "market" : "installed");
     };
     if (section === at && anchor !== "persona") land();
     else navigation.leave(land);
@@ -471,15 +466,10 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
           {at === "ext" && (
             <>
               <div className="ext-bar">
-                <ExtTabs at={extTab} disabled={updatingPkg.applying} onPick={(tab) => { setInstalledTarget(null); setExtTab(tab); }} />
                 {scope && <span className="ext-scope"><ScopePill scope={scope} scopes={scopes} onPick={setScopeAt} /></span>}
-                <ExtAddMenu disabled={updatingPkg.applying} offer={new Set<ExtAddWay>(["market", ...(updatingPkg.name ? [] : ["source", "folder"] as const), ...(live ? ["service"] as const : [])])}
-                  onPick={(way) => { setInstalledTarget(null); setExtTab(way === "market" ? "market" : "installed"); if (way === "service") setAdding(true); else if (way !== "market") setAddingPkg(way); }} />
+                <ExtAddMenu disabled={updatingPkg.applying} offer={new Set<ExtAddWay>([...(updatingPkg.name ? [] : ["source", "folder"] as const), ...(live ? ["service"] as const : [])])}
+                  onPick={(way) => { if (way === "service") setAdding(true); else setAddingPkg(way); }} />
               </div>
-              {extTab === "installed" && <InstalledLocation root={root} target={installedTarget} packages={packages} skills={skills} mcp={mcp} refreshing={extRefreshing} onFound={setInstalledTarget} />}
-              {extTab === "market" && <MarketGroup port={port} onApplying={applyingChanged} onInstalled={afterExtChange} onViewInstalled={(kind, name) => { setInstalledTarget({ kind, name }); setExtTab("installed"); }} account={acct} onSignIn={() => go("account", "account")} />}
-              {extTab === "installed" && (
-              <>
               <ExtSplit on={soloSection === "ext"} picked={picked ?? firstPick(packages, looseMcp, looseSkills)} onPick={setPicked} detail={
                 <ExtDetail picked={picked ?? firstPick(packages, looseMcp, looseSkills)} packages={packages} mcp={mcp} skills={skills} port={port} root={scopeAt} live={live} implicit={implicit}
                   updating={updatingPkg.name} onChanged={afterExtChange} onReloadError={reload.report} onReloaded={reload.applied}
@@ -555,8 +545,6 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
                 </div>
                 {reload.note}
               </ExtSplit>
-              </>
-              )}
             </>
           )}
           {at === "network" && (
@@ -566,7 +554,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
           {at === "account" && <AccountSettings port={port} homePort={homePort} />}
           {at === "storage" && (
             <DataSettings port={port} homePort={homePort} localPort={localPort} hub={hub} workspace={workspaceRoot ?? (homePort === port ? status?.workspaceRoot ?? "" : "")} cwd={status?.cwd} busy={busy}
-              signedIn={!!acct?.signedIn && !!acct.user} onIsolate={() => run("isolate", () => port.isolateWorkspace())} onChanged={onChanged} onRecovered={() => { onChanged(); onSessionsRecovered?.(); }} />
+              onIsolate={() => run("isolate", () => port.isolateWorkspace())} onChanged={onChanged} onRecovered={() => { onChanged(); onSessionsRecovered?.(); }} />
           )}
 
           {at === "common" && <CommonSettings port={port} homePort={homePort} theme={theme} onTheme={onTheme} look={look} onLook={onLook} />}

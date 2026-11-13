@@ -14,8 +14,7 @@ function draw(port: MockPort) {
   return render(<Settings
     hub={new MockHub()} onError={() => {}} port={port} status={null} theme="light" reloadThemes={() => {}}
     onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
-    look={{}} onLook={() => {}} onClose={() => {}} onChanged={() => {}} at="ext:installed" account={null}
-    accountUnread="" reloadAccount={() => {}}
+    look={{}} onLook={() => {}} onClose={() => {}} onChanged={() => {}} at="ext:installed"
   />);
 }
 

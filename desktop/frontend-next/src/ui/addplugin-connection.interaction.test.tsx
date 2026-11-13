@@ -42,7 +42,6 @@ function settings(port: AgentPort, onChanged = vi.fn()) {
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}}
     onClose={() => {}} onChanged={onChanged} onError={() => {}} at="ext:installed"
-    account={null} accountUnread="" reloadAccount={() => {}}
   />;
 }
 

@@ -25,8 +25,7 @@ it("keeps the selected project's skills when the previous read finishes late", a
   render(<Settings
     hub={new MockHub()} onError={() => {}} port={port} status={null} theme="" reloadThemes={() => {}}
     onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
-    look={{}} onLook={() => {}} onClose={() => {}} onChanged={() => {}} at="ext" account={null}
-    accountUnread="" reloadAccount={() => {}}
+    look={{}} onLook={() => {}} onClose={() => {}} onChanged={() => {}} at="ext"
   />);
 
   await userEvent.click(await screen.findByRole("tab", { name: /权限与安全/ }));
@@ -51,8 +50,7 @@ it("switches the project from the extension page itself, without a trip to anoth
   render(<Settings
     hub={new MockHub()} onError={() => {}} port={port} status={null} theme="" reloadThemes={() => {}}
     onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
-    look={{}} onLook={() => {}} onClose={() => {}} onChanged={() => {}} at="ext" account={null}
-    accountUnread="" reloadAccount={() => {}}
+    look={{}} onLook={() => {}} onClose={() => {}} onChanged={() => {}} at="ext"
   />);
   await userEvent.click(await screen.findByRole("button", { name: /Project A/ }));
   await userEvent.click(screen.getByRole("option", { name: /Project B/ }));

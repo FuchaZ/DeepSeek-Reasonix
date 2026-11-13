@@ -17,7 +17,6 @@ function draw(onClose = vi.fn()) {
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}}
     onClose={onClose} onChanged={vi.fn()} onError={() => {}} at="appearance"
-    account={null} accountUnread="" reloadAccount={() => {}}
   />);
   return onClose;
 }

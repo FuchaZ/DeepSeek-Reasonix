@@ -20,12 +20,12 @@ function hub() {
   return h;
 }
 
-it("the scope filter is one dropdown holding the six scopes; the find box above the list is the one name search", async () => {
+it("the scope filter is one dropdown holding the six scopes and the 最近 ordering row; the find box above the list is the one name search", async () => {
   render(<App hub={hub()} />);
   const trigger = await screen.findByRole("button", { name: "会话范围" });
   await userEvent.click(trigger);
   const menu = document.querySelector<HTMLElement>(".session-filter-menu:not([hidden])")!;
-  expect(Array.from(menu.querySelectorAll("button.mi"), (b) => b.getAttribute("data-value"))).toEqual(["all", "live", "waiting", "unread", "pinned", "archived"]);
+  expect(Array.from(menu.querySelectorAll("button.mi"), (b) => b.getAttribute("data-value"))).toEqual(["all", "recent", "live", "waiting", "unread", "pinned", "archived"]);
   expect(screen.queryByRole("button", { name: "按名称筛选会话" })).toBeNull();
   expect(screen.getAllByRole("searchbox", { name: "搜索会话 / 项目" })).toHaveLength(1);
 });

@@ -1,4 +1,4 @@
-import type { AccountState, AgentPort, Appearance as Look, SessionStatus } from "../port/port";
+import type { AgentPort, Appearance as Look, SessionStatus } from "../port/port";
 import type { HubPort } from "../port/hub";
 
 export interface SettingsProps {
@@ -26,8 +26,5 @@ export interface SettingsProps {
   onChanged: () => void;
   onSessionsRecovered?: () => void;
   at?: string;
-  account: AccountState | null;
-  accountUnread: string;
-  reloadAccount: () => void;
   workspaceRoot?: string;
 }

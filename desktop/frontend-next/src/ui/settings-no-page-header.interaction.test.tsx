@@ -19,7 +19,6 @@ function draw(at: string) {
       look={{} as never} onLook={() => {}} reloadThemes={() => {}}
       onClose={() => {}} onChanged={() => {}} onError={() => {}}
       at={at as never}
-      account={null} accountUnread="" reloadAccount={() => {}}
     />,
   );
 }

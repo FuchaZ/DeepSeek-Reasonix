@@ -68,7 +68,7 @@ it.each([false, true])("only shows a directory badge when isolated=%s", async (i
   const current = isolated ? copy : root;
   vi.spyOn(port, "workspaces").mockResolvedValue({ current, isolated, canSwitch: true, canIsolate: true, recents: [] });
   await act(async () => { render(<Chrome port={port} status={{ workspaceRoot: current, sessionPath: path } as never}
-    title="工作" steer={0} account={null} theme="dark" onTheme={vi.fn()}
+    title="工作" steer={0} theme="dark" onTheme={vi.fn()}
     onFind={vi.fn()} view="flow" rows={0} surfaces={0} onView={vi.fn()} />); });
   expect(screen.queryByText("项目目录")).toBeNull();
   if (isolated) {

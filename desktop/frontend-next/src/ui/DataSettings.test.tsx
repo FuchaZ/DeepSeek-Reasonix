@@ -9,11 +9,11 @@ import { DataSettings } from "./DataSettings";
 
 afterEach(cleanup);
 
-function draw(signedIn = false) {
+function draw() {
   const port = new MockPort() as unknown as AgentPort;
   render(
     <>
-      <DataSettings port={port} homePort={port} localPort={port} hub={new MockHub()} workspace="/w" cwd="/w" busy="" signedIn={signedIn}
+      <DataSettings port={port} homePort={port} localPort={port} hub={new MockHub()} workspace="/w" cwd="/w" busy=""
         onIsolate={() => {}} onChanged={() => {}} onRecovered={() => {}} />
     </>,
   );
@@ -35,9 +35,4 @@ it("expands memory, usage, storage and export controls together", async () => {
       expect(document.querySelector(`#set-${id} .grp-items`), id).toBeTruthy();
     }
   });
-});
-
-it("offers the cloud backup only when signed in", () => {
-  draw(true);
-  expect(document.querySelector('[data-setting="backup"]')).toBeTruthy();
 });

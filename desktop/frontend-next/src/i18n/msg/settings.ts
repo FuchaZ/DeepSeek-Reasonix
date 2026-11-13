@@ -151,7 +151,6 @@ export const SETTINGS: Messages = {
   "settings.show_a_status_icon_in": { zh: "在托盘显示图标", en: "Show a status icon in the tray" },
   "settings.show_file_changes_above_the": { zh: "在输入框顶部显示文件改动", en: "Show file changes at the top of the input box" },
   "settings.show_name": { zh: "显示：{name}", en: "Show: {name}" },
-  "settings.signed_in": { zh: "已登录", en: "Signed in" },
   "settings.skills": { zh: "技能", en: "Skills" },
   "settings.skills_external_tools_plugins_automation": { zh: "技能、外部工具、插件、自动化", en: "Skills, external tools, plugins, automation" },
   "settings.skills_from_the_working_directory": { zh: "工作目录与「我的」中的技能。带 / 的可以由你直接调用，其余的由模型根据任务判断是否使用。关掉一个立刻生效：从你的下一条消息起模型不再拿到它，直接点名也调不动，不用新建会话。", en: "Skills from the working directory and from My skills. Those with a / you can invoke yourself; the rest the model decides on per task. Switching one off takes effect at once: from your next message the model no longer has it, and naming it yourself stops working too — no new session needed." },
@@ -216,7 +215,6 @@ export const SETTINGS: Messages = {
   "settings.storage_hint": { zh: "会话、索引、缓存占了多少空间", en: "How much space sessions, indexes and caches take" },
 
   "settings.config_in_one_file": { zh: "把模型、扩展、记忆等配置加密导出成一个文件", en: "Export models, extensions and memory to one encrypted file" },
-  "settings.back_up_to_the_cloud": { zh: "登录后把配置备份到云端", en: "Back up your configuration to the cloud once signed in" },
   "settings.size_of_requests_sent": { zh: "发给模型服务商的请求有多大", en: "How large the requests sent to model providers are" },
   "settings.other_machines": { zh: "其他机器", en: "Other machines" },
   "settings.network_hint": { zh: "代理和网络诊断", en: "Proxy and network diagnostics" },

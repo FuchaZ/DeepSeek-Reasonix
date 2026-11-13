@@ -30,7 +30,6 @@ async function search(q: string, anchor = "graphics") {
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}}
     onClose={() => {}} onChanged={() => {}} onError={() => {}}
-    account={null} accountUnread="" reloadAccount={() => {}}
   />);
   await act(async () => {});
   await userEvent.type(screen.getByRole("textbox", { name: t("settings.search_settings") }), q);

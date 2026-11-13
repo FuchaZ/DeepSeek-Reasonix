@@ -16,7 +16,7 @@ function draw(at: string) {
     <Settings hub={new MockHub() as never} port={port} status={{ preset: "balanced", toolApprovalMode: "ask" } as SessionStatus}
       theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
       look={{} as never} onLook={() => {}} reloadThemes={() => {}} onClose={() => {}} onChanged={() => {}} onError={() => {}}
-      at={at} account={null} accountUnread="" reloadAccount={() => {}} />,
+      at={at} />,
   );
   return port;
 }

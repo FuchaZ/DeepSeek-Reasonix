@@ -292,7 +292,7 @@ it("resets the memory panel when Settings receives a new active connection", asy
   const draw = (port: AgentPort) => <Settings hub={hub} port={port} status={{ preset: "balanced", toolApprovalMode: "ask" } as never}
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}} onClose={() => {}} onChanged={() => {}} onError={() => {}}
-    account={null} accountUnread="" reloadAccount={() => {}} at="memory" />;
+ at="memory" />;
   const view = render(draw(old.port));
   await edit("old", "old settings draft");
   view.rerender(draw(next.port));

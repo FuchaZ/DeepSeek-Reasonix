@@ -99,7 +99,6 @@ it("lets Escape dismiss the Settings form while its confirmed installation still
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}}
     onClose={() => {}} onChanged={onChanged} onError={() => {}} at="ext:installed"
-    account={null} accountUnread="" reloadAccount={() => {}}
   />);
   await userEvent.click(await screen.findByRole("button", { name: "添加…" }));
   await userEvent.click(await screen.findByRole("menuitem", { name: /接入外部服务/ }));

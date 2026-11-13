@@ -207,7 +207,6 @@ export const SETTINGS: SettingEntry[] = [
   { section: "session", anchor: "scheduled-runs", title: "panels.scheduled_runs", scope: "machine", apply: "immediate", keywords: ["定时", "计划", "任务", "每天", "schedule", "cron", "unattended", "无人值守"] },
   { section: "session", anchor: "hooks", title: "settings.hooks", scope: "chosen", apply: "immediate", keywords: ["钩子", "hook", "触发"] },
 
-  { section: "ext", anchor: "market", title: "ext.community_market", scope: "machine", apply: "immediate", keywords: ["市场", "market", "社区", "发现", "下载", "发布", "publish", "主题"] },
   { section: "ext", anchor: "plugins", title: "settings.plugin_packages", scope: "machine", apply: "immediate", keywords: ["安装"] },
   { section: "ext", anchor: "mcp", title: "ext.external_services", scope: "chosen", apply: "immediate", keywords: ["mcp", "服务器", "连接外部"] },
   { section: "ext", anchor: "skills", title: "settings.skills", scope: "chosen", apply: "immediate", keywords: ["skill", "技能包"] },

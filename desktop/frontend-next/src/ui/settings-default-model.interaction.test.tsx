@@ -21,7 +21,6 @@ function draw(port: AgentPort, networkPort?: AgentPort) {
       look={{} as never} onLook={() => {}} reloadThemes={() => {}}
       onClose={() => {}} onChanged={() => {}} onError={() => {}}
       at="model:model"
-      account={null} accountUnread="" reloadAccount={() => {}}
     />,
   );
 }

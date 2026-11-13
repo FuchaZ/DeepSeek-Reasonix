@@ -19,7 +19,6 @@ function draw(at?: string) {
       theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
       look={{} as never} onLook={() => {}} reloadThemes={() => {}}
       onClose={vi.fn()} onChanged={() => {}} onError={() => {}}
-      account={null} accountUnread="" reloadAccount={() => {}}
     />,
   );
 }

@@ -10,7 +10,6 @@ import { AutoArchive } from "./AutoArchive";
 import { SessionDirSettings } from "./SessionDirSettings";
 import { LegacySessionsSection } from "./LegacySessionsSection";
 import { BackupFile } from "./BackupFile";
-import { Backup } from "./Backup";
 
 interface Props {
   port: AgentPort;
@@ -20,13 +19,12 @@ interface Props {
   workspace: string;
   cwd?: string;
   busy: string;
-  signedIn: boolean;
   onIsolate: () => void;
   onChanged: () => void;
   onRecovered: () => void;
 }
 
-export function DataSettings({ port, homePort, localPort, hub, workspace, cwd, busy, signedIn, onIsolate, onChanged, onRecovered }: Props) {
+export function DataSettings({ port, homePort, localPort, hub, workspace, cwd, busy, onIsolate, onChanged, onRecovered }: Props) {
   return (
     <>
       <SectionCard title={t("data.memory_and_usage")} hint={t("data.what_the_agent_remembers_and")}>
@@ -46,11 +44,6 @@ export function DataSettings({ port, homePort, localPort, hub, workspace, cwd, b
       </SectionCard>
       <SectionCard title={t("data.backup")} hint={t("data.take_your_configuration_to_another")}>
       <Group id="backup-file" title={t("data.export_and_import_config")} hint={t("settings.config_in_one_file")}><BackupFile port={port} /></Group>
-      {signedIn && (
-      <Group id="backup" title={t("data.cloud_backup")} hint={t("settings.back_up_to_the_cloud")}>
-      <Backup port={port} />
-    </Group>
-      )}
       </SectionCard>
     </>
   );

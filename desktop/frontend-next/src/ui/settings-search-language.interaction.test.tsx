@@ -39,7 +39,6 @@ async function draw() {
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}}
     onClose={onClose} onChanged={() => {}} onError={() => {}}
-    account={null} accountUnread="" reloadAccount={() => {}}
   />);
   return { calls, onClose, find: () => screen.getByRole<HTMLInputElement>("textbox", { name: t("settings.search_settings") }) };
 }

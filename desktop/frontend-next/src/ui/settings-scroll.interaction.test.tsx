@@ -15,12 +15,12 @@ function draw(at: string, port = new MockPort()) {
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}}
     weight="" onWeight={() => {}} look={{}} onLook={() => {}}
     reloadThemes={() => {}} onClose={() => {}} onChanged={() => {}}
-    onError={() => {}} at={at} account={null} accountUnread="" reloadAccount={() => {}}
+    onError={() => {}} at={at}
   />);
 }
 
 it.each([
-  ["appearance", "账号与关于"],
+  ["appearance", "关于"],
   ["tools", "Agent 行为"],
 ])("starts the next category at the top after scrolling %s", async (from, to) => {
   draw(from);
@@ -137,7 +137,7 @@ it("cancels a pending landing when the user chooses another category", async () 
   draw("account:trace-export", port);
   await userEvent.click(screen.getByRole("tab", { name: /^数据/ }));
   await act(async () => { finish(saved); });
-  await userEvent.click(screen.getByRole("tab", { name: /^账号/ }));
+  await userEvent.click(screen.getByRole("tab", { name: /^关于/ }));
   const target = await waitFor(() => {
     const found = document.querySelector<HTMLElement>('[data-setting="trace-export"]');
     expect(found).toBeTruthy();

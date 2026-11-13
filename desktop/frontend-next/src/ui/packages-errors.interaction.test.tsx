@@ -38,7 +38,6 @@ it.each(["export", "toggle", "remove-reject", "remove-denied"])("shows the %s fa
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{} as never} onLook={() => {}} reloadThemes={() => {}}
     onClose={() => {}} onChanged={onChanged} onError={() => {}} at="ext:installed"
-    account={null} accountUnread="" reloadAccount={() => {}}
   />);
   await screen.findByText("notes-kit");
   const pane = within(row());

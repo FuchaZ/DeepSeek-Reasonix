@@ -14,7 +14,7 @@ function settings(remote: MockPort, local: MockPort, at = "memory") {
   return <Settings hub={new MockHub()} onError={() => {}} port={remote} networkPort={local}
     status={null} theme="" reloadThemes={() => {}} onTheme={() => {}} contrast="" onContrast={() => {}}
     weight="" onWeight={() => {}} look={{}} onLook={() => {}} onClose={() => {}} onChanged={() => {}}
-    at={at} account={null} accountUnread="" reloadAccount={() => {}} />;
+    at={at} />;
 }
 
 it("reads and forgets memory on this machine while a remote pane is active", async () => {

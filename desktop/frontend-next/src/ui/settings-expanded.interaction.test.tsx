@@ -13,7 +13,7 @@ function draw(at: string) {
   render(<Settings hub={new MockHub()} port={new MockPort()} status={null} at={at}
     theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
     look={{}} onLook={() => {}} reloadThemes={() => {}} onClose={vi.fn()} onChanged={() => {}} onError={() => {}}
-    account={null} accountUnread="" reloadAccount={() => {}} />);
+ />);
 }
 
 it("shows appearance controls together and keeps them mounted when a pill locates a region", async () => {

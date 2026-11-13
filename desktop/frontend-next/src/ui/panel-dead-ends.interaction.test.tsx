@@ -95,7 +95,7 @@ describe("a write the kernel refuses", () => {
         theme="light" onTheme={() => {}} contrast="" onContrast={() => {}} weight="" onWeight={() => {}}
         look={{} as never} onLook={() => {}} reloadThemes={() => {}}
         onClose={() => {}} onChanged={() => {}} onError={() => {}}
-        at="storage" account={null} accountUnread="" reloadAccount={() => {}}
+        at="storage"
       />,
     );
     await userEvent.click(await screen.findByRole("button", { name: "创建" }));
