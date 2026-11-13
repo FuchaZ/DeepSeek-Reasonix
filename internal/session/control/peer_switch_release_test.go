@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"reasonix/internal/base/testenv"
 	"reasonix/internal/contract/config"
 	"reasonix/internal/state/peermail"
 )
@@ -11,7 +12,7 @@ import (
 // setIncoming writes the user's answer for what another session may send.
 func setIncoming(t *testing.T, accepted string) {
 	t.Helper()
-	t.Setenv("REASONIX_HOME", t.TempDir())
+	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
 	cfg := config.LoadForEdit(config.UserConfigPath())
 	cfg.Peers.Enabled = true
 	cfg.Peers.Dispatch = true

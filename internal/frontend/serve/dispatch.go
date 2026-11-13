@@ -93,10 +93,9 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text, role
 	if !ok {
 		return control.DispatchResult{}, control.ErrDispatchNotLocal
 	}
-	// This session's own project opens a second session once the person has
-	// allowed dispatch_to_project: an "always allow" on the permission card is
-	// that yes, so there is no separate switch for the same intent. Until then the
-	// old rule stands - this session already lives there, so no window is opened.
+	// This session's own project opens a second session only once the person
+	// allowed dispatch_to_project: "always allow" on the card is that yes. Until
+	// then the old rule stands and no window is opened for the same folder.
 	if sameFolder(root, sender.WorkspaceRoot()) && !sender.DispatchIntoSelfAllowed() {
 		return control.DispatchResult{}, projectError(control.ErrDispatchSameProject, root)
 	}

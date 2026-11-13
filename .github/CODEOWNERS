@@ -19,6 +19,7 @@
 # Contracts and processes the Studio line runs on.
 /docs/DOCS_STANDARD.md                    @esengine @SivanCola
 /docs/STUDIO_*.md                         @esengine @SivanCola
+/docs/STUDIO_TWEAKS_HANDOFF.md            @Oliver-Rui @esengine
 /docs/SESSION_MEMORY_RETRIEVAL.md         @esengine @SivanCola
 /docs/*_CONTRACT.md                       @esengine @SivanCola
 /docs/TOOL_APPROVAL_MODES.md              @esengine @SivanCola

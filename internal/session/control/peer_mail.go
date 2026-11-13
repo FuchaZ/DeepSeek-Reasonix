@@ -310,11 +310,9 @@ func (c *Controller) noteUnreadFromPeer(path string) {
 }
 
 // releaseHeldPeerMessages approves what just arrived without showing the card,
-// as far as the user's own answer allows. peers.incoming is that answer: ask
-// holds everything, dispatch takes a paired session, always takes any. A project
-// the user released is taken too, whichever answer is set. Only the asking is
-// skipped: the message is the same follow-up an approval would queue, and what
-// it starts runs under this session's own approvals and sandbox.
+// as far as peers.incoming allows: ask holds everything, dispatch takes a paired
+// session, always takes any, and a released project is taken either way. Only
+// the asking is skipped; what it starts runs under this session's approvals.
 func (c *Controller) releaseHeldPeerMessages(ids []string) {
 	if len(ids) == 0 {
 		return

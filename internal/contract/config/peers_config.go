@@ -31,11 +31,9 @@ type PeersConfig struct {
 	// workspace without the approval card. A folder outside it still asks. Off
 	// unless the user turns it on; user file only.
 	OpenNested bool `toml:"open_nested"`
-	// Incoming is what happens to a message another of the user's sessions sends
-	// to this one: ask, take it from the sessions this one has a dispatch
-	// relationship with, or take it from any of them. Only the asking is skipped;
-	// what the message starts still runs under this session's own approvals and
-	// sandbox. User file only.
+	// Incoming is what happens to a message another of the user's sessions sends:
+	// ask, take one from a paired session, or take any. Only the asking is
+	// skipped; what it starts runs under this session's approvals. User file only.
 	Incoming string `toml:"incoming"`
 }
 

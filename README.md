@@ -4,6 +4,10 @@
 
 > [!WARNING]
 > **Reasonix is no longer maintained as of 2026-11-12.** The final release is v2.61.0; there will be no further releases, fixes or issue triage. The project is MIT-licensed and forks are welcome. See the [announcement](https://github.com/esengine/DeepSeek-Reasonix/issues/15109).
+>
+> This tree carries fork work on the `studio` (2.x) line: the community market and the
+> account are gone, the sidebar and the conversation rail are rebuilt, and sessions can
+> hand each other work under `peers.incoming`. Upstream stopped at v2.61.0.
 
 <p align="center">
   <strong>English</strong>
