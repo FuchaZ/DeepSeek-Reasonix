@@ -3,7 +3,11 @@
 </p>
 
 > [!NOTE]
-> **Reasonix Studio Tweaks** — a personal fork of [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) on the `studio` (2.x) line. Upstream stopped at v2.61.0; this fork continues from there with small, scoped changes to Reasonix Studio: UI layout, sessions that can talk to each other, and background help that carries a conversation forward.
+> **Reasonix Studio Tweaks** — a personal fork of [DeepSeek-Reasonix](https://github.com/esengine/DeepSeek-Reasonix) on the `studio` (2.x) line.
+>
+> Upstream stopped at v2.61.0; this fork continues from there with small, scoped changes to
+> Reasonix Studio: UI layout, sessions that can talk to each other, and background help
+> that carries a conversation forward.
 
 <p align="center">
   <strong>English</strong>

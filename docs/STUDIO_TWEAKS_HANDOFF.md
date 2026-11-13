@@ -1,5 +1,6 @@
 ---
 owner: @Oliver-Rui
+backup: @esengine
 status: active
 reviewed: 2026-11-13
 ---
@@ -45,17 +46,21 @@ All paths are under `desktop/frontend-next/src` unless noted.
 ### 最近 ordering
 
 - Ordering moved into the session filter menu, directly under 全部, as one row — not a toolbar
-  button and not a switch. It cycles newest → oldest → unsorted, and the arrow on the right
-  (↑ / ↓ / ⇅) always says which. A chosen scope is inked and ticked rather than painted as a
-  block, and the menu's rows are the height of the conversation rows that opened it.
+  button and not a switch.
+- It cycles newest → oldest → unsorted, and the arrow on the right (↑ / ↓ / ⇅) always says
+  which.
+- A chosen scope is inked and ticked rather than painted as a block, and the menu's rows are
+  the height of the conversation rows that opened it.
 
 ### Removed
 
-- 社区与贡献者 and 赞助 (QQ group, Discord, GitHub issues, contributor list, PayPal, WeChat and
-  Alipay QR codes) from 关于, with every dependency: `Community.tsx`, `Sponsor.tsx`, their tests,
-  `contributors.json`, the three images, `sponsor.css`, `en_community.ts`, `en_sponsor.ts`, eight
-  `community.*` / `sponsor.*` action entries, two settings anchors, and the sidebar's 社区 entry.
-  `communityLinks.ts` keeps only the maintainer, which the author line still shows.
+- 社区与贡献者 and 赞助 left 关于: the QQ group, Discord, GitHub issues, the contributor list,
+  and the PayPal, WeChat and Alipay QR codes.
+- Every dependency went with them: `Community.tsx`, `Sponsor.tsx`, their tests,
+  `contributors.json`, the three images, `sponsor.css`, `en_community.ts`, `en_sponsor.ts`,
+  eight `community.*` / `sponsor.*` action entries, two settings anchors, and the sidebar's
+  社区 entry.
+- `communityLinks.ts` keeps only the maintainer, which the author line still shows.
 - 抖音 (account id, copy button, QR code) — removed earlier in the same line of work.
 - `RecentSessions.tsx` (the 最近 view) and its tests: 最近 is an ordering now, not a page.
 - `Account.tsx`: after the sign-in card left the settings page, nothing in the product mounted
@@ -110,12 +115,18 @@ CI is already in the repository; this fork did not add it.
 **The branch matters.** `ci.yml` and `studio.yml` only run on `studio` (and `main-v2`), so work
 on any other branch is unchecked until it lands there.
 
-`release-studio.yml` expects credentials a fork does not inherit: the `studio-release`
-environment, Apple signing (`APPLE_CERT_P12`, `APPLE_CERT_PASSWORD`, `APPLE_API_KEY_P8`,
-`APPLE_API_KEY_ID`, `APPLE_API_ISSUER_ID`), minisign, R2, and — only when
-`vars.STUDIO_SIGNING_ENABLED == 'true'` — Certum. Without Apple secrets the macOS jobs cannot
-sign; without R2 the catalog is not mirrored. A candidate release can be published as a
-prerelease by using a pre-release version, which also keeps it off the GitHub latest slot.
+`release-studio.yml` expects credentials a fork does not inherit.
+
+| Credential | Needed for | Without it |
+| --- | --- | --- |
+| `studio-release` environment | The publish job's approval gate | The release cannot publish |
+| `APPLE_*` (five secrets) | Signing and notarizing macOS | macOS jobs cannot sign |
+| minisign key | Signing every artifact | The publish job stops |
+| R2 credentials | Mirroring and the Studio catalog | The release publishes, the catalog is not updated |
+| Certum | Windows Authenticode, only when `vars.STUDIO_SIGNING_ENABLED` is `true` | Windows ships unsigned |
+
+A candidate release can be published as a prerelease by using a pre-release version, which
+also keeps it off the GitHub latest slot.
 
 Note the version baseline: the branch's `release-notes/studio/` already carries `2.61.0.md`,
 while the highest `studio-v*` tag on the remote is `studio-v2.50.0`. Choose the first tag with
