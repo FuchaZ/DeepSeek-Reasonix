@@ -1,5 +1,8 @@
+import { useCallback, useRef, useState, type RefObject } from "react";
+import { createPortal } from "react-dom";
+import { useDismiss } from "./dismiss";
+import { beside, pinToViewport, useFollow } from "./place";
 import { StudioIcon } from "./StudioIcon";
-import { useState } from "react";
 import { t } from "../i18n";
 import type { CapabilityScope } from "../port/port";
 
@@ -24,21 +27,31 @@ export function ScopePill({
   scope: CapabilityScope; scopes: CapabilityScope[]; onPick: (root: string) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const wrap = useRef<HTMLSpanElement>(null);
+  const btn = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  useDismiss(open, wrap, () => setOpen(false), menu);
   return (
-    <span className="scopeanchor">
-      <button type="button" className="spill who" data-action="ext.scope" aria-expanded={open} onClick={() => setOpen(!open)}>
+    <span className="scopeanchor" ref={wrap}>
+      <button ref={btn} type="button" className="spill who" data-action="ext.scope" aria-expanded={open} onClick={() => setOpen(!open)}>
         {scope.label || scope.name}
         <i className="cv" aria-hidden><StudioIcon name="down" /></i>
       </button>
-      {open && (
+      {open && createPortal(
+        // Settings is a scroll box inside a sheet that clips, so a list left in
+        // its flow is cut at those edges however it is positioned inside them.
+        // Out of the flow, placing it is what keeps it on screen.
         <ScopePicker
+          anchor={btn}
+          box={menu}
           scopes={scopes}
           at={scope.root}
           onPick={(root) => {
             setOpen(false);
             onPick(root);
           }}
-        />
+        />,
+        document.body,
       )}
     </span>
   );
@@ -93,12 +106,17 @@ export function ScopeAway({ scope, onBack }: { scope: CapabilityScope; onBack: (
   );
 }
 
+// The list hangs from its pill rather than sitting in the page's flow, so the
+// gap between them is a placement input and no rule owns it.
+const GAP = 6;
+
 // With a folder or two the list is the whole answer. Past that, the projects
 // worth finding are the ones already carrying an exception — so that is the
 // filter, and search only appears when the list is long enough to need it.
 function ScopePicker({
-  scopes, at, onPick,
+  anchor, box, scopes, at, onPick,
 }: {
+  anchor: RefObject<HTMLButtonElement | null>; box: RefObject<HTMLDivElement | null>;
   scopes: CapabilityScope[]; at: string; onPick: (root: string) => void;
 }) {
   const [q, setQ] = useState("");
@@ -109,8 +127,17 @@ function ScopePicker({
     const needle = q.trim().toLowerCase();
     return !needle || (sc.label || sc.name).toLowerCase().includes(needle) || sc.root.toLowerCase().includes(needle);
   });
+  const place = useCallback(() => {
+    const el = box.current, from = anchor.current;
+    if (!el || !from) return;
+    const edge = from.getBoundingClientRect(), size = el.getBoundingClientRect();
+    pinToViewport(el, edge.left, beside(edge, size.height, innerHeight, "below", GAP));
+  }, [anchor, box]);
+  // The filter decides how tall the list is, which is the difference between
+  // fitting under the pill and having to open above it.
+  useFollow(true, place, shown.length, { anchor, container: box });
   return (
-    <div className="scope-pick" role="listbox">
+    <div className="scope-pick" role="listbox" ref={box}>
       {searchable && (
         <input
           className="q"
