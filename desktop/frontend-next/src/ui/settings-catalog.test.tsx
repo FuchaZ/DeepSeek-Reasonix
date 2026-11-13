@@ -148,7 +148,7 @@ describe("the settings catalogue", () => {
   // wording, the handler or the component: change the declaration and the row
   // changes, change anything else and it does not.
   it("reads what a change costs from the declaration and nowhere else", () => {
-    const now = renderToStaticMarkup(<Group id="market" title="X" />);
+    const now = renderToStaticMarkup(<Group id="plugins" title="X" />);
     const later = renderToStaticMarkup(<Group id="storage" title="X" />);
     expect(now).toContain("立即生效");
     expect(later).toContain("重启后生效");

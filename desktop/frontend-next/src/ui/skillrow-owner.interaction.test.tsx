@@ -269,7 +269,7 @@ it.each(["success", "failure"])("notifies Settings without an old error after le
   const onChanged = vi.fn();
   render(settings(port, onChanged));
   await userEvent.click(await screen.findByRole("switch", { name: "关闭 explore" }));
-  await userEvent.click(screen.getByRole("tab", { name: "发现" }));
+  await userEvent.click(screen.getByRole("tab", { name: /^常用/ }));
   expect(screen.queryByRole("switch", { name: "关闭 explore" })).toBeNull();
   const reads = skills.mock.calls.length;
   await act(async () => pending.settle(outcome));

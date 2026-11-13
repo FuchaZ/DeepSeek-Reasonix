@@ -14,7 +14,10 @@ beforeEach(async () => { await import("./Settings"); localStorage.setItem(STORAG
 
 afterEach(() => { cleanup(); vi.restoreAllMocks(); localStorage.clear(); sessionStorage.clear(); });
 
-it("keeps machine reads separate from active-pane account operations", async () => {
+// Nothing on the settings screen reads an account any more (the page named what
+// this machine runs, not who is signed in), so what is left to hold is the other
+// half: a machine read is answered by the machine, not by whichever pane is active.
+it("keeps machine reads on the machine rather than the active pane", async () => {
   const hub = new MockHub(), local = new MockPort(), remote = new MockPort();
   hub.runtimes = async () => [{ id: "remote", base: "/rt/remote", host: "gpu", root: "/remote", name: "Remote" }];
   hub.portFor = () => remote;
@@ -24,23 +27,11 @@ it("keeps machine reads separate from active-pane account operations", async () 
   const facts: MemoryCatalog = { memories: [{ name: "local-fact", title: "This machine fact", activation: "relevant" }], recallQuery: "" };
   vi.spyOn(local, "memories").mockResolvedValue(facts);
   const remoteMemories = vi.spyOn(remote, "memories");
-  const localAccount = vi.spyOn(local, "account");
-  const remoteAccount = vi.spyOn(remote, "account").mockResolvedValue({ signedIn: true, user: { handle: "remote-user", label: "Remote account", email: "remote@example.test" } });
-  const remoteLogout = vi.spyOn(remote, "accountLogout").mockResolvedValue();
-  const localLogout = vi.spyOn(local, "accountLogout");
   render(<App hub={hub} />);
   await userEvent.click(await screen.findByRole("button", { name: "设置" }));
   await userEvent.click(await screen.findByRole("tab", { name: /^数据/ }, { timeout: 10000 }));
   await screen.findAllByText("This machine fact");
   expect(remoteMemories).not.toHaveBeenCalled();
-  expect(localAccount).not.toHaveBeenCalled();
-  expect(remoteAccount).toHaveBeenCalled();
-  await userEvent.click(screen.getByRole("tab", { name: /账号/ }));
-  await screen.findAllByText("Remote account");
-  await userEvent.click(screen.getByRole("button", { name: "退出登录" }));
-  await userEvent.click(screen.getByRole("button", { name: /确认退出/ }));
-  expect(remoteLogout).toHaveBeenCalled();
-  expect(localLogout).not.toHaveBeenCalled();
 });
 
 

@@ -43,7 +43,7 @@ async function draw() {
   return { calls, onClose, find: () => screen.getByRole<HTMLInputElement>("textbox", { name: t("settings.search_settings") }) };
 }
 
-it.each(["market", "plugins", "mcp", "skills", "composition-picker"])(
+it.each(["plugins", "mcp", "skills", "composition-picker"])(
   "finds the unmounted %s block by its displayed English title and lands on it",
   async (anchor) => {
     language("en");
@@ -59,15 +59,9 @@ it.each(["market", "plugins", "mcp", "skills", "composition-picker"])(
     expect(hit?.querySelector(".what")?.textContent).toBe(t(entry.title));
     if (anchor !== "composition-picker") expect(block(anchor)).toBeNull();
     expect(calls).toEqual(reads);
-    if (anchor === "market") {
-      hit!.focus();
-      await userEvent.keyboard("{Enter}");
-    } else await userEvent.click(hit!);
+    await userEvent.click(hit!);
     await waitFor(() => expect(block(anchor)).not.toBeNull());
     expect(find().value).toBe("");
-    if (entry.section === "ext") {
-      expect(screen.getByRole("tab", { name: t(anchor === "market" ? "发现" : "ext.installed") }).getAttribute("aria-selected")).toBe("true");
-    }
   },
 );
 

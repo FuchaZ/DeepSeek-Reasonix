@@ -220,7 +220,6 @@ export const SETTINGS: SettingEntry[] = [
   { section: "remote", anchor: "phone-notify", within: "phone", title: "remote.phone_notifications", scope: "machine", apply: "immediate", keywords: ["推送", "提醒", "手机", "批准", "push", "notification", "phone"] },
   { section: "remote", anchor: "phone-device", within: "phone", title: "remote.this_phones_reminders", scope: "machine", apply: "immediate", keywords: ["推送", "提醒", "手机", "push", "notification"] },
   { section: "storage", anchor: "backup-file", title: "data.export_and_import_config", scope: "machine", apply: "immediate", keywords: ["备份", "导出", "导入", "换机", "迁移", "文件"] },
-  { section: "storage", anchor: "backup", title: "data.cloud_backup", scope: "account", apply: "immediate", keywords: ["备份", "恢复", "换机", "同步", "导出"] },
   { section: "versions", anchor: "versions", title: "common.version", scope: "machine", apply: "immediate", keywords: ["更新", "升级"] },
   { section: "common", anchor: "update-mode", title: "about.update_mode", scope: "machine", apply: "immediate", keywords: ["自动更新", "检查更新", "更新提醒", "后台", "update", "auto update", "notify", "自动下载", "download"] },
   { section: "versions", anchor: "logs", title: "about.logs_and_abnormal_exit_records", scope: "machine", apply: "none", keywords: ["日志", "崩溃", "闪退", "异常退出", "log", "logs", "crash", "路径"] },
