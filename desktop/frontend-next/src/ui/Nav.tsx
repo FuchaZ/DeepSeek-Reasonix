@@ -61,7 +61,7 @@ export function Nav({ at, onGo, onFiles, onFeedback, onNew, onSearch, feedbackUn
               className="navbtn"
               data-action={entry.action}
               aria-label={label}
-              aria-current={entry.section && entry.section === at ? "page" : undefined}
+              aria-current={entry.section && targetOf(entry.key, entry.section).section === at ? "page" : undefined}
               onClick={() => run(entry)}
             >
               {barIcon(entry)}
