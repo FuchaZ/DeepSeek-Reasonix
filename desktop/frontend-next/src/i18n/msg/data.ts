@@ -15,7 +15,6 @@ export const DATA: Messages = {
   "data.choose_a_session_json_file": { zh: "选择会话 JSON 文件", en: "Choose a session JSON file" },
   "data.choose_older_data_folder": { zh: "选择旧版数据目录…", en: "Choose older data folder…" },
   "data.choose_the_older_data_folder": { zh: "选择旧版的数据文件夹。扫描只会复制会话，不会移动或删除原文件；找不到原工作区的会话会归入当前工作区。", en: "Choose the older data folder. The scan only copies sessions and never moves or deletes the originals; sessions whose workspace no longer exists are placed in the current workspace." },
-  "data.cloud_backup": { zh: "云备份", en: "Cloud backup" },
   "data.collector_address": { zh: "收集器地址", en: "Collector address" },
   "data.commands_and_paths_may_not": { zh: "命令和路径在另一种系统上可能无法运行，这类项目默认不勾选。", en: "Commands and paths may not work on another system, so those items start unticked." },
   "data.commands_that_run_on_this": { zh: "会在本机运行的命令，恢复时逐项确认", en: "Commands that run on this machine; each one is confirmed on restore" },
