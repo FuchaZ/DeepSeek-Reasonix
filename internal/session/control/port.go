@@ -394,6 +394,9 @@ type Capabilities interface {
 // Status covers read-only run/usage/billing telemetry and task list state.
 type Status interface {
 	TurnInFlight() bool
+	// AuthoredTurns is how many turns the person started, which is not how many
+	// user-role messages the transcript holds.
+	AuthoredTurns() int
 	ContextSnapshot() (int, int)
 	ContextBreakdown() agent.ContextBreakdown
 	ContextMaintenanceSnapshot() agent.ContextMaintenanceSnapshot

@@ -678,6 +678,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
           onClearJobs={(ids) => setClearedJobs((was) => new Set([...was, ...ids]))}
           onOpenJob={jobsLive.open}
           usage={status?.sessionUsage} quote={status?.sessionCostQuote} tariff={status?.tariff} onTariffFlip={refreshStatus}
+          authoredTurns={status?.authoredTurns}
         />
         {reloadFailure && <ReloadNotice failure={reloadFailure} onReload={onReloadSession} />}
         {/* Below the box, under a ceiling of their own. Both arrive unbidden and

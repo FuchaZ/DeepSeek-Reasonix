@@ -21,7 +21,7 @@ import { MASK, type Wallet } from "./wallet";
 import type { SpeedSummary } from "./speed";
 
 /** The numbers about this turn, in one row under the composer. */
-export function MeterRail({ tps, trail, running, speed, metrics, ctx, mcp, compact, cost, turnCost = [], wallet, hideAmounts, tasks, jobs, onSettings, onCancelJob, onReadJob, onReadProcesses, onOpenRun, onStopCall, onClearJobs, onOpenJob, usage, quote, tariff, onTariffFlip }: {
+export function MeterRail({ tps, trail, running, speed, metrics, ctx, mcp, compact, cost, turnCost = [], wallet, hideAmounts, tasks, jobs, onSettings, onCancelJob, onReadJob, onReadProcesses, onOpenRun, onStopCall, onClearJobs, onOpenJob, usage, quote, tariff, onTariffFlip, authoredTurns }: {
   tps: number;
   trail: number[];
   running: boolean;
@@ -50,6 +50,9 @@ export function MeterRail({ tps, trail, running, speed, metrics, ctx, mcp, compa
   quote?: CostQuote;
   tariff?: Tariff;
   onTariffFlip?: () => void;
+  // How many turns the person opened. Absent until the status arrives, which
+  // draws no count: a zero there would report a session nobody had started.
+  authoredTurns?: number;
 }) {
   const speedDetailId = useId();
   const [meterOpen, setMeterOpen] = useState(false);
@@ -113,6 +116,7 @@ export function MeterRail({ tps, trail, running, speed, metrics, ctx, mcp, compa
         </div>
       )}
       {tariff && <TariffChip tariff={tariff} onFlip={onTariffFlip ?? (() => {})} />}
+      {authoredTurns !== undefined && <span className="studio-meter-static studio-meter-turns"><span>{t("composer.turn_count")}</span><b>{authoredTurns}</b></span>}
       {cost.length > 0 && <span className="studio-meter-cost"><StudioIcon name="coin" /><span>{t("common.this_session_2")}</span>{hideAmounts ? <b>{MASK}</b> : cost.map((m) => <b key={m.currency}>{money(m.amount, m.currency)}</b>)}</span>}
       {cost.length > 0 && turnCost.some((m) => m.amount > 0) && <span className="studio-meter-cost"><span>{t("composer.this_turn")}</span>{hideAmounts ? <b>{MASK}</b> : turnCost.map((m) => <b key={m.currency}>{money(m.amount, m.currency)}</b>)}</span>}
       <button className="studio-meter-mask" type="button" data-action="metrics.hide-amounts" aria-pressed={hideAmounts} aria-label={hideAmounts ? t("composer.show_amounts") : t("composer.hide_amounts")} title={hideAmounts ? t("composer.show_amounts") : t("composer.hide_amounts")} onClick={() => setHidesAmounts(!hideAmounts)}><StudioIcon name={hideAmounts ? "eyeoff" : "eye"} /></button>

@@ -357,7 +357,7 @@ export class MockPort extends MockWorkspace implements AgentPort {
   async markSessionViewed() {}
 
   async status(): Promise<SessionStatus> {
-    return { ...this.state, agentCompositionLocked: this.compositions.compositionStarted, ...(location.search.includes("tariff") && { tariff: { peak: !location.search.includes("tariff=off"), changesAt: new Date(Date.now() + 130 * 60_000).toISOString() } }), ...(location.search.includes("jobs") && benchJobs()) };
+    return { ...this.state, agentCompositionLocked: this.compositions.compositionStarted, authoredTurns: this.session?.turns ?? 0, ...(location.search.includes("tariff") && { tariff: { peak: !location.search.includes("tariff=off"), changesAt: new Date(Date.now() + 130 * 60_000).toISOString() } }), ...(location.search.includes("jobs") && benchJobs()) };
   }
 
   async balance(): Promise<WalletReading | null> {

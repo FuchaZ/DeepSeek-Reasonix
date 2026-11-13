@@ -294,6 +294,7 @@ export const COMPOSER: Messages = {
   "composer.trust_this_folder": { zh: "是否信任此文件夹", en: "Trust this folder" },
   "composer.trust_this_folder_2": { zh: "是否信任此文件夹？", en: "Trust this folder?" },
   "composer.try_again": { zh: "再来一次", en: "Try again" },
+  "composer.turn_count": { zh: "对话轮次", en: "Turns" },
   "composer.uncertain": { zh: "状态不明", en: "uncertain" },
   "composer.used_by_another_worktree": { zh: "其他 worktree 占用", en: "Used by another worktree" },
   "composer.verification_timed_out_availability_is": { zh: "验证超时，尚未确认", en: "Verification timed out; availability is still unknown" },

@@ -290,6 +290,10 @@ export interface SessionStatus {
   window: number;
   cacheHit: number;
   cacheMiss: number;
+  // Turns the person started, counted by the kernel; absent from a kernel that
+  // predates it and from a session whose history has not been read yet, and
+  // the rail draws no count rather than a zero for either.
+  authoredTurns?: number;
   sessionCostQuote?: import("./wire").CostQuote;
   sessionUsage?: SessionUsage;
   jobs?: JobEntry[];

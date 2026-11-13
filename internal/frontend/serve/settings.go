@@ -216,6 +216,9 @@ func (s *Server) status(w http.ResponseWriter, r *http.Request) {
 		"window":           window,
 		"cacheHit":         hit,
 		"cacheMiss":        miss,
+		// Cumulative for the session, like the cost beside it — and counted by
+		// the kernel so a reload reads the same number the live window showed.
+		"authoredTurns": s.ctl().AuthoredTurns(),
 	}
 	if binding := compositionControllerView(s.ctl()); binding != nil {
 		sess["agentComposition"] = binding
