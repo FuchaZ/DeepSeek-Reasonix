@@ -3091,6 +3091,7 @@
 
   .rules .fallback { display: flex; align-items: center; gap: 12px; margin-top: 18px }
   .rules .fallback .k { flex: none; font: var(--w-reg) var(--fs-meta) var(--mono); color: var(--faint) }
+  .rules .fallback > .seg { margin-left: auto }
 
   .seg .ver { margin-left: 5px; font: var(--w-reg) var(--fs-micro) var(--mono); font-style: normal; color: var(--faint) }
   .seg button[aria-checked="true"] .ver { color: var(--faint) }
