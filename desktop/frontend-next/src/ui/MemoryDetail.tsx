@@ -40,11 +40,11 @@ export function MemoryDetail({ m, edit, setEdit, busy, galaxies, onSave, onConfi
 }) {
   if (edit?.name === m.name) {
     return (
-      <div className="memdetail" data-target={m.name}>
+      <div className="memdetail" data-target={m.name} data-editing>
         <div className="memedit">
           <label>{t("memory.titling")}<input value={edit.title} onChange={(e) => setEdit({ ...edit, title: e.target.value })} /></label>
           <label>{t("memory.one_line_summary")}<input value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} /></label>
-          <label>{t("common.body_text")}<textarea rows={8} value={edit.body} onChange={(e) => setEdit({ ...edit, body: e.target.value })} /></label>
+          <label className="body-edit">{t("common.body_text")}<textarea rows={8} value={edit.body} onChange={(e) => setEdit({ ...edit, body: e.target.value })} /></label>
           <div className="pair">
             <label>{t("common.type")}
               <select value={edit.type} onChange={(e) => setEdit({ ...edit, type: e.target.value })}>

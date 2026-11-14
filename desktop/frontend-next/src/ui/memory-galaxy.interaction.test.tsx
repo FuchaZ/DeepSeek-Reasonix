@@ -81,6 +81,19 @@ it("confirms or archives a new fact straight from the list", async () => {
   expect(forget).not.toHaveBeenCalled();
 });
 
+// The new view drops the detail column to give the review queue the full row.
+// An opened fact still needs somewhere to land: without the third column it
+// wrapped under the rail, one character per line.
+it("keeps an opened fact beside the list in the new view", async () => {
+  fixture();
+  await waitFor(() => expect(listed()).toHaveLength(4));
+  await userEvent.click(screen.getByRole("button", { name: /^每天最多发一个版本/ }));
+  await userEvent.click(nav("新的"));
+  const grid = document.querySelector<HTMLElement>(".memgrid")!;
+  expect(grid.hasAttribute("data-detail"), "the grid must know the detail column is used").toBe(true);
+  expect(document.querySelector<HTMLElement>(".memdetail")!.dataset.target).toBe("one-release");
+});
+
 it("moves a fact to another galaxy, importance and type through the editor", async () => {
   const { save } = fixture();
   await waitFor(() => expect(listed()).toHaveLength(4));

@@ -193,7 +193,7 @@ function MemoryPanel({ port }: { port: AgentPort }) {
           {usedCount > 0 ? t("memory.n_of_them_used", { n: usedCount }) : t("memory.none_of_them_used")}
         </p>
       )}
-      <div className="memgrid">
+      <div className="memgrid" data-detail={selected ? "" : undefined}>
         <nav className="memrail" aria-label={t("memory.memory_categories")}>
           {railItem({ kind: "all" }, <Icon name="all" />, t("common.all"))}
           {railItem({ kind: "new" }, <Icon name="new" />, t("memory.new"))}
