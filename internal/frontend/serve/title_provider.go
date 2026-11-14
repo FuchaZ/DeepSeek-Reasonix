@@ -15,7 +15,11 @@ type titleProviderState struct {
 	prov  provider.Provider
 	price *provider.Pricing
 	ref   string
-	sink  event.Sink
+	// declared reports a title_model someone chose. The chat-model fallback
+	// keeps a manual rename working; naming sessions unprompted spends a model
+	// nobody picked, which the settings page calls "do not use".
+	declared bool
+	sink     event.Sink
 	// quote prices a title call at emit time. Titles record into their own
 	// recorder instead of the assembled sink, so no CostQuoteSink sits in front
 	// of that recorder to fill the quote in; see tryRequestTitle.
@@ -34,6 +38,7 @@ func (s *Server) initTitleProvider() error {
 		return err
 	}
 	ref := strings.TrimSpace(cfg.Agent.TitleModel)
+	declared := ref != ""
 	if ref == "" {
 		if start, ok := cfg.ResolveStartupChatModel(); ok {
 			ref = start.Ref
@@ -55,8 +60,9 @@ func (s *Server) initTitleProvider() error {
 		return err
 	}
 	model := titleProviderState{prov: prov, price: entry.Price, ref: entry.Name + "/" + entry.Model,
-		sink:  stats.NewRecorder(event.Discard, config.StatsDir(), "serve"),
-		quote: boot.QuoteContextFor(cfg)}
+		declared: declared,
+		sink:     stats.NewRecorder(event.Discard, config.StatsDir(), "serve"),
+		quote:    boot.QuoteContextFor(cfg)}
 	s.mu.Lock()
 	s.titleModel = model
 	s.mu.Unlock()

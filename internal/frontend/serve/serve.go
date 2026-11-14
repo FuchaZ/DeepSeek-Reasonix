@@ -124,6 +124,7 @@ func New(ctrl control.SessionAPI, bc *Broadcaster, serveCfg config.ServeConfig) 
 	}
 	s.nameWorkspaceHolder(ctrl)
 	s.attachWireLog()
+	s.watchFirstTurn()
 	if concrete, ok := ctrl.(*control.Controller); ok {
 		s.bindCompositionSelector(concrete)
 	}
