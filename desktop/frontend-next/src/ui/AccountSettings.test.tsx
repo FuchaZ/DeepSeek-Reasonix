@@ -13,10 +13,12 @@ function draw() {
   render(<AccountSettings port={port} homePort={port} />);
 }
 
-it("is version and diagnostics, and about: one row per setting", () => {
+it("is version and diagnostics, and about: one row per setting", async () => {
   draw();
   expect([...document.querySelectorAll(".prefs-card > header h3")].map((h) => h.textContent)).toEqual(["版本与诊断", "关于"]);
+  // Update mode is a release behaviour, so it sits with the version it governs.
   for (const id of ["versions", "logs"]) expect(document.querySelector(`[data-setting="${id}"]`), id).toBeTruthy();
+  await waitFor(() => expect(document.querySelector('[data-setting="update-mode"]')).toBeTruthy());
   // The community card and the sponsorship block are gone; the page is about
   // the app and who maintains it, not about where to send money or chat.
   for (const id of ["community", "sponsor"]) expect(document.querySelector(`[data-setting="${id}"]`), id).toBeNull();

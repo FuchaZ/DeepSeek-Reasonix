@@ -15,6 +15,7 @@ import { SectionCard } from "./SectionCard";
 import { SessionRef } from "./SessionRef";
 import { SubagentClaims } from "./SubagentClaims";
 import { TurnNarrationSetting } from "./TurnNarrationSetting";
+import { WriteLease } from "./WriteLease";
 
 interface Props {
   port: AgentPort;
@@ -67,6 +68,9 @@ export function AgentSettings({ port, hub, persona, onPersona, onChanged }: Prop
       <SectionCard title={t("settings.collaboration")}>
         <SessionRef port={port} />
         <SubagentClaims port={port} onChanged={onChanged} />
+        <Group id="write-lease" title={t("session.several_sessions_writing_one_project")} hint={t("safety.when_two_sessions_edit_one")}>
+          <WriteLease port={port} />
+        </Group>
         <PeersSection port={port} hub={hub} />
       </SectionCard>
       <SectionCard title={t("settings.automation")}>

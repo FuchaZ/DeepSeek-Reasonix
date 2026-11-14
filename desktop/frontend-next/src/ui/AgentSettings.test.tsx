@@ -21,9 +21,12 @@ function draw() {
 it("is four cards of single rows, plan mode and the display switches living elsewhere", async () => {
   draw();
   expect([...document.querySelectorAll(".prefs-card > header h3")].map((h) => h.textContent)).toEqual(["人设与预设", "计划与提问", "协作", "自动化"]);
-  for (const id of ["persona", "agent-presets", "plan-approval", "ask-timeout", "turn-narration", "progress-watch", "session-ref", "subagent-claims", "peers", "hooks", "scheduled-runs"]) {
+  for (const id of ["persona", "agent-presets", "plan-approval", "ask-timeout", "turn-narration", "progress-watch", "session-ref", "subagent-claims", "write-lease", "peers", "hooks", "scheduled-runs"]) {
     await waitFor(() => expect(document.querySelector(`[data-setting="${id}"]`), id).toBeTruthy());
   }
+  // The lease answers "who writes at once", so it sits beside the sub-agent's
+  // write scope rather than with the sandbox that bounds where writing goes.
+  expect(document.querySelector('[data-setting="write-lease"]')?.closest(".prefs-card")?.querySelector("h3")?.textContent).toBe("协作");
   for (const id of ["plan-mode", "changed-files", "fold-work", "feedback-level-notices"]) expect(document.querySelector(`[data-setting="${id}"]`), id).toBeNull();
 });
 

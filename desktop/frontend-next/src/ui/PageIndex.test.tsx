@@ -41,6 +41,15 @@ describe("which settings a page's index lists", () => {
     expect(shown.map((e) => e.anchor)).toEqual(entries("session").map((e) => e.anchor));
   });
 
+  // The index reads the page: four cards in one order and a row of chips in
+  // another made the reader hunt for a block the chips had already passed.
+  it("follows the order the page draws its blocks in", () => {
+    expect(pageIndexOf(SETTINGS, "session").map((e) => e.anchor)).toEqual([
+      "agent-presets", "plan-approval", "ask-timeout", "turn-narration", "progress-watch",
+      "session-ref", "subagent-claims", "write-lease", "peers", "hooks", "scheduled-runs",
+    ]);
+  });
+
   it("leaves no setting off every page: each is listed, or sits inside one that is", () => {
     const homes = new Set(NAV.flatMap(([, items]) => items.map(([id]) => id as string)));
     const listed = new Set(SETTINGS.filter((e) => !e.hidden && !e.within && homes.has(pageHome(e.section))).map((e) => e.anchor));

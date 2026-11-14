@@ -2,6 +2,7 @@ import { t } from "../i18n";
 import { EscStopSetting } from "./EscStopSetting";
 import { ComposerHintSection } from "./ComposerHintSection";
 import { GlobalShortcutSection } from "./GlobalShortcutSection";
+import { GraphicsSection } from "./GraphicsSection";
 import { KeysSheet } from "./KeysSheet";
 import { LiveGraceSection } from "./LiveGraceSection";
 import { LiveStreamBudgetSection } from "./LiveStreamBudgetSection";
@@ -37,6 +38,7 @@ export function OpsSettings() {
         <OpenSessionLimitSection />
         <LiveStreamBudgetSection />
         <PageSleepSetting />
+        <GraphicsSection />
       </SectionCard>
     </>
   );

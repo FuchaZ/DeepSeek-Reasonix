@@ -11,7 +11,6 @@ import { SegChoice, SettingRow } from "./SettingRow";
 import { Shell } from "./Shell";
 import { ToolList } from "./ToolList";
 import { WebAccess } from "./WebAccess";
-import { WriteLease } from "./WriteLease";
 
 interface Props {
   port: AgentPort;
@@ -42,9 +41,6 @@ export function SafetySettings({ port, mode, busy, onMode, onChanged }: Props) {
         </Group>
         <Group id="shell" title={t("common.which_program_runs_commands")} hint={t("safety.which_program_runs_a_command")}>
           <Shell port={port} onChanged={onChanged} />
-        </Group>
-        <Group id="write-lease" title={t("session.several_sessions_writing_one_project")} hint={t("safety.when_two_sessions_edit_one")}>
-          <WriteLease port={port} />
         </Group>
       </SectionCard>
       <SectionCard title={t("safety.web")}>

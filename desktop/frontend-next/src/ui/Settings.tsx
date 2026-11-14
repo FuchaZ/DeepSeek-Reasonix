@@ -122,7 +122,6 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
   const applyingChanged = useCallback((applying: boolean) => {
     setUpdatingPkg((p) => p.connection === updatingPkg.connection ? { ...p, applying } : p);
   }, [updatingPkg.connection]);
-  const [hookCount, setHookCount] = useState(0);
   const [netMode, setNetMode] = useState("");
   const [memCount, setMemCount] = useState(0);
   const [ruleCount, setRuleCount] = useState(0);
@@ -142,7 +141,6 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
       setLive(c.live !== false);
     }).catch((e) => { if (current()) { setMcp([]); setExtErrors((errors) => ({ ...errors, mcp: reason(e) })); } });
     const packageRead = port.plugins().then((c) => { if (current()) setPackages(c); }).catch((e) => { if (current()) { setPackages([]); setExtErrors((errors) => ({ ...errors, packages: reason(e) })); } });
-    port.hooks().then((c) => { if (current()) setHookCount(c.hooks.length); }).catch(() => { if (current()) setHookCount(0); });
     homePort.network().then((n) => { if (current()) setNetMode(t(NET_MODE[n.mode] ?? n.mode)); }).catch(() => { if (current()) setNetMode(""); });
     localPort.memories().then((c) => { if (current()) setMemCount(c.memories.length); }).catch(() => { if (current()) setMemCount(0); });
     port.permissions().then((p) => { if (current()) setRuleCount(p.deny.length + p.ask.length + p.allow.length); }).catch(() => { if (current()) setRuleCount(0); });
@@ -285,7 +283,6 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
     providers: models.length ? t("settings.n_services", { n: groupVendors(models).length }) : "",
     tools: ruleCount ? `${approval} · ${ruleCount}` : approval,
     peers: "",
-    hooks: hookCount ? t("common.n_2", { n: hookCount }) : t("common.off"),
     ext: broken ? t("settings.n_with_problems", { n: broken }) : packages.length ? t("settings.n_packages", { n: packages.length }) : `${looseMcp.length + looseOn}`,
     network: netMode,
     remote: remoteTally,
@@ -557,7 +554,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
               onIsolate={() => run("isolate", () => port.isolateWorkspace())} onChanged={onChanged} onRecovered={() => { onChanged(); onSessionsRecovered?.(); }} />
           )}
 
-          {at === "common" && <CommonSettings port={port} homePort={homePort} theme={theme} onTheme={onTheme} look={look} onLook={onLook} />}
+          {at === "common" && <CommonSettings port={port} theme={theme} onTheme={onTheme} look={look} onLook={onLook} />}
 
           {at === "appearance" && (
             <Appearance port={homePort} theme={theme} onTheme={onTheme} contrast={contrast} onContrast={onContrast} weight={weight} onWeight={onWeight} reloadThemes={reloadThemes} look={look} onLook={onLook} />
