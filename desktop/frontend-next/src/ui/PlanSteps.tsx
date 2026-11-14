@@ -1,6 +1,5 @@
 import { t } from "../i18n";
 import { currentStep, stepDone, stepLabel, type PlanStep } from "../state/session";
-import { RMark } from "./RMark";
 import { StudioIcon } from "./StudioIcon";
 
 // Keyed by text, not index: todo_write rewrites the whole list every call, and
@@ -20,9 +19,9 @@ export const stepIndent = (s: PlanStep) => (s.level ? Math.min(s.level, 4) * 12 
 
 type Mark = "done" | "now" | "todo";
 
-/** How the list is moving: a proposal has not started, so every row is numbered
- *  whatever status the seed gives it; a step in hand turns while the run moves,
- *  is ringed while it waits on a person, and is only emphasised otherwise. */
+/** A proposal has not started, so every row is numbered whatever status the seed
+ *  gives it. A started row keeps its ordinal too — the step in hand is marked by
+ *  ink, so the badge's "step n of m" always names a row a person can count to. */
 export type StepsState = "proposed" | "moving" | "waiting" | "still";
 
 export function PlanSteps({ steps, state }: { steps: PlanStep[]; state: StepsState }) {
@@ -37,8 +36,7 @@ export function PlanSteps({ steps, state }: { steps: PlanStep[]; state: StepsSta
         return (
           <li key={id[i]} className="plan-step" data-state={mark} style={{ marginInlineStart: stepIndent(st) }}>
             <span className="plan-step-mark" aria-label={mark === "done" ? t("plan.step.done") : mark === "now" ? t("plan.step.now") : t("plan.step.todo")}>
-              {mark === "done" ? <StudioIcon name="check" /> : mark === "now" && state === "moving" ? <RMark className="plan-spin" />
-                : mark === "now" && state === "waiting" ? null : i + 1}
+              {mark === "done" ? <StudioIcon name="check" /> : i + 1}
             </span>
             <span className="plan-step-text">{proposed ? st.text : stepLabel(st)}</span>
           </li>

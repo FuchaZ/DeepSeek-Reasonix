@@ -59,7 +59,10 @@ describe("the plan card", () => {
     expect(badge()).toBe("第 2 / 3 步");
     expect(card().querySelector(".plan-card-sub")?.textContent).toBe("正在做：改成按 GBK 解码");
     expect(marks()).toEqual(["done", "now", "todo"]);
-    expect(card().querySelector(".plan-step[data-state=now] .plan-spin")).not.toBeNull();
+    // The badge names step 2, so row 2 keeps its ordinal: the step in hand is
+    // marked by ink, never by replacing the number a person counts by.
+    expect(card().querySelector(".plan-step[data-state=now] .plan-step-mark")?.textContent).toBe("2");
+    expect(card().querySelector(".plan-step .plan-spin")).toBeNull();
     expect(card().querySelector(".plan-card-foot")).toBeNull();
   });
 
@@ -68,6 +71,7 @@ describe("the plan card", () => {
     expect(card().getAttribute("data-phase")).toBe("waiting");
     expect(badge()).toBe("等你定");
     expect(card().querySelector(".plan-card-sub")?.textContent).toBe("停在第 2 步：改成按 GBK 解码");
+    expect(card().querySelector(".plan-step[data-state=now] .plan-step-mark")?.textContent).toBe("2");
     expect(card().querySelector(".plan-spin")).toBeNull();
   });
 
