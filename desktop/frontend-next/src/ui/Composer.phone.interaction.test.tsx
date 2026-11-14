@@ -68,8 +68,7 @@ describe("the stop button", () => {
     const box = draw(true);
     const stop = screen.getByRole("button", { name: "停下" });
     expect(stop.getAttribute("data-action")).toBe("session.stop");
-    expect(stop.querySelectorAll("svg")).toHaveLength(1);
-    expect(stop.querySelector(".lucide-square")).not.toBeNull();
+    expect(stop.querySelectorAll(".stop-core")).toHaveLength(1);
     expect(box.querySelector('.btn.send .lucide-arrow-up')).not.toBeNull();
   });
 });

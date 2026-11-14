@@ -92,10 +92,56 @@
 .compose .btn.send:disabled { background: var(--overlay); color: var(--ghost); filter: none; opacity: 1; }
 .compose .btn.send:focus-visible, .compose .btn.stop:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; box-shadow: none; }
 .compose .btn.send[data-running]:not(:disabled) { width: auto; display: inline-flex; gap: 5px; padding: 0 12px 0 10px; border-radius: var(--r-pill); background: var(--accent); color: var(--accent-fg); font: var(--w-med) var(--fs-ui)/1 var(--ui); }
-.compose .btn.stop, .compose .btn.stop[data-primary] { border: 0; background: color-mix(in srgb, var(--err) 12%, transparent); color: var(--err-ink); }
-.compose .btn.stop:hover:not(:disabled) { background: color-mix(in srgb, var(--err) 20%, transparent); color: var(--err-ink); }
+.compose .btn.stop, .compose .btn.stop[data-primary] {
+  --stop-size: 32px;
+  border: 0; background: transparent; color: var(--err-ink);
+}
+.compose .btn.stop:hover:not(:disabled) { background: transparent; filter: brightness(1.12); }
+.compose .btn.stop:disabled { opacity: .55; filter: none; }
 .compose .btn :is(.ic, .ic > svg) { width: 18px; height: 18px; }
 .compose .btn.send .ic > svg { stroke-width: 2; }
+
+/* The stop mark is one drawing at two scales, so its icon box is the button
+   itself rather than the shared 18px glyph slot. Proportions come from the
+   reference drawing but the wall and the core are both eased back: at 32px a
+   6.9 wall and a 34.66 core read as loud beside the reply text, so the wall
+   thins to 4.6 and the core to 32, and the band's two edges fade over the
+   last pixel to keep the curve smooth without a retina display. */
+.compose .btn.stop .ic {
+  --stop-ring: calc(var(--stop-size, 32px) * .046);
+  --stop-ink: #B5726A;
+  --stop-ink-lo: color-mix(in oklab, #B5726A 76%, #6E3F3A);
+  --stop-ink-hi: color-mix(in oklab, #B5726A 76%, #DDB9B1);
+  position: relative;
+  width: var(--stop-size, 32px); height: var(--stop-size, 32px);
+  display: grid; place-items: center;
+  border: 0; background: none;
+}
+.compose .btn.stop .ic::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 205deg,
+    var(--stop-ink-hi), var(--stop-ink), var(--stop-ink) 45%,
+    var(--stop-ink-lo), var(--stop-ink) 75%, var(--stop-ink-hi));
+  -webkit-mask: radial-gradient(closest-side,
+    #0000 calc(100% - var(--stop-ring) - .35px),
+    #000 calc(100% - var(--stop-ring) + .1px),
+    #000 calc(100% - .1px),
+    #0000 calc(100% + .3px));
+  mask: radial-gradient(closest-side,
+    #0000 calc(100% - var(--stop-ring) - .35px),
+    #000 calc(100% - var(--stop-ring) + .1px),
+    #000 calc(100% - .1px),
+    #0000 calc(100% + .3px));
+}
+.compose .btn.stop .ic > .stop-core {
+  position: relative;
+  display: block;
+  width: calc(var(--stop-size, 32px) * .32);
+  height: calc(var(--stop-size, 32px) * .32);
+  border-radius: calc(var(--stop-size, 32px) * .32 * .16);
+  background: linear-gradient(145deg, var(--stop-ink), var(--stop-ink) 60%, var(--stop-ink-lo));
+  box-shadow: 0 0 .5px currentColor;
+}
 
 .studio-meterrail { left: 0; right: 0; padding: 0 2px; gap: 0; color: var(--faint); font: var(--w-reg) var(--fs-micro)/1 var(--ui); }
 .studio-meterrail b { color: var(--muted); font-weight: var(--w-med); }

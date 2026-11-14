@@ -1611,8 +1611,6 @@
     stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round;
   }
   .btn.stop { display: inline-flex; align-items: center; gap: 6px }
-  .btn.stop .ic { display: grid; width: 13px; height: 13px; flex: none }
-  .btn.stop .ic > svg { fill: currentColor; stroke: none }
   .btn.stop:hover { border-color: var(--err); color: var(--err-ink) }
 
   .pill {
