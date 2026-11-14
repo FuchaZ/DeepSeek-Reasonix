@@ -6,12 +6,15 @@ import { openFiles } from "./files-entry.mjs";
 const base = new URL(process.env.PERF_URL ?? "http://localhost:4399/perf.html");
 const browser = await chromium.launch();
 const measure = (buttons) => buttons.map((button) => {
-  const icon = button.querySelector("svg");
+  // A drawn mark carries no svg: the stop control paints its ring and core with
+  // CSS, so the element that has to be legible and centred is that drawing, not
+  // a glyph inside it.
+  const icon = button.querySelector("svg") ?? button.querySelector(".stop-core");
   if (!icon) return { missing: true };
   const box = button.getBoundingClientRect();
   const svg = icon.getBoundingClientRect();
-  const glyph = icon.getBBox();
-  const unit = svg.width / icon.viewBox.baseVal.width;
+  const glyph = icon.getBBox ? icon.getBBox() : { width: svg.width, height: svg.height };
+  const unit = icon.viewBox?.baseVal?.width ? svg.width / icon.viewBox.baseVal.width : 1;
   return {
     missing: false,
     glyphWidth: glyph.width * unit,
@@ -19,7 +22,7 @@ const measure = (buttons) => buttons.map((button) => {
     offsetX: Math.abs(svg.x + svg.width / 2 - box.x - box.width / 2),
     offsetY: Math.abs(svg.y + svg.height / 2 - box.y - box.height / 2),
     fits: svg.left >= box.left && svg.right <= box.right && svg.top >= box.top && svg.bottom <= box.bottom,
-    accessible: !!button.getAttribute("aria-label") && icon.getAttribute("aria-hidden") === "true",
+    accessible: !!button.getAttribute("aria-label") && (icon.getAttribute("aria-hidden") === "true" || !!icon.closest('[aria-hidden="true"]')),
   };
 });
 const check = (sizes, label, centered = true) => {
