@@ -219,8 +219,8 @@ The second release of this line. Four commits, all frontend (`desktop/frontend-n
 
 | Commit | Change |
 | --- | --- |
-| `1e4451d` | The session tree carries two explicit groups — 项目 over the remembered projects, 任务 over the non-remembered folder(s). The partition is a pure helper (`workspaceGroups.ts`); a list, not a scalar, because `roots()` can list several unremembered folders. |
-| `75b11b9` | 新建会话 opens a 选择项目 card (search, local + remote projects, 创建项目, 不在项目中工作). The escape row sends **no root**, and `Hub.resolveRoot` falls back to the kernel's auto workspace (`<state>/workspaces/auto`) — the state-home path is never computed in the frontend. Per-project 新建 bypasses. |
+| `1e4451d` | **Not carried in this tree.** Two explicit groups in the session tree (项目 / 任务). |
+| `75b11b9` | **Not carried in this tree.** The new-session 选择项目 card. |
 | `d5436da` | Three layout fixes, each live-measured first: the settings windowbar's buttons opt out of the drag region (最小化/最大化/关闭 were dead while 设置 was open); the scope pill's chevron opts back to `inline-block` against the deliberate global `.studio-icon { display: block }`; scope dropdown rows declare their grid positions so an exception chip cannot auto-place into column one. |
 | `17154c7` | `data.cloud_backup` — a key nothing had referenced since the feature left in 2.62.0's work. |
 
