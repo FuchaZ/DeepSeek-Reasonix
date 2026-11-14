@@ -4272,34 +4272,6 @@
   .pickact button[data-go]:hover:not(:disabled) { background: color-mix(in srgb, var(--accent) 12%, transparent) }
   .pickact button:disabled { opacity: .38; cursor: default }
 
-  /* The new-session picker: a row names the project and the folder it opens
-     (mono, like the scope picker's path), and the no-project escape holds the
-     card's bottom edge so it never scrolls away with the list. */
-  .newsession .picklist { max-height: 45vh }
-  .newsession .pickq {
-    margin-top: 12px; padding: 6px 9px; min-width: 0;
-    border: 1px solid var(--border); border-radius: var(--r-xs);
-    background: var(--surface); color: var(--text); font: var(--w-reg) var(--fs-ui) var(--ui);
-  }
-  .newsession .pickq:focus-visible { outline: 2px solid var(--focus); outline-offset: -1px }
-  .newsession .pickrow .who { display: flex; flex-direction: column; align-items: flex-start; min-width: 0 }
-  .newsession .pickrow .who b {
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font: var(--w-med) var(--fs-ui) var(--ui); color: var(--text);
-  }
-  .newsession .pickrow .who small {
-    max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-    font: var(--w-reg) var(--fs-micro) var(--mono); color: var(--faint);
-  }
-  .newsession .pickrow > small { flex: none; color: var(--faint) }
-  .newsession .pickact { justify-content: space-between; align-items: center }
-  .newsession .pickact .escape { display: flex; align-items: center; gap: 6px; border-style: dashed }
-  .newsession .pickact .escape:hover:not(:disabled) { border-color: var(--accent); color: var(--accent-ink) }
-  .newsession .pickact .escape svg {
-    width: 13px; height: 13px; fill: none; stroke: currentColor;
-    stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round;
-  }
-
   .rmtbook { display: grid; gap: 0 }
   .rmtrow { border-top: 1px solid var(--hair); padding: 10px 2px }
   .rmtrow:last-of-type { border-bottom: 1px solid var(--hair) }
