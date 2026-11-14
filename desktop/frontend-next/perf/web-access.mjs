@@ -21,8 +21,8 @@ for (const scheme of ["light", "dark"]) {
     await page.goto(`${BASE}?pref=zh&turns=2&webaccess=${ready}`, { waitUntil: "networkidle" });
     await page.waitForSelector(".app");
     await page.evaluate(() => document.querySelector('[data-action="chrome.settings"]')?.click());
-    await page.waitForSelector('[data-action="settings.section"][data-value="tools"]');
-    await page.evaluate(() => document.querySelector('[data-action="settings.section"][data-value="tools"]')?.click());
+    await page.waitForSelector('.prefs-nav [role="tab"][data-action="settings.section"][data-value="tools"]');
+    await page.evaluate(() => document.querySelector('.prefs-nav [role="tab"][data-action="settings.section"][data-value="tools"]')?.click());
     await page.locator('[data-action="settings.page-index"][data-target="web-access"]').click();
     await page.waitForSelector("#set-web-access");
     const r = await page.evaluate(() => {

@@ -19,8 +19,8 @@ for (const scheme of ["light", "dark"]) {
       await page.goto(`${BASE}?pref=${pref}&turns=2`, { waitUntil: "networkidle" });
       await page.waitForSelector(".app");
       await page.evaluate(() => document.querySelector('[data-action="chrome.settings"]')?.click());
-      await page.waitForSelector('[data-action="settings.section"][data-value="tools"]');
-      await page.evaluate(() => document.querySelector('[data-action="settings.section"][data-value="tools"]')?.click());
+      await page.waitForSelector('.prefs-nav [role="tab"][data-action="settings.section"][data-value="tools"]');
+      await page.evaluate(() => document.querySelector('.prefs-nav [role="tab"][data-action="settings.section"][data-value="tools"]')?.click());
       const sw = page.getByRole("switch", { name: label });
       await sw.waitFor();
       check(`${tag}: it starts off`, (await sw.getAttribute("aria-checked")) === "false");
