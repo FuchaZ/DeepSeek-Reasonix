@@ -54,8 +54,8 @@
 .think[open] > summary .fold { color: var(--muted); }
 .think > summary .fold::before { width: 10px; height: 10px; color: var(--faint); }
 .think > summary:hover .fold { color: var(--text); }
-.think .thinking-preview { margin: 4px 0 0 16px; color: var(--faint); font: var(--w-reg) var(--fs-meta)/1.5 var(--ui); }
-.think .tk { margin-top: 8px; padding-left: 18px; color: var(--muted); font: var(--w-reg) var(--fs-ui)/1.75 var(--ui); }
+.think .thinking-preview { margin: 4px 0 0 16px; color: var(--faint); font: var(--w-think) var(--fs-meta)/1.5 var(--ui); }
+.think .tk { margin-top: 8px; padding-left: 18px; color: var(--muted); font: var(--w-think) var(--fs-ui)/1.75 var(--ui); }
 .think[open] { margin-bottom: 8px; }
 .think::details-content { transition: block-size 240ms var(--ease-out), content-visibility var(--t-panel) allow-discrete; }
 .think-sweep {
@@ -71,7 +71,7 @@
 .think[data-live]:not([data-full]) .tk { max-height: calc(1.75em * 6); overflow: hidden; display: flex; flex-direction: column; justify-content: flex-end; }
 .think[data-live]:not([data-full]) .tk-in { flex: none; }
 .think[data-cut] > summary .fold, .think[data-cut] > summary:hover .fold { color: var(--warn-ink); }
-.think-note { margin: 4px 0 0 16px; color: var(--faint); font: var(--w-reg) var(--fs-meta)/1.5 var(--ui); }
+.think-note { margin: 4px 0 0 16px; color: var(--faint); font: var(--w-think) var(--fs-meta)/1.5 var(--ui); }
 @media (prefers-reduced-motion: reduce) {
   .think-sweep { background: none; color: var(--muted); animation: none; }
   .think[data-settled] .think-label { animation: none; }

@@ -387,6 +387,10 @@ of button only — a small one with the pill, a medium one with `--r-md`.
   Latin still holds, so the Chinese interface starts at medium.
 - The `heavy` tier steps further for Chinese, whose default is already the Latin
   bold tier, and stops at 700: above it a Han character's closed strokes fill in.
+- `--w-think` is the thought block's own weight, one step below `--w-reg` at
+  every tier. Kept apart from `--w-reg` so a reader who raises body weight for
+  legibility does not thereby erase the difference between what the model
+  reasoned and what it answered.
 - The proposed decision for #12019 retains **soft** as a lower-contrast built-in
   body/muted palette. Unlike the previous contract, the body end now moves.
 - Unset, normal and strong remain unchanged. Pack-authored inks keep their
