@@ -39,7 +39,7 @@ export const SETTING_SCREEN: Record<string, string> = {
   "observability.otlp.service_name": "account:trace-export",
   "tools.video_url_passthrough": "tools:web-access",
   "agent.subagent_claims": "session:subagent-claims",
-  "agent.write_lease": "tools:write-lease",
+  "agent.write_lease": "session:write-lease",
   "ui.show_changed_files": "display:changed-files",
   "ui.feedback_level_notices": "display:feedback-level-notices",
   "ui.fold_turn_work": "display:fold-work",
@@ -61,7 +61,7 @@ export const SETTING_SCREEN: Record<string, string> = {
   "notifications.sound": "common:notify",
   "language": "common:language",
   "desktop.language": "common:language",
-  "desktop.update_mode": "common:update-mode",
+  "desktop.update_mode": "versions:update-mode",
   "network.proxy_mode": "network:network",
   "network.proxy_url": "network:network",
 };
