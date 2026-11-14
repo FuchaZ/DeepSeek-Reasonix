@@ -17,6 +17,11 @@
 }
 @container conversation (max-width: 200px) { .studio-meterrail .studio-meter-cache { display: none; } }
 @container conversation (max-width: 520px) { .studio-deckchip > span { display: none; } }
+.studio-deck-anchor { flex: 0 1 auto; min-width: 0; }
+.studio-deckchip { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.studio-deckchip > span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.studio-deckchip .studio-icon,
+.studio-deckchip b { flex: none; }
 .chrome .thbtn.r-more { color: var(--muted); }
 .chrome .thbtn.r-more svg { stroke-width: 2.6; }
 @container conversation (max-width: 480px) {
