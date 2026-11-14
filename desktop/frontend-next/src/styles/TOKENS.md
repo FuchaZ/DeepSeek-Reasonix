@@ -391,6 +391,10 @@ of button only — a small one with the pill, a medium one with `--r-md`.
   every tier. Kept apart from `--w-reg` so a reader who raises body weight for
   legibility does not thereby erase the difference between what the model
   reasoned and what it answered.
+- Under `heavy` the body already sits at 600, so one step of weight no longer
+  reads. Emphasis keeps `--w-semi` and takes `--ink-emphasis`: the ceiling above
+  leaves no room for more weight, so the difference moves to ink. It is declared
+  per scheme, and a pack's own `fgStrong` outranks it.
 - The proposed decision for #12019 retains **soft** as a lower-contrast built-in
   body/muted palette. Unlike the previous contract, the body end now moves.
 - Unset, normal and strong remain unchanged. Pack-authored inks keep their

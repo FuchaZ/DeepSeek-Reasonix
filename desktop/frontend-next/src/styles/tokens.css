@@ -218,7 +218,15 @@
   :root[data-measure="full-all"] { --column: 100% }
   :root[data-measure="custom"] { --doc: var(--measure-width); --column: var(--measure-width); --wide: var(--measure-width) }
 
-  :root[data-weight="heavy"] { --w-reg: 600; --w-med: 700; --w-semi: 700; --w-think: 500 }
+  :root[data-weight="heavy"] {
+  --w-reg: 600; --w-med: 700; --w-semi: 700; --w-think: 500;
+  --ink-emphasis: oklch(.103 .0196 85);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root[data-weight="heavy"] { --ink-emphasis: oklch(1 .006756 115.3) }
+  }
+  :root[data-theme="dark"][data-weight="heavy"] { --ink-emphasis: oklch(1 .006756 115.3) }
+  :root[data-theme="light"][data-weight="heavy"] { --ink-emphasis: oklch(.103 .0196 85) }
 
 
   :root {
