@@ -9,7 +9,7 @@ GOEXE := $(shell go env GOEXE)
 # One pin for the Makefile and the CI lint job; see .github/workflows/ci.yml.
 GOLANGCI_VERSION := $(shell cat .golangci-version)
 
-.PHONY: build vet fmt lint lint-go lint-install lint-cross lint-update coverage-gate coverage-gate-update pricecheck acp-conformance check test studio-test sdk-test sdk-test-race hooks cross clean studio
+.PHONY: build vet fmt lint lint-go lint-install lint-cross lint-update coverage-gate coverage-gate-update pricecheck acp-conformance check test studio-test sdk-test sdk-test-race hooks notes-draft cross clean studio
 
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/reasonix$(GOEXE) ./cmd/reasonix
@@ -107,6 +107,14 @@ sdk-test-race:
 hooks:
 	@git config core.hooksPath .githooks
 	@echo "installed: core.hooksPath -> .githooks (pre-push runs go vet)"
+
+# The runbook's first step: a skeleton of the next version's notes, drawn from the
+# commits since the last studio-v* tag. It never edits an existing note, so a
+# version already written is refused rather than overwritten. VERSION is the
+# semver the release will carry, without the leading v.
+notes-draft:
+	@test -n "$(VERSION)" || { echo "usage: make notes-draft VERSION=X.Y.Z" >&2; exit 2; }
+	@node scripts/notes-draft.mjs "$(VERSION)"
 
 cross:
 	@mkdir -p dist

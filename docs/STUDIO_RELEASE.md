@@ -29,7 +29,25 @@ Workflow: `.github/workflows/release-studio.yml`. Trigger: push of a `studio-vX.
 
 ## 3. Steps
 
-1. Gather `release-notes/studio/unreleased/*.md` (one file per pull request, named by its number, items named after it) into `release-notes/studio/X.Y.Z.md` (format in section 6), `git rm` the fragments in the same commit, push to `studio`.
+1. Draft `release-notes/studio/X.Y.Z.md` (format in section 6) from the commits since the last
+   tag, commit it, and push to `studio`:
+
+   ```bash
+   make notes-draft VERSION=X.Y.Z          # Linux/macOS, and CI
+   node scripts/notes-draft.mjs X.Y.Z      # Windows: the Git Bash toolchain has no make
+   ```
+
+   `make notes-draft` lists the commits since the previous `studio-v*` tag, grouped by
+   conventional-commit type:
+
+   - It writes one item per user-visible commit, each naming the commit that earned it, so
+     `release-note` R4 holds from the first draft.
+   - `chore`, `docs`, `refactor`, `ci` and `test` become a single trailing comment instead of
+     items: a person drops them rather than deciding one at a time.
+   - It refuses a version that already has a note, so a hand-edited draft is never overwritten.
+
+   The `release-notes/studio/unreleased/*.md` fragment board this step used to read is empty
+   and no longer maintained: 2.60.0 onward, notes are written as one file per version.
 2. Wait until P2 holds for the commit that contains the notes.
 3. Tag the verified commit and push the tag:
 

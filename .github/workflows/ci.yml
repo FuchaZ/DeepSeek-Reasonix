@@ -88,7 +88,7 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
-      - run: node --test scripts/linux-install-smoke.test.mjs scripts/studio-artifacts.test.mjs scripts/ci-platform-scope.test.mjs scripts/cli-archive-build.test.mjs scripts/cli-archive-contents.test.mjs scripts/release-credits.test.mjs scripts/update-contributors.test.mjs scripts/update-acknowledgments.test.mjs scripts/markdown-refs.test.mjs scripts/studio-release-notes.test.mjs scripts/publish-cli-pointer.test.mjs scripts/studio-release-flags.test.mjs scripts/studio-notes-publish.test.mjs scripts/withdraw-version.test.mjs scripts/brew-cask-guard.test.mjs scripts/feedback-sync.test.mjs npm/publish.test.mjs
+      - run: node --test scripts/linux-install-smoke.test.mjs scripts/studio-artifacts.test.mjs scripts/ci-platform-scope.test.mjs scripts/cli-archive-build.test.mjs scripts/cli-archive-contents.test.mjs scripts/release-credits.test.mjs scripts/update-contributors.test.mjs scripts/update-acknowledgments.test.mjs scripts/markdown-refs.test.mjs scripts/studio-release-notes.test.mjs scripts/publish-cli-pointer.test.mjs scripts/studio-release-flags.test.mjs scripts/studio-notes-publish.test.mjs scripts/withdraw-version.test.mjs scripts/brew-cask-guard.test.mjs scripts/feedback-sync.test.mjs scripts/notes-draft.test.mjs npm/publish.test.mjs
 
   # The ruleset requires the per-OS check names (test (ubuntu-latest) etc.).
   # A matrix job skipped at job level reports no per-leg checks at all, so
