@@ -67,8 +67,15 @@ function ImageViewer({
     y: number;
     from: { x: number; y: number };
   } | null>(null);
+  // A drag captures the pointer, so its following click lands on the view and
+  // reads as a backdrop press. The press's origin is the distinction.
+  const pressedImage = useRef(false);
   useEscape(true, onClose);
   const backdrop = (ev: MouseEvent<HTMLDivElement>) => {
+    if (pressedImage.current) {
+      pressedImage.current = false;
+      return;
+    }
     if (ev.target === ev.currentTarget && ev.detail < 2) onClose();
   };
   const download = () => {
@@ -105,6 +112,9 @@ function ImageViewer({
       onClick={backdrop}
       onMouseDown={(ev) => {
         if (!(ev.target as HTMLElement).closest("button")) ev.preventDefault();
+      }}
+      onPointerDownCapture={(ev) => {
+        pressedImage.current = ev.target instanceof HTMLImageElement;
       }}
       onKeyDown={(ev) => {
         if (ev.key === "Tab") {
@@ -171,7 +181,7 @@ function ImageViewer({
         onClick={backdrop}
         onWheel={(ev) => zoom(ev.deltaY < 0 ? 1.1 : 1 / 1.1)}
         onPointerDown={(ev) => {
-          if (ev.target instanceof HTMLImageElement) {
+          if (pressedImage.current) {
             drag.current = { x: ev.clientX, y: ev.clientY, from: pan };
             ev.currentTarget.setPointerCapture(ev.pointerId);
           }

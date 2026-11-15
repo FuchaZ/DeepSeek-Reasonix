@@ -59,6 +59,22 @@ try {
       await page.keyboard.press("Escape");
       await dialog.waitFor({ state: "detached" });
       assert.equal(await page.locator(".user-image button").evaluate(el => el === document.activeElement), true);
+      // A real drag captures the pointer, so its closing click lands on the
+      // view. It must not read as a backdrop press; the next real press must.
+      await user.dblclick();
+      const panned = page.getByRole("dialog", { name: "preview.svg", exact: true });
+      await panned.waitFor();
+      const picture = panned.locator("img");
+      const box = await picture.boundingBox();
+      await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page.mouse.down();
+      await page.mouse.move(box.x + box.width / 2 + 90, box.y + box.height / 2 + 40, { steps: 6 });
+      await page.mouse.up();
+      assert.equal(await panned.count(), 1, "the drag's click closed the preview");
+      assert.match(await picture.getAttribute("style"), /translate\(90px, 40px\)/);
+      const shell = await panned.boundingBox();
+      await page.mouse.click(shell.x + 3, shell.y + 3);
+      await panned.waitFor({ state: "detached" });
       // A call that showed the model a picture opens its card and group by
       // itself; clicking either disclosure would fold it back. Open only what
       // is still folded, so this guard holds under both the old and new default.

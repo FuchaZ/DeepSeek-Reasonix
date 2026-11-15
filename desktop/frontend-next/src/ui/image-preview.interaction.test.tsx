@@ -44,6 +44,24 @@ describe("shared image preview entrances", () => {
     expect(screen.getByText(item.text)).toBeTruthy();
   });
 
+  it("keeps clicks on the image inside the viewer, and a drag does not close it", async () => {
+    const user = userEvent.setup();
+    const { container } = render(<UserCard item={item} port={{ workspaceImageURL: () => src }} />);
+    screen.getByRole("button", { name: "查看图片 preview.png" }).focus();
+    await user.keyboard("{Enter}");
+    const dialog = screen.getByRole("dialog");
+    const image = within(dialog).getByRole("img");
+    const view = container.ownerDocument.querySelector(".image-preview-view")!;
+    fireEvent.pointerDown(image, { clientX: 100, clientY: 100, pointerId: 1 });
+    fireEvent.pointerMove(view, { clientX: 160, clientY: 130, pointerId: 1 });
+    fireEvent.pointerUp(view, { clientX: 160, clientY: 130, pointerId: 1 });
+    expect(image.style.transform).toContain("translate(60px, 30px)");
+    fireEvent.click(view, { detail: 1, target: view });
+    expect(screen.getByRole("dialog")).toBe(dialog);
+    fireEvent.click(dialog, { detail: 1 });
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
   it("opens from the keyboard and keeps clicks on the image inside the viewer", async () => {
     const user = userEvent.setup();
     render(<UserCard item={item} port={{ workspaceImageURL: () => src }} />);

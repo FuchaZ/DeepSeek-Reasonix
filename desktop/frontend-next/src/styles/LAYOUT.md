@@ -111,6 +111,13 @@ the picker and keyboard navigation.
   *is* the title bar, so it has to be the drag handle, and every control on it
   opts back out. Membership is what the markup says is interactive, not a list of the
   controls that happen to be on the bar today.
+- With the workspace column shut, the left end of the bar holds two fixed
+  layers — the icon rail at 13 and the drawer toggle at 39 — and the breadcrumb's
+  parent is drag surface. The crumb therefore lifts to 40 while the folder mark
+  inside it keeps its own no-drag rectangle, so a press on the mark belongs to
+  the control rather than to the window corner. The rest of the crumb stays
+  draggable. Only the title-bar shell needs the lift; a browser tab neither
+  draws those layers nor has a window to drag.
 - macOS floats its window controls over the window's corner, not over this row.
   Whichever element owns that corner reserves them — `.chrome` collapsed, the
   rail head open — and both read `--lights-w` / `--lights-h`. The swap inside

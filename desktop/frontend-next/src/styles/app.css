@@ -136,6 +136,9 @@
     -webkit-app-region: no-drag;
   }
 
+  [data-titlebar="app"] .chrome .crumb-context { position: relative; z-index: 40; }
+  [data-titlebar="app"] .chrome .crumb-folder { position: relative; z-index: 1; -webkit-app-region: no-drag; }
+
   [data-titlebar="app"][data-platform="darwin"] .app {
     --chrome-h: 51px; --lights-w: 96px; --lights-h: var(--chrome-h);
   }
