@@ -187,12 +187,17 @@ func (m *memoryManager) current() *memory.Set {
 }
 
 // drainPending returns and clears the queued turn-tail notes, for Compose to fold
-// onto the next outgoing turn.
+// onto the next outgoing turn. A snapshot that withholds memory drains and
+// discards them: the note carries the fact's own body, and a panel edit is not a
+// reason to hand the model what its preset keeps from it.
 func (m *memoryManager) drainPending() []string {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	notes := m.pending
 	m.pending = nil
+	if !m.set.Injecting() {
+		return nil
+	}
 	return notes
 }
 

@@ -27,7 +27,15 @@ type Persona struct {
 	Prefix                string `json:"prefix"`
 	Suffix                string `json:"suffix"`
 	IncludeRuntimeContext bool   `json:"include_runtime_context"`
+	// IncludeMemory withholds saved memory. A pointer keeps a definition
+	// written before this field reading as enabled; omitempty keeps its
+	// revision and binding digest unchanged.
+	IncludeMemory *bool `json:"include_memory,omitempty"`
 }
+
+// MemoryEnabled reports whether this persona sees saved memory. Absent means
+// enabled, so only an explicit false withholds it.
+func (p Persona) MemoryEnabled() bool { return p.IncludeMemory == nil || *p.IncludeMemory }
 
 type Module struct {
 	ID         string          `json:"id"`

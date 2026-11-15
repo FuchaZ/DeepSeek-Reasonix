@@ -160,3 +160,49 @@ func TestAbsentOptionalPreservesRevisionAndBindingDigest(t *testing.T) {
 		t.Fatal("absent optional changed legacy binding digest")
 	}
 }
+
+func TestAbsentIncludeMemoryReadsAsEnabledAndKeepsRevision(t *testing.T) {
+	// A definition written before the field exists must keep working memory and
+	// its recorded revision: a preset already bound to a conversation is only
+	// re-admitted when its digest matches what was sealed.
+	d := Builtins()[0]
+	data, err := json.Marshal(d)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var legacy map[string]json.RawMessage
+	if err := json.Unmarshal(data, &legacy); err != nil {
+		t.Fatal(err)
+	}
+	var persona map[string]json.RawMessage
+	if err := json.Unmarshal(legacy["persona"], &persona); err != nil {
+		t.Fatal(err)
+	}
+	if _, present := persona["include_memory"]; present {
+		t.Fatal("an untouched built-in must not carry include_memory")
+	}
+	delete(persona, "include_memory")
+	if legacy["persona"], err = json.Marshal(persona); err != nil {
+		t.Fatal(err)
+	}
+	if Revision(d) != Digest(legacy) {
+		t.Fatal("absent include_memory changed the revision")
+	}
+
+	decoded, err := Decode(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if decoded.Persona.IncludeMemory != nil || !decoded.Persona.MemoryEnabled() {
+		t.Fatal("absent include_memory did not read as enabled")
+	}
+
+	off := false
+	decoded.Persona.IncludeMemory = &off
+	if decoded.Persona.MemoryEnabled() {
+		t.Fatal("explicit false still reads as enabled")
+	}
+	if Revision(decoded) == Revision(Builtins()[0]) {
+		t.Fatal("withholding memory did not change the revision")
+	}
+}

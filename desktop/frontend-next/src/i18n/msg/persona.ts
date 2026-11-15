@@ -34,6 +34,7 @@ export const PERSONA: Messages = {
   "persona.deselect_group": { zh: "取消本组全选", en: "Deselect group" },
   "persona.discard_changes": { zh: "放弃更改", en: "Discard changes" },
   "persona.discard_unsaved_changes": { zh: "放弃未保存的更改？", en: "Discard unsaved changes?" },
+  "persona.do_not_inject_memory": { zh: "不注入记忆", en: "Do not inject memory" },
   "persona.do_not_inject_optional_runtime": { zh: "不注入可选运行时上下文", en: "Do not inject optional runtime context" },
   "persona.download_preset_json": { zh: "下载预设 JSON", en: "Download preset JSON" },
   "persona.duplicate_as_custom_preset": { zh: "复制为自定义预设", en: "Duplicate as custom preset" },
@@ -136,6 +137,7 @@ export const PERSONA: Messages = {
   "persona.used_only_when_explicitly_selecting": { zh: "仅在显式选择 default 时使用，与本机卡片设置的新任务默认独立。", en: "Used only when explicitly selecting default, separately from this machine's new-task card selection." },
   "persona.verify_before_concluding_make_the": { zh: "先验证再下结论，只做最少的正确改动，并说明剩余风险。", en: "Verify before concluding, make the smallest correct change, and state the residual risk." },
   "persona.view_name": { zh: "查看 {name}", en: "View {name}" },
+  "persona.when_on_saved_facts": { zh: "开启后不注入保存的事实、自动召回与记忆工具；项目指令与技能照常写入。", en: "When on, saved facts, automatic recall and the memory tools are not injected; project instructions and skills are written as usual." },
   "persona.when_on_the_probed_environment": { zh: "开启后不注入探测到的运行环境与离线提示；指令、记忆与技能照常写入。", en: "When on, the probed environment and the offline note are not injected; instructions, memory and skills are written as usual." },
   "persona.writes_the_user_config_applies": { zh: "写入用户配置，在新会话及现有会话下一次重建时生效；保存本身不会重建会话。", en: "Writes the user config; applies to new sessions and the next rebuild of an existing session. Saving itself does not rebuild it." },
 };

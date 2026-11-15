@@ -1,6 +1,7 @@
 package boot
 
 import (
+	"reasonix/internal/contract/agentcomposition"
 	"reasonix/internal/contract/config"
 	"reasonix/internal/state/instruction"
 	"reasonix/internal/state/memory"
@@ -34,6 +35,7 @@ func buildMemoryAssembly(opts Options, cfg *config.Config, root, sysPrompt strin
 		RecallLimit:       cfg.Memory.RecallLimit,
 		RecallMaxChars:    cfg.Memory.RecallMaxChars,
 		Proactive:         cfg.MemoryProactive(),
+		SkipInjection:     withholdsMemory(opts.Composition),
 	})
 	return memoryAssembly{
 		set:       set,
@@ -41,4 +43,11 @@ func buildMemoryAssembly(opts Options, cfg *config.Config, root, sysPrompt strin
 		sensitive: instruction.ExtractSensitivePaths(set.Docs),
 		sysPrompt: memory.Compose(sysPrompt, set),
 	}
+}
+
+// withholdsMemory reports a bound composition whose persona keeps saved memory
+// from the model. An unbound session and the everyday preset both answer false,
+// so the ordinary configuration is untouched.
+func withholdsMemory(binding *agentcomposition.Binding) bool {
+	return binding != nil && !binding.Resolved.Persona.MemoryEnabled()
 }

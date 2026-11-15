@@ -91,12 +91,16 @@ type SuppressionCode string
 const (
 	SuppressCarriedNote  SuppressionCode = "carried-note"
 	SuppressRetrievalOff SuppressionCode = "retrieval-off"
-	SuppressGenericTurn  SuppressionCode = "generic-turn"
-	SuppressEmptyStore   SuppressionCode = "empty-store"
-	SuppressUnreadable   SuppressionCode = "store-unreadable"
-	SuppressNoTerms      SuppressionCode = "no-searchable-terms"
-	SuppressNoMatch      SuppressionCode = "no-distinctive-match"
-	SuppressOverBudget   SuppressionCode = "over-budget"
+	// SuppressMemoryOff is a preset withholding memory, not an empty store:
+	// the two have different answers, and a reader told "empty" goes looking
+	// for facts that are still there.
+	SuppressMemoryOff   SuppressionCode = "memory-off"
+	SuppressGenericTurn SuppressionCode = "generic-turn"
+	SuppressEmptyStore  SuppressionCode = "empty-store"
+	SuppressUnreadable  SuppressionCode = "store-unreadable"
+	SuppressNoTerms     SuppressionCode = "no-searchable-terms"
+	SuppressNoMatch     SuppressionCode = "no-distinctive-match"
+	SuppressOverBudget  SuppressionCode = "over-budget"
 )
 
 // SuppressReason renders one suppression decision: stable code, then sentence.

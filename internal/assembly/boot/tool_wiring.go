@@ -84,7 +84,9 @@ func hookRuntime(shell sandbox.Shell) hook.RuntimeOptions {
 // registerSessionTools adds the product-docs, session and memory tools every
 // role carries. The retrieval ablation drops only the BM25-backed history and
 // recall, so a lost solve is attributable to retrieval, not a missing reader.
-func registerSessionTools(reg *tool.Registry, set ablation.Set, roots config.Roots, sessionDir string, store memory.Store, proactive string) {
+// A preset whose persona withholds memory registers none of the three: a model
+// that could search the store would be reading what it was told it does not have.
+func registerSessionTools(reg *tool.Registry, set ablation.Set, roots config.Roots, sessionDir string, store memory.Store, proactive string, memoryOff bool) {
 	reg.Add(productdocs.NewTool())
 	retrievalOff := set.Off(ablation.Retrieval)
 	if !retrievalOff {
@@ -92,13 +94,18 @@ func registerSessionTools(reg *tool.Registry, set ablation.Set, roots config.Roo
 	}
 	reg.Add(sessiontool.NewListSessionsTool(sessionDir))
 	reg.Add(sessiontool.NewReadSessionTool(sessionDir))
-	if !retrievalOff {
+	// Two independent reasons to drop a tool, and they are not the same set:
+	// the ablation removes only the BM25-backed reader; a withholding preset
+	// removes all three.
+	if !retrievalOff && !memoryOff {
 		reg.Add(memory.NewRecallTool(store))
 	}
-	if proactive != "off" {
-		reg.Add(memory.NewRememberTool(store))
+	if !memoryOff {
+		if proactive != "off" {
+			reg.Add(memory.NewRememberTool(store))
+		}
+		reg.Add(memory.NewForgetTool(store))
 	}
-	reg.Add(memory.NewForgetTool(store))
 	addTurnExitTools(reg)
 }
 

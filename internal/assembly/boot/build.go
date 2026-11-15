@@ -421,7 +421,7 @@ func (b *builder) wireTools() error {
 	t.runner, t.skillRun = t.roles.delegation(delegationInputs{opts: opts, sub: t.sub, exec: b.execProv, entry: b.model.entry,
 		modelName: b.model.name, root: root, maxSteps: t.maxSteps, delivery: b.model.delivery, store: subagentStore,
 		session: b.session, bashEnforced: env.bash.Enforce, extraRoots: b.workspaceExtraRoots(), childTools: childViewImage(cfg, env, root)})
-	registerSessionTools(t.reg, opts.Ablation, b.roots, b.session.dir, b.prompt.memory.Store, b.cfg.MemoryProactive())
+	registerSessionTools(t.reg, opts.Ablation, b.roots, b.session.dir, b.prompt.memory.Store, b.cfg.MemoryProactive(), withholdsMemory(opts.Composition))
 	if opts.NativeSurfaces {
 		t.reg.Add(agent.NewRenderSurfaceTool())
 	}

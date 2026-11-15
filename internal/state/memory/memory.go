@@ -45,6 +45,10 @@ type Options struct {
 	RecallMaxChars    int
 	// Proactive is ask, auto or off; empty keeps the approval-gated writes.
 	Proactive string
+	// SkipInjection withholds every memory surface from the model while the
+	// store stays readable, so a management surface can still show and edit
+	// facts. A bound composition whose persona withholds memory sets it.
+	SkipInjection bool
 }
 
 // Load discovers all memory for a session: the hierarchical docs and the
@@ -65,6 +69,13 @@ func Load(opts Options) *Set {
 	}
 	store := StoreFor(opts.UserDir, cwd)
 	store.PinnedBudgetChars = opts.PinnedBudgetChars
+	// A preset that withholds memory keeps the store readable for management
+	// surfaces but loads no snapshot of it: pinned bodies and the retrieval
+	// index are exactly what it must not reach the model.
+	if opts.SkipInjection {
+		return &Set{Docs: resolved.Documents, Store: store, CWD: cwd, UserDir: opts.UserDir,
+			InstructionDiagnostics: resolved.Diagnostics, opts: opts}
+	}
 	pinned, storeErr := store.pinnedGuidanceForProject()
 	var recall *RecallIndex
 	if storeErr == nil {
@@ -117,8 +128,19 @@ func (s *Set) DocPath(scope Scope) string {
 // the base prompt byte-for-byte untouched (and the cache prefix maximal) when
 // there is no memory at all.
 func (s *Set) Empty() bool {
-	return s == nil || (len(s.Docs) == 0 && len(s.PinnedGuidance) == 0 && s.Store.Dir == "")
+	if s == nil {
+		return true
+	}
+	if !s.Injecting() {
+		return len(s.Docs) == 0
+	}
+	return len(s.Docs) == 0 && len(s.PinnedGuidance) == 0 && s.Store.Dir == ""
 }
+
+// Injecting reports whether this snapshot's saved facts may reach the model.
+// Standing instructions are not saved facts and are unaffected: they are the
+// project's own text, and a preset that withholds memory still works inside it.
+func (s *Set) Injecting() bool { return s != nil && !s.opts.SkipInjection }
 
 // docScopes are the scopes the panel can target for a quick-add or a new doc.
 // Ordered broad → specific for display.
@@ -164,9 +186,10 @@ func (s *Set) WriteDoc(path, body string) (string, error) {
 // BackgroundBlock renders the memory protocol and any pinned preferences. The
 // saved-fact index is deliberately absent: it changes on every remember, and
 // everything after it in the prefix — the project instructions, the skills
-// index — would be re-sent with it. The tools reach it instead.
+// index — would be re-sent with it. The tools reach it instead. A snapshot
+// whose preset withholds memory renders nothing, and both consumers read here.
 func (s *Set) BackgroundBlock() string {
-	if s == nil {
+	if s == nil || !s.Injecting() {
 		return ""
 	}
 	if s.Store.Dir == "" && len(s.PinnedGuidance) == 0 {

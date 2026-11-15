@@ -66,12 +66,18 @@ func BuildRecallIndex(store Store) (*RecallIndex, error) {
 func (s *Set) AutoRecall(query string, opts RecallOptions) RecallResult {
 	opts = s.withConfiguredBudgets(opts)
 	result := RecallResult{Query: strings.TrimSpace(query), CharBudget: recallCharBudget(opts.MaxChars)}
-	if genericRecallQuery(result.Query) {
-		result.Suppress(SuppressGenericTurn, "generic user turn")
-		return result
-	}
 	if s == nil {
 		result.Suppress(SuppressEmptyStore, "memory store is empty")
+		return result
+	}
+	// Checked before the query's shape: a turn with no recall at all is owed
+	// the reason it has none, not a remark about how generic the question was.
+	if !s.Injecting() {
+		result.Suppress(SuppressMemoryOff, "saved memory is withheld by this preset")
+		return result
+	}
+	if genericRecallQuery(result.Query) {
+		result.Suppress(SuppressGenericTurn, "generic user turn")
 		return result
 	}
 	if s.StoreError != nil {

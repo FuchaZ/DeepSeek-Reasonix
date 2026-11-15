@@ -253,3 +253,35 @@ func TestQuickRememberNoticeIsTranslated(t *testing.T) {
 		t.Fatalf("notice = %q, want it to start %q", e.Text, want)
 	}
 }
+
+// A snapshot that withholds memory drains its queued notes rather than sending
+// them: the note carries the fact's own body, so a panel save in a preset that
+// withholds memory would otherwise hand the model exactly what it must not see.
+// The write still lands, and the reload it triggers keeps withholding.
+func TestWithheldMemoryQueuesNoTurnTailNote(t *testing.T) {
+	root := testenv.TempDir(t)
+	userDir := filepath.Join(root, "user")
+	cwd := filepath.Join(root, "project")
+	if err := os.MkdirAll(cwd, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	c := New(Options{Memory: memory.Load(memory.Options{CWD: cwd, UserDir: userDir, SkipInjection: true})})
+
+	const body = "Releases go to staging first."
+	if _, err := c.SaveMemory(memory.Memory{
+		Name: "deploy-target", Description: "where releases go",
+		Type: memory.TypeProject, Body: body,
+	}); err != nil {
+		t.Fatalf("SaveMemory: %v", err)
+	}
+	if set := c.Memory(); set.Injecting() {
+		t.Fatal("the reload after a write stopped withholding memory")
+	}
+	composed := c.Compose("hello")
+	if strings.Contains(composed, body) || strings.Contains(composed, "<memory-update>") {
+		t.Fatalf("a withheld snapshot handed the model the saved body:\n%s", composed)
+	}
+	if facts, err := c.Memory().Store.ListActive(); err != nil || len(facts.Facts) == 0 {
+		t.Fatalf("the write did not reach the store: %v %+v", err, facts)
+	}
+}

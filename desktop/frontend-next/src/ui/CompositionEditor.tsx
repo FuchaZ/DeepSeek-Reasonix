@@ -37,6 +37,14 @@ export function CompositionEditor({
   const persona = draft.persona;
   const updatePersona = (patch: Partial<AgentComposition["persona"]>) =>
     onChange({ ...draft, persona: { ...persona, ...patch } });
+  // Turning memory back on removes the field rather than writing `true`: absent
+  // is what every preset written before the switch says, and returning to it is
+  // what keeps that preset's revision unchanged. Built from `rest` rather than
+  // patched onto `persona`, since the patch merge would put the old value back.
+  const toggleMemory = () => {
+    const { include_memory: withheld, ...rest } = persona;
+    onChange({ ...draft, persona: withheld === false ? rest : { ...rest, include_memory: false } });
+  };
   return (
     <div className="composition-editor">
       <label className="pers-field">
@@ -99,6 +107,19 @@ export function CompositionEditor({
           on={!persona.include_runtime_context}
           busy={disabled}
           onClick={() => updatePersona({ include_runtime_context: !persona.include_runtime_context })}
+        />
+      </div>
+      <div className="lrow">
+        <span className="tx">
+          <span className="lb">{t("persona.do_not_inject_memory")}</span>
+          <span className="ds">{t("persona.when_on_saved_facts")}</span>
+        </span>
+        <Switch
+          data-action="persona.memory"
+          label={t("persona.do_not_inject_memory")}
+          on={persona.include_memory === false}
+          busy={disabled}
+          onClick={toggleMemory}
         />
       </div>
       <div className="composition-capabilities">

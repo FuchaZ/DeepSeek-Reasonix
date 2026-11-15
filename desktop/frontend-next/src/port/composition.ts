@@ -11,7 +11,9 @@ export interface AgentComposition {
   id: string;
   name: string;
   description: string;
-  persona: { prefix: string; suffix: string; include_runtime_context: boolean };
+  // include_memory absent means saved memory is enabled; only an explicit false
+  // withholds it. Leaving it absent keeps a preset's revision unchanged.
+  persona: { prefix: string; suffix: string; include_runtime_context: boolean; include_memory?: boolean };
   tools: CompositionSelection;
   skills: CompositionSelection;
   mcp: CompositionSelection;

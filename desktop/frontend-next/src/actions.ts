@@ -740,6 +740,7 @@ export const ACTIONS: UIAction[] = [
   { id: "persona.preset", kind: "view", target: "optional", proof: "interaction" },
   { id: "persona.save", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
   { id: "persona.runtime-context", kind: "view", target: "none", proof: "interaction" },
+  { id: "persona.memory", kind: "view", target: "none", proof: "interaction" },
   // The kernel announces the change on the stream, so no rebuild stands between
   // the click and the canonical change.
   { id: "currency.mode", kind: "kernel-mutation", target: "none", proof: "authority-effect" },

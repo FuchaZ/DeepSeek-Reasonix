@@ -392,3 +392,64 @@ func TestLoadHidesMemoryUnderExperimentEnv(t *testing.T) {
 		t.Fatal("a zero store must not recall")
 	}
 }
+
+// A preset that withholds memory is not the experiment arm: the store stays
+// readable so a management surface can still show and edit facts, while every
+// surface that would reach the model renders nothing.
+func TestSkipInjectionWithholdsEverySurfaceAndKeepsTheStoreReadable(t *testing.T) {
+	root := testenv.TempDir(t)
+	user := filepath.Join(root, "user")
+	proj := filepath.Join(root, "project")
+	mustMkdir(t, filepath.Join(proj, ".git"))
+	mustWrite(t, filepath.Join(proj, "AGENTS.md"), "STANDING INSTRUCTION BODY")
+	store := StoreFor(user, proj)
+	if _, err := store.Save(Memory{Name: "pinned-pref", Description: "always on", Activation: ActivationPinned, Body: "PINNED BODY"}); err != nil {
+		t.Fatal(err)
+	}
+
+	set := Load(Options{CWD: proj, UserDir: user, SkipInjection: true})
+	if len(set.PinnedGuidance) != 0 {
+		t.Fatalf("withheld memory still loaded pinned guidance: %+v", set.PinnedGuidance)
+	}
+	if set.recall != nil {
+		t.Fatal("withheld memory still built a retrieval index")
+	}
+	if injected := Load(Options{CWD: proj, UserDir: user}).StaticContext(); !strings.Contains(injected, "PINNED BODY") {
+		t.Fatal("fixture did not reach the injected surface")
+	}
+	block := set.StaticContext()
+	if strings.Contains(block, "PINNED BODY") || strings.Contains(block, "remember") {
+		t.Fatalf("withheld memory reached the model-visible block:\n%s", block)
+	}
+	if !strings.Contains(block, "STANDING INSTRUCTION BODY") {
+		t.Fatal("standing instructions must survive a preset that withholds memory")
+	}
+	if got := Compose("BASE", set); got != "BASE" {
+		t.Fatalf("withheld memory changed the cached prefix: %q", got)
+	}
+
+	// The store answers a management surface even though nothing reaches the
+	// model: withholding is not deletion, and a panel must still list the fact.
+	if facts, err := set.Store.ListActive(); err != nil || len(facts.Facts) == 0 {
+		t.Fatalf("management read failed on a withheld store: %v %+v", err, facts)
+	}
+	if _, err := set.Store.Save(Memory{Name: "late-fact", Description: "saved while withheld", Body: "LATE BODY"}); err != nil {
+		t.Fatalf("a write through the withheld store failed: %v", err)
+	}
+}
+
+func TestAutoRecallSaysWithheldRatherThanEmpty(t *testing.T) {
+	root := testenv.TempDir(t)
+	store := StoreFor(filepath.Join(root, "user"), filepath.Join(root, "project"))
+	if _, err := store.Save(Memory{Name: "needle-fact", Description: "recall needle", Keywords: "widget calibration", Body: "BODY"}); err != nil {
+		t.Fatal(err)
+	}
+	off := Load(Options{CWD: filepath.Join(root, "project"), UserDir: filepath.Join(root, "user"), SkipInjection: true})
+	result := off.AutoRecall("how do I calibrate the widget", RecallOptions{})
+	if result.SuppressionCode != SuppressMemoryOff {
+		t.Fatalf("suppression = %q, want %q", result.SuppressionCode, SuppressMemoryOff)
+	}
+	if result.Block() != "" {
+		t.Fatalf("withheld recall still injected a block: %q", result.Block())
+	}
+}
