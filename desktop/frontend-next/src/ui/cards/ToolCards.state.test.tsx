@@ -47,6 +47,19 @@ describe("tool outcome cards", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
+  // The picture is the one thing a view_image call existed to show; a folded
+  // card is where it goes unread. The reader's own close still holds.
+  it("opens a call that showed the model a picture by itself", () => {
+    const { container } = render(
+      <ToolCard tool={{ id: "vi", name: "view_image", args: '{"path":"shots/w280.png"}', output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: ["data:image/png;base64,AAAA"], readOnly: true }} running={false} />,
+    );
+    const disclosure = container.querySelector("details.tool-disclosure") as HTMLDetailsElement;
+    expect(disclosure.open).toBe(true);
+    expect(container.querySelector(".tshots img")).not.toBeNull();
+    fireEvent.click(disclosure.querySelector("summary")!);
+    expect(disclosure.open).toBe(false);
+  });
+
   // A video handed to the model natively is a file the person cannot see in the
   // transcript; the card names it, its size and length, and where it went.
   it("names a video the call handed to the model natively", () => {

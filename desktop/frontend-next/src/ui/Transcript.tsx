@@ -652,7 +652,10 @@ const ActivityGroup = memo(function ActivityGroup({
   const live = useContext(LiveWork).has(gid);
   const changed = items.some((item) => item.t === "tool" && toolChangedFile(item.tool));
   const start = useStartsOpen("activity", running || live, false, changed);
-  const open = opened[gid] ?? start;
+  // The group opens for a picture for the same reason the card does (ToolCard):
+  // once the turn folds the group, that is where the picture goes unread.
+  const shot = items.some((item) => item.t === "tool" && (item.tool.images?.length ?? 0) > 0);
+  const open = opened[gid] ?? (start || shot);
   const setOpen = useCallback(
     (next: boolean) => onOpened((all) => (all[gid] === next ? all : { ...all, [gid]: next })),
     [gid, onOpened],
@@ -661,11 +664,7 @@ const ActivityGroup = memo(function ActivityGroup({
   const fold = useMemo(() => foldEarlier(items), [items]);
   const [showEarlier, setShowEarlier] = useState(false);
   const earlierCalls = fold.kinds.reduce((count, [, n]) => count + n, 0);
-  const failures = items.reduce((count, item) => {
-    if (item.t === "tool") return count + (toolFailed(item.tool) ? 1 : 0);
-    if (item.t === "reads") return count + item.tools.filter(toolFailed).length;
-    return count;
-  }, 0);
+  const failures = items.reduce((count, item) => count + (item.t === "tool" ? (toolFailed(item.tool) ? 1 : 0) : item.t === "reads" ? item.tools.filter(toolFailed).length : 0), 0);
   return (
     <details className="activity-group" data-failed={failures ? "" : undefined} data-running={running ? "" : undefined} open={open} onToggle={(event) => event.currentTarget.open !== open && setOpen(event.currentTarget.open)}>
       <ActivityHead items={items} open={open} runs={runs} failures={failures} calls={calls} />

@@ -55,6 +55,11 @@ const graph = (nodes: GraphNode[], edges: GraphEdge[] = []): WireEvent => ({ kin
 export const mockMsgIndex = (turn: number) => turn * 2 - 1;
 export const mockTurnStart = (turn: number) => ({ authoredTurn: turn, msgIndex: mockMsgIndex(turn) });
 
+// A picture small enough to stay in the fixture's budget and shaped like a
+// screen, so a view_image card in mock mode shows something a person reads as
+// a screenshot rather than a grey square.
+const MOCK_SHOT = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAACgCAIAAABYAuR3AAACb0lEQVR42u3cMQqCUADHYQ+g4BQtBQ1BrdENuoQ0SAcQ5yDoBM1NQXsX6Vi1uQRiZK8efvA7gPD8lr/ykvlyFUVplsfyqBpgCUgSSBJIIAkkkCSQpCCQ9sdTgEASSCBJIEkgScYGY4NAAkkCSQLJgQkkkAQSSBJIEkggCSSQBBJIEkgSSCApJkjT2SKK0iwfjSfSfwaSBJIEEkgCCSQJJAkkCSSQBBJIEkgSSCAJJJA0TEhhLoh87V1I58tNAUIFJIEEEkgggQQSSMaGOMYGrzhIIIEEEkgggSSQBBJIEkggCSSQJJCksJC2u/qrgSSQQJJAkkCSjA39jw1FWUm9B5IEEkgCCSSBBJIEkgSS+Vvmb5Cklg+yZR0skAQSSBJIEkiSscH8rdAjNUggCSSQBBJIAgkkgQQSSALJL0Iyf4MkgSSBBJJAAkkggSSZv6VfTecgCSSQQBJIIAkkkAQSSAIJJMn8DZJAAkkCSQIJJIEEkkACSQJJAgkkgQSSQAJJAkkCqTuk9f2gpvbDflw3agIJJJBAAgkkkEACCSSQQOIHJJBAAgkkkEACCSSQQAIJJJBAAgkkkEACCSSQQAIJJJBAAgkkkEACCSSQQAIJJJBAAgkkkEACCSSQQAIJJJAEEkgggQQSSCCBBBJIIIEEEkgggQQSSK4slkCSQJJAAkkggSSBJIEEkkACSSCBJIEkgdQFUlFWUu+BJIEEkkACSSCBJIEkgWT+lvkbJAkkCSQJJJAEEkgSSBJIEkggCSSQJJAkkEASSCAJJJAkkCSQQBJIIAkkkCSQJJBAEkggCSSQJJAkkEASSCAJJJCkj3oCdE+BfEjevLcAAAAASUVORK5CYII=";
+
 export const SCRIPT: Beat[] = [
   { wait: 300, ev: { kind: "turn_started" } },
   {
@@ -154,6 +159,22 @@ export const SCRIPT: Beat[] = [
           "... (truncated at 3 matches)",
         ].join("\n"),
         durationMs: 140,
+      }),
+    },
+  },
+  // view_image: the one call whose entire purpose is a picture the person can
+  // look at; its card opens itself (see ToolCard) and the group holds with it.
+  { wait: 400, ev: { kind: "tool_dispatch", tool: tool("view_image", { id: "vi1", args: JSON.stringify({ path: "shots/w280.png" }) }) } },
+  {
+    wait: 600,
+    ev: {
+      kind: "tool_result",
+      tool: tool("view_image", {
+        id: "vi1",
+        args: JSON.stringify({ path: "shots/w280.png" }),
+        output: "[image: shots/w280.png, image/png, 567729 bytes shown]",
+        images: [MOCK_SHOT],
+        durationMs: 30,
       }),
     },
   },

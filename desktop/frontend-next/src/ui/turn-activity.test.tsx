@@ -69,6 +69,21 @@ describe("the work under a turn's sentences", () => {
     expect(groups[1].querySelector('.nm[title="edit_file"]')).not.toBeNull();
   });
 
+  // The card opens itself for a picture (ToolCard); once the turn ends and the
+  // group folds by preference, that is where the picture goes unread — so the
+  // group holding one stays open too, until the reader closes it.
+  it("holds a group open while it holds a picture", () => {
+    const view: Item = { t: "tool", id: "v1", running: false, children: [],
+      tool: { id: "v1", name: "view_image", readOnly: true, args: '{"path":"shots/w280.png"}',
+        output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: ["data:image/png;base64,AAAA"] } };
+    const chunk = draw([user("u", "看看截图"), say("s1", "先跑一步"), call("t1", "bash"), say("s2", "再看一眼图"), view, say("s3", "好了")]);
+    const groups = [...chunk.querySelectorAll("details.activity-group")] as HTMLDetailsElement[];
+    expect(groups).toHaveLength(2);
+    expect(groups[1].open).toBe(true);
+    expect(groups[1].querySelector(".tshots img")).not.toBeNull();
+    expect(groups[0].open).toBe(false);
+  });
+
   it("keeps each sentence above the work that followed it", () => {
     const chunk = draw([
       user("u", "做这件事"),

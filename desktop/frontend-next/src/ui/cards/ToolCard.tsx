@@ -178,7 +178,10 @@ export function ToolCard({
   useEffect(() => {
     if (bad) setOpen(null);
   }, [bad]);
-  const open = touched ?? start;
+  // A picture a call handed back is the one thing that call existed to show, so
+  // its card opens itself; a reader who closes it keeps it closed.
+  const shots = (tool.images?.length ?? 0) > 0;
+  const open = touched ?? (start || shots);
   // The body of a finished, closed card is most of what a long session holds in
   // the page, so such a card does not mount it; once opened it stays, so what the
   // reader did inside (show all) survives closing it again.
@@ -201,10 +204,10 @@ export function ToolCard({
   // output yet: a row that cannot open is the one that looks stuck.
   const hasBody = Boolean(
     takeover || tool.diff || goal || tool.argumentNormalization || tool.name === "todo_write" ||
-    (tool.output && !echoed && children.length === 0) || tool.err || children.length || (activity && running && activityArgs),
+    (tool.output && !echoed && children.length === 0) || tool.err || children.length || (activity && running && activityArgs) || shots,
   );
   const activityResult = Boolean(
-    takeover || tool.diff || goal || tool.name === "todo_write" || tool.output || tool.err || children.length,
+    takeover || tool.diff || goal || tool.name === "todo_write" || tool.output || tool.err || children.length || shots,
   );
   const heading = (
     <>
