@@ -59,10 +59,16 @@ try {
       await page.keyboard.press("Escape");
       await dialog.waitFor({ state: "detached" });
       assert.equal(await page.locator(".user-image button").evaluate(el => el === document.activeElement), true);
-      await page.locator(".activity-group > summary").click();
+      // A call that showed the model a picture opens its card and group by
+      // itself; clicking either disclosure would fold it back. Open only what
+      // is still folded, so this guard holds under both the old and new default.
+      const group = page.locator(".activity-group");
+      if (!(await group.evaluate(el => el.open))) await group.locator("> summary").click();
       const tool = page.locator('[data-call="image-shot"] .tool-disclosure');
-      await tool.locator("summary .nm").click();
-      await page.getByRole("button", { name: "查看图片 工具截图 1", exact: true }).click();
+      if (!(await tool.evaluate(el => el.open))) await tool.locator("summary .nm").click();
+      const shot = page.getByRole("button", { name: "查看图片 工具截图 1", exact: true });
+      await shot.waitFor({ state: "visible" });
+      await shot.click();
       assert.equal(await page.getByRole("dialog").locator("img").getAttribute("src"), data);
       await page.getByRole("button", { name: "关闭图片预览" }).click();
       assert.equal(await tool.evaluate(el => el.open), true);
