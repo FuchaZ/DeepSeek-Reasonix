@@ -2,6 +2,7 @@ package boot
 
 import (
 	"context"
+	"slices"
 	"strings"
 	"testing"
 
@@ -118,9 +119,9 @@ func TestEffectPresetWithholdingMemoryReachesTheProviderBoundary(t *testing.T) {
 // projected blocks ride.
 func userTurnOf(t *testing.T, req provider.Request) string {
 	t.Helper()
-	for i := len(req.Messages) - 1; i >= 0; i-- {
-		if req.Messages[i].Role == provider.RoleUser {
-			return req.Messages[i].Content
+	for _, msg := range slices.Backward(req.Messages) {
+		if msg.Role == provider.RoleUser {
+			return msg.Content
 		}
 	}
 	t.Fatal("the request carried no user message")
