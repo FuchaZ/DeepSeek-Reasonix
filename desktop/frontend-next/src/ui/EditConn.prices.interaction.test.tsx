@@ -19,6 +19,8 @@ async function open(e: ProviderEntry) {
   const edit = vi.spyOn(port, "editProvider").mockResolvedValue(undefined as never);
   render(<EditConn entry={e} port={port as never} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
   await screen.findByText("按模型设置价格");
+  // The per-model tuning folds shut; opening it is part of reaching the rows.
+  await userEvent.click(screen.getByRole("button", { name: /按模型设置价格/ }));
   return { edit };
 }
 const field = (name: string) => screen.getByRole<HTMLInputElement>("textbox", { name });

@@ -30,18 +30,28 @@ func TestAssetRefusesAnUnknownKind(t *testing.T) {
 	}
 }
 
-// A shipped pack carries both images, and they are what a picker previews and
-// the window draws.
-func TestShippedPackServesItsImages(t *testing.T) {
+// A pack's images are what a picker previews and the window draws; the file a
+// pack carries is what Asset serves, whether the pack shipped or was installed.
+func TestPackServesItsImages(t *testing.T) {
 	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
-	raw, ctype, err := Asset("official-noir-gold", assetBackground)
+	writePack(t, Dir(), "imaged", `{"schemaVersion":1,"name":"Imaged",
+	  "background":{"image":"background.webp"},"tokens":{"light":{"bg":"#FFFFFF"},"dark":{"bg":"#000000"}}}`)
+	img := []byte("\x89PNG\r\n\x1a\n background")
+	if err := os.WriteFile(filepath.Join(Dir(), "imaged", "background.webp"), img, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	prev := []byte("\x89PNG\r\n\x1a\n preview")
+	if err := os.WriteFile(filepath.Join(Dir(), "imaged", "preview.webp"), prev, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	raw, ctype, err := Asset("imaged", assetBackground)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(raw) == 0 || ctype != "image/webp" {
+	if string(raw) != string(img) || ctype != "image/webp" {
 		t.Fatalf("background = %d bytes, %q", len(raw), ctype)
 	}
-	if _, _, err := Asset("official-noir-gold", assetPreview); err != nil {
+	if _, _, err := Asset("imaged", assetPreview); err != nil {
 		t.Fatalf("preview: %v", err)
 	}
 }

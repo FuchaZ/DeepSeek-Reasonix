@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import type { ProviderEntry } from "../port/port";
@@ -19,6 +19,8 @@ const relay = (over: Partial<ProviderEntry> = {}): ProviderEntry => ({
 
 const mount = (entry: ProviderEntry, editProvider = vi.fn(async () => {})) => {
   render(<EditConn entry={entry} port={{ editProvider } as unknown as Port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  // The per-model tuning folds shut; opening it is part of reaching the rows.
+  fireEvent.click(screen.getByRole("button", { name: /按模型设置限制/ }));
   return editProvider;
 };
 

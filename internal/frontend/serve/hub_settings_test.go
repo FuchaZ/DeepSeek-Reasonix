@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"reasonix/internal/base/testenv"
+	"reasonix/internal/ext/theme"
 	"reasonix/internal/platform/remotecloud"
 )
 
@@ -103,6 +104,21 @@ func TestMachineSettingsAssetsStayLocalWithRemoteFirst(t *testing.T) {
 	}
 	if err := os.WriteFile(filepath.Join(home, "config.toml"), []byte("[desktop.appearance.wallpaper]\nfile = \""+name+"\"\n"), 0o600); err != nil {
 		t.Fatal(err)
+	}
+	// A pack of this window's own, carrying both images the routes serve.
+	pack := filepath.Join(theme.Dir(), "official-noir-gold")
+	if err := os.MkdirAll(pack, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	packBody := `{"schemaVersion":1,"name":"Noir Gold","background":{"image":"background.webp"},"tokens":{
+	  "light":{"bg":"#FFFFFF","fg":"#111111"},"dark":{"bg":"#0B0B0B","fg":"#EEEEEE"}}}`
+	if err := os.WriteFile(filepath.Join(pack, "theme.json"), []byte(packBody), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, image := range []string{"preview.webp", "background.webp"} {
+		if err := os.WriteFile(filepath.Join(pack, image), []byte("png bytes"), 0o644); err != nil {
+			t.Fatal(err)
+		}
 	}
 	for _, path := range []string{"/themes/official-noir-gold/preview", "/themes/official-noir-gold/background", "/appearance/wallpaper/" + name} {
 		w := httptest.NewRecorder()

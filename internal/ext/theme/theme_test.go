@@ -118,8 +118,18 @@ func TestLoadRejectsAPathInsteadOfAnID(t *testing.T) {
 func TestShippedPacksAreReadable(t *testing.T) {
 	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
 	packs := List()
-	if len(packs) < 8 {
-		t.Fatalf("List = %d packs, want the shipped set", len(packs))
+	shipped := []string{"official-clear-blue", "official-cloudsea-gilt", "official-patina", "official-tea-green"}
+	if len(packs) != len(shipped) {
+		t.Fatalf("List = %d packs, want the shipped set %v", len(packs), shipped)
+	}
+	found := map[string]bool{}
+	for _, p := range packs {
+		found[p.ID] = true
+	}
+	for _, id := range shipped {
+		if !found[id] {
+			t.Fatalf("shipped pack %q is missing from the listing", id)
+		}
 	}
 	for _, p := range packs {
 		if p.Name == "" || len(p.Tokens["light"]) == 0 || len(p.Tokens["dark"]) == 0 {

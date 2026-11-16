@@ -47,6 +47,10 @@
 .prefs-card select.peerfield { width: 100%; text-overflow: ellipsis; white-space: nowrap; }
 .prefs-card .addp select { width: 100%; height: 32px; }
 .prefs-card .addp .unit-field { height: 32px; }
+.prefs-card .ml-head { width: 100%; box-sizing: border-box; padding: 3px 8px; border: 0; border-radius: var(--r-sm); background: transparent; cursor: pointer; text-align: left; }
+.prefs-card .ml-head:hover { background: var(--overlay); }
+.prefs-card .ml-head .studio-icon { width: 13px; height: 13px; margin-left: auto; flex: none; color: var(--faint); transition: transform var(--m-line); }
+.prefs-card .ml-group[data-shut] .ml-head .studio-icon { transform: rotate(-90deg); }
 .prefs-card .addp .ml-group { container: model-fields / inline-size; font-size: var(--fs-meta); }
 .prefs-card .addp .ml-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .prefs-card .addp .ml-row .me-name { grid-column: 1 / -1; }
@@ -383,8 +387,10 @@
 .prefs-card > .grp[data-inline] > .grp-items { grid-column: 2; grid-row: 1 / span 3; margin: 0; }
 .usage .utiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 .usage .utile-paid .v { font-size: calc(26px * var(--fs-scale, 1)); }
-.usage .ucharts { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; align-items: start; }
-@container prefsmain (max-width: 900px) { .usage .ucharts, .usage .utiles { grid-template-columns: minmax(0, 1fr); } }
+.usage .ucharts { display: flex; gap: 14px; align-items: stretch; }
+.usage .ucharts > .ucard:first-child { flex: 1.3 1 0; min-width: 0; }
+.usage .ucharts .ucharts-spend { flex: 1 1 0; min-width: 0; }
+@container prefsmain (max-width: 900px) { .usage .ucharts { flex-direction: column; } .usage .ucharts, .usage .utiles { grid-template-columns: minmax(0, 1fr); } }
 .prefs-sheet[data-solo="usage"] #set-usage > :is(.grp-hd, .hint, .apply) { display: none; }
 .grp[data-setting="market"], .grp[data-setting="market"]:hover { margin: 0; padding: 4px 0 0; border: 0; border-radius: 0; background: none; box-shadow: none; }
 .mkt .mkt-list[data-rows] { display: flex; flex-direction: column; margin: 0; padding: 0; list-style: none; }

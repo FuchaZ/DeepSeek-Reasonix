@@ -583,7 +583,6 @@ func sessionHolder(held *sessionstore.SessionLeaseError) map[string]any {
 	return map[string]any{"pid": held.Info.PID, "host": held.Info.Hostname}
 }
 
-
 // ownsSessionDir reports whether dir sits inside a workspace's sessions tree
 // this hub lists, which is the boundary a delete may not reach past.
 func (h *Hub) ownsSessionDir(dir string) bool {

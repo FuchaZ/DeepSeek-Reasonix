@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { t } from "../i18n";
 import type { ModelLimit } from "../port/port";
+import { StudioIcon } from "./StudioIcon";
 
 export interface LimitText {
   win: string;
@@ -42,13 +44,17 @@ export function ModelLimits({
 }) {
   const set = (model: string, patch: Partial<LimitText>) =>
     onChange({ ...value, [model]: { ...(value[model] ?? { win: "", out: "" }), ...patch } });
+  // The rows answer a tuning question most readers never ask, so the block
+  // folds shut; a stored override stays one press away.
+  const [open, setOpen] = useState(false);
   return (
-    <div className="ml-group" role="group" aria-label={t("models.limits_per_model")}>
-      <div className="ml-head">
+    <div className="ml-group" role="group" aria-label={t("models.limits_per_model")} data-shut={!open || undefined}>
+      <button type="button" className="ml-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <strong>{t("models.limits_per_model")}</strong>
         <span>{t("models.a_blank_field_follows_the")}</span>
-      </div>
-      <ul className="me-list ml-list">
+        <StudioIcon name="down" />
+      </button>
+      {open && <ul className="me-list ml-list">
         {models.map((model) => {
           const cur = value[model] ?? { win: "", out: "" };
           const from = inherited(model);
@@ -75,7 +81,7 @@ export function ModelLimits({
             </li>
           );
         })}
-      </ul>
+      </ul>}
     </div>
   );
 }

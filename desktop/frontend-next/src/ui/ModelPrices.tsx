@@ -1,5 +1,7 @@
+import { useState } from "react";
 import { t } from "../i18n";
 import type { ModelRate } from "../port/port";
+import { StudioIcon } from "./StudioIcon";
 import { shortId } from "./ModelLimits";
 
 export interface PriceText {
@@ -101,13 +103,17 @@ export function ModelPrices({
 }) {
   const set = (model: string, patch: Partial<PriceText>) =>
     onChange({ ...value, [model]: { ...(value[model] ?? blank()), ...patch } });
+  // Same fold as the limits block: the rows answer a tuning question most
+  // readers never ask, and a stored price stays one press away.
+  const [open, setOpen] = useState(false);
   return (
-    <div className="ml-group mp-group" role="group" aria-label={t("usage.price_by_model")}>
-      <div className="ml-head">
+    <div className="ml-group mp-group" role="group" aria-label={t("usage.price_by_model")} data-shut={!open || undefined}>
+      <button type="button" className="ml-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
         <strong>{t("usage.price_by_model")}</strong>
         <span>{t("usage.price_per_million_tokens_left")}</span>
-      </div>
-      <ul className="me-list ml-list">
+        <StudioIcon name="down" />
+      </button>
+      {open && <ul className="me-list ml-list">
         {models.map((model) => {
           const cur = value[model] ?? blank();
           const own = cur.inp !== "" || cur.out !== "";
@@ -176,7 +182,7 @@ export function ModelPrices({
             </li>
           );
         })}
-      </ul>
+      </ul>}
     </div>
   );
 }

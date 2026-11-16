@@ -163,11 +163,21 @@ func find(t *testing.T, packs []themeRow, id string) themeRow {
 
 // The window draws the background straight from this URL, so it has to answer
 // with the image bytes and its own type — not JSON, and not the SPA shell.
-func TestThemeAssetServesTheShippedImage(t *testing.T) {
+func TestThemeAssetServesThePackImage(t *testing.T) {
 	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
+	installPack(t, "imaged", "Imaged")
+	body := `{"schemaVersion":1,"name":"Imaged","background":{"image":"background.webp"},"tokens":{
+	  "light":{"bg":"#FFFFFF","fg":"#111111"},"dark":{"bg":"#0B0B0B","fg":"#EEEEEE"}}}`
+	if err := os.WriteFile(filepath.Join(theme.Dir(), "imaged", "theme.json"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	img := []byte("\x89PNG\r\n\x1a\n background webp bytes for the route to serve")
+	if err := os.WriteFile(filepath.Join(theme.Dir(), "imaged", "background.webp"), img, 0o644); err != nil {
+		t.Fatal(err)
+	}
 	srv := themeServer(t)
 
-	resp, err := http.Get(srv.URL + "/themes/official-noir-gold/background")
+	resp, err := http.Get(srv.URL + "/themes/imaged/background")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,9 +188,9 @@ func TestThemeAssetServesTheShippedImage(t *testing.T) {
 	if ct := resp.Header.Get("Content-Type"); ct != "image/webp" {
 		t.Fatalf("content type = %q", ct)
 	}
-	body, _ := io.ReadAll(resp.Body)
-	if len(body) < 1000 {
-		t.Fatalf("background is %d bytes", len(body))
+	got, _ := io.ReadAll(resp.Body)
+	if string(got) != string(img) {
+		t.Fatalf("background = %d bytes, want the pack's own", len(got))
 	}
 }
 
@@ -211,15 +221,26 @@ func TestThemeAssetRefusesTraversalAndUnknownKinds(t *testing.T) {
 // a picker can show the two opacities before anything is activated.
 func TestThemesListCarriesBackgroundPlacement(t *testing.T) {
 	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
-	got := find(t, listThemes(t, themeServer(t).URL), "official-noir-gold")
+	installPack(t, "placed", "Placed")
+	body := `{"schemaVersion":1,"name":"Placed","background":{"image":"background.webp","focusX":0.8,"focusY":0.3,"safeArea":"left","homeOpacity":0.9,"taskOpacity":0.15},"tokens":{
+	  "light":{"bg":"#FFFFFF","fg":"#111111"},"dark":{"bg":"#0B0B0B","fg":"#EEEEEE"}}}`
+	if err := os.WriteFile(filepath.Join(theme.Dir(), "placed", "theme.json"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"background.webp", "preview.webp"} {
+		if err := os.WriteFile(filepath.Join(theme.Dir(), "placed", name), []byte("png bytes"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got := find(t, listThemes(t, themeServer(t).URL), "placed")
 	if got.Background == nil || !got.Background.Image {
-		t.Fatalf("background = %+v, want the shipped image", got.Background)
+		t.Fatalf("background = %+v, want the pack's own image", got.Background)
 	}
 	if got.Background.TaskOpacity >= got.Background.HomeOpacity {
 		t.Fatalf("opacities = %+v, want the image to recede while working", got.Background)
 	}
 	if !got.HasPreview {
-		t.Fatal("shipped pack reports no preview")
+		t.Fatal("pack with a preview reports none")
 	}
 }
 
