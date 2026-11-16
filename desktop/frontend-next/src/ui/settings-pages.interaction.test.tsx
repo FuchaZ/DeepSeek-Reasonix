@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react";
 import "./testkit";
 import { Settings } from "./Settings";
 import type { SessionStatus } from "../port/port";
@@ -33,8 +33,9 @@ describe("the permissions page", () => {
     draw("tools");
     await waitFor(() => expect(shown("approval")).toBe(true));
     expect(shown("sandbox")).toBe(true);
-    expect(shown("browser-tools")).toBe(true);
-    expect([...document.querySelectorAll(".prefs-card > header h3")].map((h) => h.textContent)).toEqual(["批准", "沙箱与执行", "联网", "扩展范围"]);
+    // The web answers what the model may reach, so it lives on the agent page.
+    expect(shown("browser-tools")).toBe(false);
+    expect([...document.querySelectorAll(".prefs-card > header h3")].map((h) => h.textContent)).toEqual(["批准", "沙箱与执行", "扩展范围"]);
     expect(document.querySelectorAll(".prefs-page")).toHaveLength(0);
   });
 
@@ -58,6 +59,9 @@ describe("the appearance family", () => {
     expect(shown("folding")).toBe(false);
     cleanup();
     draw("controls");
+    // The keys card folds shut; opening it is how its rows reach the page.
+    await waitFor(() => expect(document.querySelector('[data-action="settings.keys-fold"]')).toBeTruthy());
+    fireEvent.click(document.querySelector('[data-action="settings.keys-fold"]')!);
     await waitFor(() => expect(shown("keys")).toBe(true));
     expect(shown("scheme")).toBe(false);
     cleanup();
@@ -68,12 +72,14 @@ describe("the appearance family", () => {
 
   it("lists the shortcuts together, then what a running turn does with a message", async () => {
     draw("controls");
+    await waitFor(() => expect(document.querySelector('[data-action="settings.keys-fold"]')).toBeTruthy());
+    fireEvent.click(document.querySelector('[data-action="settings.keys-fold"]')!);
     await waitFor(() => expect(shown("keys")).toBe(true));
     const order = [...document.querySelectorAll<HTMLElement>("[data-setting]")]
       .filter((el) => shown(el.dataset.setting ?? ""))
       .map((el) => el.dataset.setting)
       .filter((id) => ["running-message-intent", "esc-stop", "keys"].includes(id ?? ""));
-    expect(order).toEqual(["keys", "esc-stop", "running-message-intent"]);
+    expect(order).toEqual(["running-message-intent", "keys", "esc-stop"]);
   });
 
   it("lands an anchor on the page that owns it, whatever section it was opened under", async () => {

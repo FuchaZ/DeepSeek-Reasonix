@@ -142,7 +142,9 @@ describe("what the window tells the kernel it is looking at", () => {
   it("does not ask the kernel for a word until typing pauses", async () => {
     const { pager } = draw(workspace(50, 132));
     const box = screen.getByRole("searchbox", { name: "搜索会话 / 项目" });
-    await userEvent.type(box, "chat 7");
+    // One burst: a wall-clock debounce can land a pause inside spaced typing,
+    // which is the behaviour under test only once the word is finished.
+    await userEvent.type(box, "chat 7", { delay: null });
     const asked = (pager.view as ReturnType<typeof vi.fn>).mock.calls.map((c) => c[0].q);
     expect(asked.filter((q) => q !== "")).toEqual([]);
     await waitFor(() => expect(lastView(pager)?.q).toBe("chat 7"));

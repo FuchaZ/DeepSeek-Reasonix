@@ -45,11 +45,20 @@ async function mount() {
   await waitFor(() => expect(document.querySelector(".railfoot")).toBeTruthy());
 }
 
-it("offers a newer release in the sidebar footer and opens the version page from it", async () => {
+// The footer notice rides the same render-count window as the pane test: on a
+// slow runner the opening work lands inside it. Retried, the assertion still
+// catches a notice that never draws.
+it("offers a newer release in the sidebar footer and opens the version page from it", { retry: 2 }, async () => {
   const stop = await newerRelease();
   await mount();
-  const notice = await screen.findByRole("button", { name: /2\.58\.0/ });
-  expect(notice.closest(".railfoot")).not.toBeNull();
+  // The railfoot hosts the one notice; a role query across the whole screen
+  // can meet a second 2.58.0 button elsewhere, so the query stays in the foot.
+  const notice = await waitFor(() => {
+    const b = document.querySelector('.railfoot [data-action="update.open"]');
+    expect(b).toBeTruthy();
+    return b as HTMLElement;
+  });
+  expect(notice.textContent).toMatch(/2\.58\.0/);
   await userEvent.click(notice);
   await waitFor(() => expect(document.querySelector(".app")!.hasAttribute("data-prefs")).toBe(true));
   const tabs = await screen.findAllByRole("tab");

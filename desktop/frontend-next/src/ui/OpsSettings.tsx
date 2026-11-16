@@ -34,7 +34,7 @@ export function OpsSettings({ landed }: { landed?: string }) {
       <section className="prefs-card" data-shut={!keysOpen || undefined}>
         <header className="cardhead">
           <h3>{t("settings.keyboard_shortcuts")}</h3>
-          <button type="button" className="foldhead" aria-expanded={keysOpen} aria-controls="keys-card-body"
+          <button type="button" className="foldhead" aria-expanded={keysOpen} aria-controls="keys-card-body" data-action="settings.keys-fold"
             aria-label={t("settings.keyboard_shortcuts")} onClick={() => setKeysOpen((v) => !v)}>
             <StudioIcon name="down" />
           </button>

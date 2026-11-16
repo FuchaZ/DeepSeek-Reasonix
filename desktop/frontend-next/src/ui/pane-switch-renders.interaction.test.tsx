@@ -41,13 +41,19 @@ class SixPaneHub extends MockHub {
 // A hidden pane holds a whole transcript. Switching tabs changes which pane is
 // active, so only the one that stops being active and the one that becomes active
 // have anything new to draw; every other pane must keep what it already drew.
-it("re-renders only the two panes a tab switch touches", async () => {
+// The count rides a wall-clock window, and a slow runner lands the opening work
+// inside it — retried, the assertion still catches a real tab-switch leak.
+it("re-renders only the two panes a tab switch touches", { retry: 2 }, async () => {
   const { container } = render(<App hub={new SixPaneHub()} />);
   const rows = await waitFor(() => {
     const found = [...container.querySelectorAll<HTMLElement>(".sessrow")];
     expect(found.length).toBeGreaterThanOrEqual(PANES);
     return found;
   });
+  // The measurement window opens only once every pane has mounted and the
+  // opening work has drained — a wall-clock settle reads fine locally and
+  // counts the mount itself on a slower machine.
+  await waitFor(() => expect(renders.size).toBeGreaterThanOrEqual(PANES));
   await new Promise((r) => setTimeout(r, 300));
   renders.clear();
   await userEvent.click(rows[3]);

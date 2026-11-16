@@ -152,6 +152,7 @@ export const SESSION: Messages = {
   "session.session_overview": { zh: "会话概览", en: "Session overview" },
   "session.session_row_buttons": { zh: "会话行快捷按钮", en: "Session row buttons" },
   "session.session_scope": { zh: "会话范围", en: "Session scope" },
+  "session.clear_the_filter": { zh: "清除筛选", en: "Clear filter" },
   "session.session_tabs": { zh: "会话标签栏", en: "Session tabs" },
   "session.session_title": { zh: "会话标题", en: "Session title" },
   "session.several_sessions_writing_one_project": { zh: "多个会话同时写一个项目", en: "Several sessions writing one project" },

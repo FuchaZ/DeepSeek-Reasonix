@@ -405,7 +405,8 @@ describe("mark as read from the row menu", () => {
     expect(marked).toEqual([RELEASE]);
     expect(dotIn(screen.getByRole("treeitem", { name: /Docs sweep/ }))).toBeTruthy();
     expect(k.viewed).toEqual([]);
-    await userEvent.pointer({ keys: "[MouseRight]", target: screen.getByText("Release notes") });
+    // The row's hover card carries the title too, so the query stays in the row.
+    await userEvent.pointer({ keys: "[MouseRight]", target: within(screen.getByRole("treeitem", { name: /Release notes/ })).getByText("Release notes") });
     expect(screen.queryByRole("menuitem", { name: "标为已读" })).toBeNull();
   });
 

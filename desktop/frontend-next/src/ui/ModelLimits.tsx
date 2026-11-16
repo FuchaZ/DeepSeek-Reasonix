@@ -49,7 +49,7 @@ export function ModelLimits({
   const [open, setOpen] = useState(false);
   return (
     <div className="ml-group" role="group" aria-label={t("models.limits_per_model")} data-shut={!open || undefined}>
-      <button type="button" className="ml-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+      <button type="button" className="ml-head" aria-expanded={open} data-action="provider.model-fold" data-value="limits" onClick={() => setOpen((v) => !v)}>
         <strong>{t("models.limits_per_model")}</strong>
         <span>{t("models.a_blank_field_follows_the")}</span>
         <StudioIcon name="down" />

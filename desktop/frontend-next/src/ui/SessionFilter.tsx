@@ -19,6 +19,15 @@ export function SessionFilter({ scope, counts, onScope }: ScopeProps) {
     <div className="session-filter">
       <ScopeClock />
       <ScopePicker scope={scope} counts={counts} onScope={onScope} />
+      {/* One press back to 全部, so a narrow filter never traps the list; the
+          dropdown itself never carries the way out. */}
+      {scope !== "all" && (
+        <button type="button" className="session-filter-clear" data-action="session.filter" data-value="all"
+          aria-label={t("session.clear_the_filter")} title={t("session.clear_the_filter")}
+          onClick={() => onScope("all")}>
+          <StudioIcon name="close" />
+        </button>
+      )}
     </div>
   );
 }

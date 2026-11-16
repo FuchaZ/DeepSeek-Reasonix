@@ -64,7 +64,9 @@ const toggleSidebar = () => userEvent.keyboard("{Control>}b{/Control}");
 
 async function openAppearance() {
   await userEvent.click(document.querySelector<HTMLElement>('[data-action="chrome.settings"]')!);
-  await userEvent.click(await screen.findByRole("tab", { name: /^操作与性能/ }));
+  // 图标栏 answers what the conversation shows around itself, so it lives on
+  // the conversation-display page now.
+  await userEvent.click(await screen.findByRole("tab", { name: /^对话显示/ }));
   await screen.findByRole("group", { name: "图标栏" });
 }
 const choice = (name: string) => screen.getByRole("button", { name });

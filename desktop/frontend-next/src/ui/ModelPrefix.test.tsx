@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import type { ModelEntry, ProviderEntry } from "../port/port";
@@ -32,6 +32,8 @@ it("draws the model menu and the usage list without the shared prefix, a typed a
 it("shows the short name on a limits row and keeps the full id in the tooltip", () => {
   render(<ModelLimits models={["group/deepseek-v4.1-flash", "other"]} value={{}} onChange={vi.fn()} inherited={() => null}
     labels={{ "group/deepseek-v4.1-flash": "deepseek-v4.1-flash" }} />);
+  // The block folds shut; opening it is part of reaching the rows.
+  fireEvent.click(screen.getByRole("button", { name: /按模型设置限制/ }));
   const row = document.querySelector('[data-model="group/deepseek-v4.1-flash"]')!;
   const name = within(row as HTMLElement).getByText(/deepseek/);
   expect(name.textContent).toBe("deepseek-v4.1-flash");

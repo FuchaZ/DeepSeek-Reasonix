@@ -59,7 +59,9 @@ it("drops the clock once the read settles", () => {
   rerender(draw(true));
   expect(screen.queryByText("3s")).toBeNull();
   expect(screen.queryByText("正在读取文件夹…")).toBeNull();
-  expect(screen.getByText("尚无文件夹")).toBeTruthy();
+  // A settled empty tree is two standing runs, each saying it holds nothing.
+  expect(screen.getByText("暂无项目")).toBeTruthy();
+  expect(screen.getByText("暂无任务")).toBeTruthy();
   expect(vi.getTimerCount()).toBe(0);
 });
 

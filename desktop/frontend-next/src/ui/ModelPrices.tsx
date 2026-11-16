@@ -108,7 +108,7 @@ export function ModelPrices({
   const [open, setOpen] = useState(false);
   return (
     <div className="ml-group mp-group" role="group" aria-label={t("usage.price_by_model")} data-shut={!open || undefined}>
-      <button type="button" className="ml-head" aria-expanded={open} onClick={() => setOpen((v) => !v)}>
+      <button type="button" className="ml-head" aria-expanded={open} data-action="provider.model-fold" data-value="prices" onClick={() => setOpen((v) => !v)}>
         <strong>{t("usage.price_by_model")}</strong>
         <span>{t("usage.price_per_million_tokens_left")}</span>
         <StudioIcon name="down" />
