@@ -2,7 +2,7 @@
 owner: @Oliver-Rui
 backup: @esengine
 status: active
-reviewed: 2026-11-14
+reviewed: 2026-11-16
 ---
 
 # Reasonix Studio Tweaks — handoff
@@ -238,3 +238,79 @@ The README open item from §5 is closed: both READMEs now tell the 2.61.0 handov
 | `vite build` | clean |
 | The running app at 100% and 115% zoom | the picker, both groups, the pill, the dropdown rows and the windowbar verified; the windowbar's buttons also by computed `webkitAppRegion` with the platform attribute stubbed (the plain browser does not render them) |
 
+## 7. The torch round — the other fork's sidebar, brought over
+
+`Oliver-Rui/DeepSeek-Reasonix-torch` runs a parallel line on the same base
+(`cd20bb50`, 2026-11-11). Ten of its commits were already here from the 2.62.0
+round — `peers.incoming`, `titleauto`, the loopback provider grant, the market
+and community removal — so this revision is what those rounds had not taken.
+
+Four commits carry it: `0f7226c` (kernel data, door names, message times,
+dispatch records), `2ad7fb3` (the dispatch chip and `peers.cross_project`),
+`159861c` (the sidebar), `1cf3a43` (the prefix retirement).
+
+### Kernel
+
+- A sessions tree that nests transcripts by date is walked whole: listing, archive,
+  empty reclamation, order and the removal boundary all read the tree, not one folder.
+  `SetDatedSessionPaths` is set for the app's own folder only, so a project's
+  conversations stay flat beside their siblings.
+- A launch refuses the home directory a shortcut hands it (`sameRealDir`), and
+  removing a project writes a tombstone (`workspacelist.List.Removed`, bounded at
+  64) that no source listing unpicked folders writes back. Adding the folder again
+  lifts it.
+- `ListedModel.DisplayName` → `Probe.Names` → the check's `names`;
+  `POST /providers/refresh-models` writes a saved endpoint's list back with those
+  names as blank aliases, and a startup pass fills them once per process.
+- `DispatchThread` and `dispatchBook.threads` are the sender's own record of what
+  it dispatched and where each task landed, served by `GET /dispatch-threads`.
+  `NoteDispatchedSession` carries the role, and `DispatchRoles()` outlives the
+  partner's pane, which a live-runtime walk could not say.
+- `peers.cross_project` answers always / paired / never, user file only, refused
+  as `peer.invalid_cross_project`.
+- `ModelShort` is the id's own last path segment and `sharedModelPrefix` is gone;
+  `hide_model_prefix` still parses on both sides, and nothing reads it.
+
+### Frontend
+
+- Two standing runs with their own labels (`WorkspaceGroupHeaders`).
+- One insertion line for project rows, group labels and conversation rows
+  (`useWorkspaceDrag`, `useSessionMove.moveTo`, `dragghost`).
+- A dated reading (`timeBuckets`, `railTimeGroups`) and the new-session pill
+  (`WorkspacePill`, `BlankProjectDialog`, `useNewSessionPicker`).
+- Message times (`messagetimes`, `MessageTimesSetting`), the dispatch chip
+  (`DispatchThreadsBar`), the row's hover card (`SessionHoverCard`), and fifteen
+  vendor marks behind `markForProvider`.
+
+### Not taken, and why
+
+- **The version catalog** (`studio_release_catalog.go`, `Versions.tsx`): it replaces
+  the hub's install / pin with a plain download list, and this tree's release is
+  `release-fork.yml`. Two designs, one of them has to go first.
+- **The standalone cross-chat settings page** (`PeersChatPage.tsx`): it collides with
+  §6's placement — the switches stay on the peers page this tree already has.
+- Its CI workflows (`attach-studio-asset`, `issue-builder`), its brand, and the two
+  workflows this tree deleted on purpose.
+
+### Checks run for this revision
+
+| Check | Result |
+| --- | --- |
+| `gofmt -l`, `go vet ./...` | clean |
+| `go test ./internal/model/... ./internal/session/control/` | pass |
+| `go test ./internal/frontend/serve/` (dispatch, peers, providers, tree, export, hub) | pass |
+| `go test ./internal/state/sessionstore/ ./internal/state/workspacelist/` | pass, including the dated-folder and tombstone cases added here |
+| `tsc --noEmit`, `npm run build` | clean |
+| `vitest` sidebar suite (15 files) | 123/123 |
+| `vitest` actions, i18n, sessions | pass, with `UNDECLARED_CEILING` at 213 |
+| `repolint -changed` | clean; `Workspaces.tsx` carries its 358-line baseline |
+
+### Debts
+
+- `Workspaces.tsx` (1158 lines) is the round's carry-forward; the extraction that
+  earns the ceiling back is the next pass.
+- Three inline inputs on the new rows are still unnamed in the census (210 → 213;
+  four others were named instead).
+- The Windows build was made here at 2.65.0. `node packaging/build-host.js` cannot
+  fetch the CUA driver on this machine, so the kernel comes from the same `go build`
+  the script runs, and `reasonix-studio-host.exe` is reused from `bin/`.
