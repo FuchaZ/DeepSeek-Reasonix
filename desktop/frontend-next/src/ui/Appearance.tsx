@@ -12,6 +12,7 @@ import { pct } from "../i18n/format";
 import { reason } from "../i18n/kernel";
 import { useCrop } from "./useCrop";
 import { WindowSection } from "./WindowSection";
+import { GraphicsSection } from "./GraphicsSection";
 import { SectionCard } from "./SectionCard";
 import { SegChoice, SettingRow } from "./SettingRow";
 import { Switch } from "./Switch";
@@ -507,6 +508,7 @@ export function Appearance({ port, theme, onTheme, contrast, onContrast, weight,
 
           <WindowSection port={port} />
 
+        <GraphicsSection />
       </SectionCard>
     </>
   );

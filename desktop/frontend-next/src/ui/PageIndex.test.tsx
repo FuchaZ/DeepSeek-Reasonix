@@ -24,9 +24,9 @@ describe("the index at the top of a settings page", () => {
     const go = vi.fn();
     const items = entries("session");
     render(<PageIndex items={items} onGo={go} />);
-    const peers = items.find((e) => e.anchor === "peers")!;
-    await userEvent.click(document.querySelector(`[data-target="peers"]`) as HTMLElement);
-    expect(go).toHaveBeenCalledWith(peers);
+    const presets = items.find((e) => e.anchor === "agent-presets")!;
+    await userEvent.click(document.querySelector(`[data-target="agent-presets"]`) as HTMLElement);
+    expect(go).toHaveBeenCalledWith(presets);
   });
 
   it("says nothing on a page too small to need it", () => {
@@ -41,12 +41,12 @@ describe("which settings a page's index lists", () => {
     expect(shown.map((e) => e.anchor)).toEqual(entries("session").map((e) => e.anchor));
   });
 
-  // The index reads the page: four cards in one order and a row of chips in
-  // another made the reader hunt for a block the chips had already passed.
+  // The index reads the page: cards in one order and a row of chips in another
+  // made the reader hunt for a block the chips had already passed.
   it("follows the order the page draws its blocks in", () => {
     expect(pageIndexOf(SETTINGS, "session").map((e) => e.anchor)).toEqual([
       "agent-presets", "plan-approval", "ask-timeout", "turn-narration", "progress-watch",
-      "session-ref", "subagent-claims", "write-lease", "peers", "hooks", "scheduled-runs",
+      "hooks", "scheduled-runs",
     ]);
   });
 

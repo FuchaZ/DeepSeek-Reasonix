@@ -41,6 +41,7 @@ export const NAV: [string, [Section, string][]][] = [
       ["common", "settings.common"],
       ["model", "common.models"],
       ["session", "settings.agent_behaviour"],
+      ["peers", "settings.session_cross_chat"],
       ["tools", "settings.permissions_and_safety"],
       ["ext", "ext.extension"],
       ["display", "settings.conversation_display"],
@@ -58,6 +59,7 @@ export const SECTION_DESC: Partial<Record<Section, string>> = {
   common: "settings.the_few_settings_changed_most",
   model: "settings.which_service_to_use_which",
   session: "settings.how_it_thinks_how_it",
+  peers: "settings.session_cross_chat_quoted_context",
   tools: "settings.what_it_can_touch_approval",
   ext: "settings.skills_external_tools_plugins_automation",
   display: "settings.what_the_conversation_shows_and",
@@ -147,6 +149,7 @@ export const SETTINGS: SettingEntry[] = [
   // people to predict the amount of verification before writing the task made
   // an internal policy look like a required work mode.
   { section: "common", anchor: "default-mode", title: "safety.how_new_conversations_start", scope: "machine", apply: "on-open", keywords: ["plan", "默认模式", "协作方式", "default_mode", "新会话"] },
+  { section: "common", anchor: "update-mode", title: "about.update_mode", scope: "machine", apply: "immediate", keywords: ["自动更新", "检查更新", "更新提醒", "后台", "update", "auto update", "notify", "自动下载", "download"] },
   { section: "common", anchor: "language", title: "common.language", scope: "machine", apply: "restart", keywords: ["中文", "english", "界面语言", "英文", "英语"] },
   { section: "common", anchor: "send-shortcut", title: "composer.send_shortcut", scope: "machine", apply: "immediate", keywords: ["发送", "回车", "换行", "enter", "ctrl", "cmd"] },
   // Immediate because the endpoint hands the holder every running sink reads,
@@ -175,15 +178,18 @@ export const SETTINGS: SettingEntry[] = [
   { section: "session", anchor: "ask-timeout", title: "safety.question_wait_time", scope: "machine", apply: "immediate", keywords: ["ask", "跳过", "无人回答", "长任务", "超时", "自动继续"] },
   { section: "session", anchor: "turn-narration", title: "settings.narration_between_tool_calls", scope: "machine", apply: "immediate", keywords: ["叙述", "总结", "小轮", "工具之间", "详细", "简短", "思路", "监控", "narration"] },
   { section: "session", anchor: "progress-watch", title: "panels.long_stretches_without_progress", scope: "machine", apply: "immediate", keywords: ["暂停", "无进展", "空转", "卡住", "循环", "轮次", "token"] },
-  { section: "session", anchor: "session-ref", title: "composer.size_of_a_referenced_conversation", scope: "machine", apply: "immediate", keywords: ["引用", "历史会话", "过往会话", "上下文", "长度", "token", "session"] },
-  { section: "session", anchor: "subagent-claims", title: "session.sub_agent_write_scope", scope: "machine", apply: "runtime-rebuild", keywords: ["subagent", "子代理", "并发", "write_paths", "乐观", "optimistic", "写锁"] },
-  // The lease is built with the session and a rebuild adopts the one it holds,
-  // so the save reaches only sessions opened afterwards; the handler rebuilds
-  // nothing.
-  { section: "session", anchor: "write-lease", title: "session.several_sessions_writing_one_project", scope: "machine", apply: "on-open", keywords: ["lease", "写锁", "并行", "多会话", "乐观", "optimistic", "write_lease", "等待"] },
-  { section: "peers", anchor: "peers", title: "remote.messages_between_sessions_experimental", scope: "machine", apply: "next-turn", keywords: ["peer", "会话间", "消息", "发送", "批准", "挂起", "另一个会话"] },
-  { section: "peers", anchor: "peer-projects", within: "peers", title: "remote.projects_allowed_through", scope: "machine", apply: "next-turn", keywords: ["放行", "项目", "不再询问", "长期", "撤销", "peer", "release", "会话间"] },
-  { section: "peers", anchor: "peers-cross-project", within: "peers", title: "remote.cross_project", scope: "machine", apply: "next-turn", keywords: ["跨项目", "派发", "配对", "禁止", "cross_project", "dispatch", "peer"] },
+  { section: "peers", anchor: "peers", title: "remote.messages_between_sessions_experimental", scope: "machine", apply: "next-turn", keywords: ["peer", "会话间", "互聊", "会话互聊", "消息", "发送", "批准", "挂起", "另一个会话"] },
+  { section: "peers", anchor: "peer-projects", within: "peers", title: "remote.projects_allowed_through", scope: "machine", apply: "next-turn", keywords: ["放行", "项目", "不再询问", "长期", "撤销", "peer", "release", "会话间", "会话互聊"] },
+  // The two ceilings on handing a task over: how deep a dispatch may chain, and
+  // how many sessions one turn may hand to at once. Saved with the switches
+  // above, and read the same way — at the next turn boundary.
+  { section: "peers", anchor: "peers-dispatch-depth", title: "settings.peers_dispatch_depth", scope: "machine", apply: "next-turn", keywords: ["穿透", "层", "深度", "dispatch", "depth"] },
+  { section: "peers", anchor: "peers-dispatched-sessions", title: "settings.peers_dispatched_sessions", scope: "machine", apply: "next-turn", keywords: ["并发", "同时派发", "上限", "concurrent"] },
+  // The outgoing answer: what this session's model may hand into the user's
+  // other projects. Saved with the switches above, applied at the next turn.
+  { section: "peers", anchor: "peers-cross-project", within: "peers", title: "remote.cross_project", scope: "machine", apply: "next-turn", keywords: ["跨项目", "派发", "白名单", "始终允许", "配对", "禁止", "dispatch", "peer"] },
+  { section: "peers", anchor: "session-ref", title: "composer.size_of_a_referenced_conversation", scope: "machine", apply: "immediate", keywords: ["引用", "历史会话", "过往会话", "上下文", "长度", "token", "session"] },
+  { section: "peers", anchor: "subagent-claims", title: "session.sub_agent_write_scope", scope: "machine", apply: "runtime-rebuild", keywords: ["subagent", "子代理", "并发", "write_paths", "乐观", "optimistic", "写锁"] },
   // Hooks carry a scope control of their own, and the kernel takes that choice
   // as a parameter (hook.Scope).
   { section: "session", anchor: "hooks", title: "settings.hooks", scope: "chosen", apply: "immediate", keywords: ["钩子", "hook", "触发"] },
@@ -198,6 +204,10 @@ export const SETTINGS: SettingEntry[] = [
   { section: "tools", anchor: "tool-list", title: "ext.tools_the_model_can_use", scope: "machine", apply: "on-open", keywords: ["禁用", "关闭工具", "tools.disabled", "省 token", "提示词开销", "web_fetch", "denylist"] },
   { section: "tools", anchor: "sandbox", title: "settings.sandbox", scope: "machine", apply: "runtime-rebuild", keywords: ["隔离", "联网", "写权限", "ssh-agent"] },
   { section: "tools", anchor: "shell", title: "common.which_program_runs_commands", scope: "machine", apply: "runtime-rebuild", keywords: ["bash", "powershell", "解释器"] },
+  // The lease is built with the session and a rebuild adopts the one it holds,
+  // so the save reaches only sessions opened afterwards; the handler rebuilds
+  // nothing.
+  { section: "tools", anchor: "write-lease", title: "session.several_sessions_writing_one_project", scope: "machine", apply: "on-open", keywords: ["lease", "写锁", "并行", "多会话", "乐观", "optimistic", "write_lease", "等待"] },
   { section: "tools", anchor: "web-access", title: "models.web_search_and_fetch", scope: "machine", apply: "on-open", keywords: ["搜索", "searxng", "deepseek", "抓取", "计费", "付费", "web search", "fetch"] },
   // The tools are bound while a runtime is assembled, and the save rebuilds this
   // one. The shared [browser] enabled key belongs to the 1.x command line.
@@ -235,7 +245,6 @@ export const SETTINGS: SettingEntry[] = [
   { section: "controls", anchor: "open-session-limit", title: "settings.session_tabs_kept_open", scope: "machine", apply: "immediate", keywords: ["标签", "窗格", "收起", "保留", "tabs", "panes", "warm", "内存", "memory"] },
   { section: "controls", anchor: "live-stream-budget", title: "settings.session_tabs_kept_live", scope: "machine", apply: "immediate", keywords: ["连接", "实时", "标签", "窗格", "卡死", "停止", "connection", "stream", "tabs", "stuck", "busy"] },
   { section: "controls", anchor: "page-sleep", title: "settings.idle_page_sleep", scope: "machine", apply: "immediate", keywords: ["休眠", "睡眠", "空闲", "内存", "收起", "browser", "page", "sleep", "memory"] },
-  { section: "controls", anchor: "graphics", title: "look.graphics", scope: "machine", apply: "restart", keywords: ["硬件加速", "显卡", "gpu", "软件渲染", "占用", "卡顿"] },
 
   { section: "appearance", anchor: "scheme", title: "settings.palette", scope: "machine", apply: "immediate", keywords: ["主题", "theme", "色板", "高级外观", "导入主题", "自定义颜色", "colours"] },
   { section: "appearance", anchor: "wallpaper", title: "look.wallpaper", scope: "machine", apply: "immediate", keywords: ["背景", "图片"] },
@@ -245,6 +254,7 @@ export const SETTINGS: SettingEntry[] = [
   { section: "appearance", anchor: "weight", title: "look.text_weight", scope: "machine", apply: "immediate", keywords: ["加粗", "字重"] },
   { section: "appearance", anchor: "contrast", title: "look.text_contrast", scope: "machine", apply: "immediate", keywords: ["柔和", "对比"] },
   { section: "appearance", anchor: "window", title: "common.window", scope: "machine", apply: "immediate", keywords: ["托盘", "关闭行为", "休眠", "睡眠"] },
+  { section: "appearance", anchor: "graphics", title: "look.graphics", scope: "machine", apply: "restart", keywords: ["硬件加速", "显卡", "gpu", "软件渲染", "占用", "卡顿"] },
 
   // A memory's project/global flag is a scope control of its own, and the
   // kernel takes that choice as a parameter.
@@ -269,7 +279,6 @@ export const SETTINGS: SettingEntry[] = [
   { section: "remote", anchor: "phone-device", within: "phone", title: "remote.this_phones_reminders", scope: "machine", apply: "immediate", keywords: ["推送", "提醒", "手机", "push", "notification"] },
 
   { section: "versions", anchor: "versions", title: "common.version", scope: "machine", apply: "immediate", keywords: ["更新", "升级"] },
-  { section: "versions", anchor: "update-mode", title: "about.update_mode", scope: "machine", apply: "immediate", keywords: ["自动更新", "检查更新", "更新提醒", "后台", "update", "auto update", "notify", "自动下载", "download"] },
   { section: "versions", anchor: "logs", title: "about.logs_and_abnormal_exit_records", scope: "machine", apply: "none", keywords: ["日志", "崩溃", "闪退", "异常退出", "log", "logs", "crash", "路径"] },
   { section: "account", anchor: "trace-export", title: "data.trace_export", scope: "machine", apply: "on-open", keywords: ["追踪", "opentelemetry", "otlp", "观测", "遥测", "trace", "collector", "收集器"] },
 
@@ -278,7 +287,7 @@ export const SETTINGS: SettingEntry[] = [
 
 export const SETTING_AT = (anchor: string) => SETTINGS.find((s) => s.anchor === anchor);
 
-export const FOLDS_INTO: Partial<Record<Section, Section>> = { providers: "model", remote: "network", memory: "storage", persona: "session", peers: "session", usage: "storage", versions: "account" };
+export const FOLDS_INTO: Partial<Record<Section, Section>> = { providers: "model", remote: "network", memory: "storage", persona: "session", usage: "storage", versions: "account" };
 
 export const pageHome = (section: Section): Section => FOLDS_INTO[section] ?? section;
 
@@ -289,7 +298,7 @@ export const SECTION_NAME: Partial<Record<Section, string>> = {
   providers: "common.model_services",
   remote: "settings.remote",
   persona: "settings.persona",
-  peers: "settings.session_messages",
+  peers: "settings.session_cross_chat",
   memory: "data.memory",
   usage: "app.usage",
   versions: "common.version",

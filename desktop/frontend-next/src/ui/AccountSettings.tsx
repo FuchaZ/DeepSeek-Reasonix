@@ -5,7 +5,6 @@ import { Group } from "./Group";
 import { Logs } from "./Logs";
 import { SectionCard } from "./SectionCard";
 import { TraceExport } from "./TraceExport";
-import { UpdateMode } from "./UpdateMode";
 import { Versions } from "./Versions";
 
 // Signing in used to have a card here. Nothing else in the app needs it now, so
@@ -17,7 +16,6 @@ export function AccountSettings({ port, homePort }: { port: AgentPort; homePort:
         <Group id="versions" title={t("common.version")} hint={t("settings.versions_hint")}>
           <Versions port={homePort} />
         </Group>
-        <UpdateMode port={homePort} />
         <Group id="logs" title={t("about.logs_and_abnormal_exit_records")} hint={t("settings.logs_hint")}>
           <Logs port={homePort} />
         </Group>

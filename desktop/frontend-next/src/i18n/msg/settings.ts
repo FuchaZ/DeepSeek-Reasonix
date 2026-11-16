@@ -143,7 +143,8 @@ export const SETTINGS: Messages = {
   "settings.send_or_a_new_line": { zh: "发送，或用 Shift 换行", en: "Send, or a new line with Shift" },
   "settings.send_system_notifications": { zh: "发送系统通知", en: "Send system notifications" },
   "settings.send_when_the_send_key": { zh: "发送（发送键设为修饰键 + Enter 时）", en: "Send when the send key is set to the modifier plus Enter" },
-  "settings.session_messages": { zh: "会话间消息", en: "Session messages" },
+  "settings.session_cross_chat": { zh: "会话互聊", en: "Session cross-chat" },
+  "settings.session_cross_chat_quoted_context": { zh: "会话互聊、引用上下文与子代理写入范围", en: "Session cross-chat, quoted context and subagent write scope" },
   "settings.session_tabs_kept_live": { zh: "保持实时连接的会话标签数", en: "Session tabs kept live" },
   "settings.session_tabs_kept_open": { zh: "同时保留的会话标签数", en: "Session tabs kept open" },
   "settings.settings_did_not_open": { zh: "设置没能打开", en: "Settings did not open" },
@@ -202,8 +203,17 @@ export const SETTINGS: Messages = {
   "settings.edit_persona": { zh: "编辑人设", en: "Edit persona" },
   "settings.persona_hint": { zh: "写在每个会话开头的身份说明", en: "The identity note written at the start of every session" },
 
-  "settings.sessions_send_each_other": { zh: "让一个会话给另一个会话发消息（实验）", en: "Let one session send another a message (experimental)" },
+  "settings.sessions_send_each_other": { zh: "让一个会话给另一个会话发消息", en: "Let one session send another a message" },
+  "settings.peers_dispatch_depth": { zh: "派发穿透层数", en: "Dispatch depth limit" },
+  "settings.how_deep_a_dispatch_may_chain": { zh: "派发再派发最多穿几层；0 表示不限制", en: "How many levels deep a dispatch may chain into a further one; 0 lifts the limit" },
+  "settings.peers_dispatched_sessions": { zh: "同时派发的会话上限", en: "Concurrent dispatched sessions" },
+  "settings.how_many_sessions_one_turn": { zh: "一轮最多同时派发几个会话；0 表示不限制", en: "How many sessions one turn may dispatch to at once; 0 lifts the limit" },
+  "settings.enter_a_whole_number_0_or_more": { zh: "请输入一个不小于 0 的整数。", en: "Enter a whole number of 0 or more." },
+  "settings.levels": { zh: "层", en: "levels" },
+  "settings.sessions": { zh: "个", en: "sessions" },
   "settings.persona_and_presets": { zh: "人设与预设", en: "Persona and presets" },
+
+  "settings.after_changing_a_setting_that": { zh: "改了需要重建运行时的设置（例如子代理写入范围）后，用「重载运行时」重新读取。", en: "After changing a setting that rebuilds the runtime — the sub-agent write scope, for one — use Reload runtime to read it again." },
 
   "settings.which_currency_costs_show": { zh: "费用用什么币种显示", en: "Which currency costs are shown in" },
   "settings.days_before_archiving": { zh: "多少天没动的会话自动归档", en: "How many idle days before a conversation is archived" },

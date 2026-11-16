@@ -5,6 +5,7 @@ import { DefaultMode } from "./DefaultMode";
 import { Notifications } from "./Notifications";
 import { SendShortcut } from "./SendShortcut";
 import { ThemeModeRow } from "./ThemeModeRow";
+import { UpdateMode } from "./UpdateMode";
 import { SectionCard } from "./SectionCard";
 import { SettingRow } from "./SettingRow";
 import { ChangedSettings } from "./ChangedSettings";
@@ -17,13 +18,14 @@ const LANGS: [string, string][] = [
 
 interface Props {
   port: AgentPort;
+  homePort: AgentPort;
   theme: string;
   onTheme: (id: string) => void;
   look: Look;
   onLook: (look: Look) => void;
 }
 
-export function CommonSettings({ port, theme, onTheme, look, onLook }: Props) {
+export function CommonSettings({ port, homePort, theme, onTheme, look, onLook }: Props) {
   const setLang = useCallback(
     (next: string) => {
       localStorage.setItem(LANG_KEY, next);
@@ -37,6 +39,7 @@ export function CommonSettings({ port, theme, onTheme, look, onLook }: Props) {
     <>
       <SectionCard title={t("common.start")}>
         <DefaultMode port={port} />
+        <UpdateMode port={homePort} />
       </SectionCard>
       <SectionCard title={t("settings.input_and_reminders")}>
         <SettingRow id="language" title={t("common.language")} desc={t("settings.interface_language")}>

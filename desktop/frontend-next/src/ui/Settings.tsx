@@ -20,6 +20,7 @@ import { firstPage, pageOf } from "./settingPages";
 import { Group, SCOPE_SAID } from "./Group";
 import { CommonSettings } from "./CommonSettings";
 import { AgentSettings } from "./AgentSettings";
+import { PeersChatPage } from "./PeersChatPage";
 import { ChatDisplaySettings } from "./ChatDisplaySettings";
 import { OpsSettings } from "./OpsSettings";
 import { AccountSettings } from "./AccountSettings";
@@ -424,7 +425,8 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
               <span className="why">{note.text}</span>
             </div>
           )}
-          {at === "session" && <AgentSettings port={port} hub={hub} persona={landed === "persona"} onPersona={() => go("session", "persona")} onChanged={onChanged} />}
+          {at === "session" && <AgentSettings port={port} persona={landed === "persona"} onPersona={() => go("session", "persona")} onChanged={onChanged} />}
+          {at === "peers" && <PeersChatPage port={port} hub={hub} onChanged={onChanged} reload={reload} />}
 
           {at === "model" && (
             <ModelSettings port={port} onChanged={onChanged} onFailed={setFailed}
@@ -554,7 +556,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
               onIsolate={() => run("isolate", () => port.isolateWorkspace())} onChanged={onChanged} onRecovered={() => { onChanged(); onSessionsRecovered?.(); }} />
           )}
 
-          {at === "common" && <CommonSettings port={port} theme={theme} onTheme={onTheme} look={look} onLook={onLook} />}
+          {at === "common" && <CommonSettings port={port} homePort={homePort} theme={theme} onTheme={onTheme} look={look} onLook={onLook} />}
 
           {at === "appearance" && (
             <Appearance port={homePort} theme={theme} onTheme={onTheme} contrast={contrast} onContrast={onContrast} weight={weight} onWeight={onWeight} reloadThemes={reloadThemes} look={look} onLook={onLook} />
