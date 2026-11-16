@@ -59,7 +59,11 @@ export function Nav({ at, onGo, onFiles, onFeedback, onNew, onSearch, feedbackUn
             <button
               key={entry.key}
               className="navbtn"
-              data-action={entry.action}
+              // The new row writes kernel state, so its identity has to be
+              // readable where the click is written: the census names an
+              // input by the literals in its data-action, and the id it
+              // spells is the same session.new the table holds for this row.
+              data-action={entry.action === "session.new" ? "session.new" : entry.action}
               aria-label={label}
               aria-current={entry.section && targetOf(entry.key, entry.section).section === at ? "page" : undefined}
               onClick={() => run(entry)}

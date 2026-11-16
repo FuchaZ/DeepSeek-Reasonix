@@ -1,5 +1,7 @@
-// A conversation can be moved one place up or down in its project's list from its menu or with Alt+Arrow,
-// the new order is the kernel's (it is read again, not patched), and the menu says where a step has nowhere to go.
+// A conversation moves one place up or down in its project's list with Alt+Arrow
+// on the focused row — the right-click menu dropped its move items when it was
+// slimmed to words that say what they open — and the new order is the kernel's
+// (it is read again, not patched).
 import { chromium } from "playwright";
 
 const BASE = process.env.PERF_URL ?? "http://localhost:4399/perf.html";
@@ -29,14 +31,8 @@ for (const scheme of ["light", "dark"]) {
     check(`${tag}: the project lists its four conversations`, start.length === 4, start.join());
 
     const first = page.locator(rows).first();
-    await first.click({ button: "right" });
-    const menu = await page.evaluate(() => {
-      const items = [...document.querySelectorAll('[role="menuitem"][data-action="session.move"]')];
-      return { labels: items.map((b) => b.textContent.trim()), disabled: items.map((b) => b.disabled) };
-    });
-    check(`${tag}: the first conversation can only go down`, menu.labels.join() === "上移,下移" && menu.disabled.join() === "true,false", JSON.stringify(menu));
-    if (shotDir) await page.locator(".session-pop").screenshot({ path: `${shotDir}/${scheme}-menu.png` });
-    await page.locator('[data-action="session.move"][data-value="1"]').click();
+    await first.focus();
+    await page.keyboard.press("Alt+ArrowDown");
     await page.waitForFunction(([sel, s]) => [...document.querySelectorAll(sel)].map((e) => e.getAttribute("data-target")?.replace(/.*\/|\.jsonl/g, "")).join() !== s, [rows, start.join()]);
     const moved = await order();
     check(`${tag}: moving it down puts it second, the rest keep their order`, moved.join() === [start[1], start[0], start[2], start[3]].join(), moved.join());
