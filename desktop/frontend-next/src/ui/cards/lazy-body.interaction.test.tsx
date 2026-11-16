@@ -12,7 +12,7 @@ const noop = async () => undefined as never;
 const same = { entering: [] as string[], onEntered: () => {}, waiting: {}, scroll: { current: null }, onExtInvoke: () => {}, checkpoints: new Map(), onOpenProject: () => {}, onKeepHere: () => {}, takeovers: {} };
 const view = (items: Item[], extra: Record<string, unknown> = {}) => (
   <Transcript items={items} {...same} revision={items.length} hidden={false} focus={null} onApprove={noop} onFullAccess={noop} onPlan={noop} onAnswer={noop} onForget={noop}
-    onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} needsProject={false} {...extra} />
+    onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} {...extra} />
 );
 const call = (running: boolean): Item => ({
   t: "tool", id: "r1", running, children: [],

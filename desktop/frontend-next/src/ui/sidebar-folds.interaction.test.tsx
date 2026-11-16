@@ -46,10 +46,14 @@ it("remembers individual collapse and expansion across sidebar remounts", async 
 it("remembers collapse-all and expand-all across sidebar remounts", async () => {
   let view = draw();
   await userEvent.click(screen.getByRole("button", { name: "收起所有项目" }));
+  // The run folds to its label: the folder rows and their conversations all
+  // go with it, and the shape survives the remount.
+  expect(screen.queryByRole("treeitem", { name: /alpha/ })).toBeNull();
   view.unmount();
   view = draw();
-  expect(project().getAttribute("aria-expanded")).toBe("false");
+  expect(screen.queryByRole("treeitem", { name: /alpha/ })).toBeNull();
   await userEvent.click(screen.getByRole("button", { name: "展开所有项目" }));
+  expect(project().getAttribute("aria-expanded")).toBe("true");
   view.unmount();
   draw();
   expect(project().getAttribute("aria-expanded")).toBe("true");

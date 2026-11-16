@@ -45,8 +45,7 @@ it("shows the plan once: in its card while it is on screen, in the strip only on
   });
   const view = render(<Pane port={port} rt={{ id: "p1", root: "/w", name: "w" } as RuntimeView}
     title="w" active visible sideHost={null} side={false} onFocus={() => {}} onReport={() => {}}
-    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-    onOpenProject={() => {}} onKeepHere={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />);
+    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />);
   const seed = [
     { content: "读出导出脚本", status: "in_progress" },
     { content: "改成按 GBK 解码", status: "pending" },

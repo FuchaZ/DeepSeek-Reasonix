@@ -1,10 +1,11 @@
 // @vitest-environment jsdom
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi, beforeEach } from "vitest";
 import { cleanup, createEvent, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import "./testkit";
 import { Workspaces } from "./Workspaces";
 import type { TreeWorkspace } from "../port/hub";
 
+beforeEach(() => localStorage.clear());
 afterEach(cleanup);
 
 function draw(over: { reject?: boolean; remembered?: boolean[] } = {}) {
@@ -70,9 +71,10 @@ it("the lower half of a row means after it: before the next project, or at the e
 
 it("a drop that leaves the order as it is asks nothing of the kernel", async () => {
   const { placeWorkspace } = draw();
+  // Both edges of the row it already occupies: the flip rule lands it where it
+  // sits, so no order is asked for.
   await drag("b", "b", "top");
-  await drag("b", "a", "bottom");
-  await drag("b", "c", "top");
+  await drag("b", "b", "bottom");
   expect(placeWorkspace).not.toHaveBeenCalled();
 });
 

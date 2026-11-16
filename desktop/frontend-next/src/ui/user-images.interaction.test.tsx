@@ -66,8 +66,7 @@ describe("saved images in user messages", () => {
     const url = vi.spyOn(saved, "workspaceImageURL").mockImplementation((path) => `/runtime/picture?path=${encodeURIComponent(path)}`);
     render(<Pane port={saved as AgentPort} rt={{ id: "p1", root: "/w", name: "w" } as RuntimeView} title="w" active visible sideHost={null} side={false}
       onFocus={vi.fn()} onReport={vi.fn()} onSessionChanged={vi.fn()} pulse={0} findPulse={0}
-      onSettings={vi.fn()} needsProject={false} onOpenProject={vi.fn()} onKeepHere={vi.fn()}
-      theme="dark" dockW={560} dockMax={880} onDockW={vi.fn()} />);
+      onSettings={vi.fn()} onOpenProject={vi.fn()} theme="dark" dockW={560} dockMax={880} onDockW={vi.fn()} />);
     const image = await screen.findByRole("img", { name: path.split("/").at(-1) });
     expect(image.getAttribute("src")).toBe(`/runtime/picture?path=${encodeURIComponent(path)}`);
     expect(url).toHaveBeenCalledWith(path);

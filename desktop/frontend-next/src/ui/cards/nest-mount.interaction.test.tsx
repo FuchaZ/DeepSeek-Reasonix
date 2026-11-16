@@ -12,7 +12,7 @@ const noop = async () => undefined as never;
 const same = { entering: [] as string[], onEntered: () => {}, waiting: {}, scroll: { current: null }, onExtInvoke: () => {}, checkpoints: new Map(), onOpenProject: () => {}, onKeepHere: () => {}, takeovers: {} };
 const view = (items: Item[], extra: Record<string, unknown> = {}) => (
   <Transcript items={items} {...same} revision={items.length} hidden={false} focus={null} onApprove={noop} onFullAccess={noop} onPlan={noop} onAnswer={noop} onForget={noop}
-    onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} needsProject={false} {...extra} />
+    onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} {...extra} />
 );
 const longOut = "alpha line\n".repeat(120) + "needle-in-the-child\n";
 const child = (id: string) => ({ id, name: "bash", args: "{}", output: id === "k2" ? longOut : "ok", readOnly: false, parentId: "t1" }) as never;

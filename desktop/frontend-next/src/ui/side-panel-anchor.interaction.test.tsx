@@ -11,8 +11,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 function mount(id = "p1") {
   return render(<Pane port={new MockPort()} rt={{ id, root: "/w", name: "w" } as RuntimeView}
     title="w" active visible sideHost={null} side={false} onFocus={() => {}} onReport={() => {}}
-    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-    onOpenProject={() => {}} onKeepHere={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />);
+    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />);
 }
 
 const toggle = (root: ParentNode) => root.querySelector<HTMLButtonElement>('[data-action="side.toggle"]')!;

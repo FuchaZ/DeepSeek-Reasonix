@@ -26,6 +26,9 @@ const sessionName = (title?: string, p?: string) =>
 interface Props {
   // Set when the focused pane is driven from another machine, naming it.
   host?: string;
+  // True when the focused pane works in the app's own folder — a task, whose
+  // crumb names no project and shows the session title alone.
+  task?: boolean;
   // Null while the window has no pane: the chrome still draws, and the few
   // controls that need a session simply do nothing until one is focused.
   port: AgentPort | null;
@@ -46,7 +49,7 @@ interface Props {
   onError?: (e: unknown) => void;
 }
 
-export function Chrome({ port, status, workspace: ws, title, steer, host, theme, onTheme, onFind, view, rows, surfaces, onView, hub, onError }: Props) {
+export function Chrome({ port, status, workspace: ws, title, steer, host, task = false, theme, onTheme, onFind, view, rows, surfaces, onView, hub, onError }: Props) {
   const root = status?.workspaceRoot || status?.cwd || "";
   const project = root ? base(root) : "—";
   // The folder mark opens the project itself. Only a shell that can enter a
@@ -83,7 +86,7 @@ export function Chrome({ port, status, workspace: ws, title, steer, host, theme,
     <div className="chrome" onDoubleClick={zoomOnTitleBar}>
 
       <div className="crumb">
-        <span className="crumb-context">
+        {!task && <span className="crumb-context">
           <button
             type="button"
             className="crumb-folder"
@@ -105,7 +108,7 @@ export function Chrome({ port, status, workspace: ws, title, steer, host, theme,
             {host}
           </span>
           <span className="crumbsep">/</span>
-        </span>
+        </span>}
         <b title={status?.sessionPath}>{sessionName(title, status?.sessionPath)}</b>
         {phone && device && (
           <span className="crumb-sub" data-state={!reachable ? "down" : status?.running ? "run" : "ok"}>

@@ -84,13 +84,17 @@ it("moves through the kernel once, reads the tree again and closes", async () =>
   expect(reload).toHaveBeenCalledTimes(1);
 });
 
-it("keeps move-to beside pin, archive and ordering in the keyboard menu", async () => {
+it("keeps move-to beside pin and archive in the keyboard menu", async () => {
   const { moveSessionTo } = draw();
   screen.getByRole("treeitem", { name: /alpha plan/ }).focus();
   await userEvent.keyboard("{Shift>}{F10}{/Shift}");
-  for (const name of ["置顶会话", "归档会话", "上移", "下移"]) {
+  // Reordering left the menu: it is the row's own Alt+arrow step and the drag
+  // the tree speaks now.
+  for (const name of ["置顶会话", "归档会话"]) {
     expect(screen.getByRole("menuitem", { name })).toBeTruthy();
   }
+  expect(screen.queryByRole("menuitem", { name: "上移" })).toBeNull();
+  expect(screen.queryByRole("menuitem", { name: "下移" })).toBeNull();
   await userEvent.click(screen.getByRole("menuitem", { name: "移动到项目…" }));
   expect(screen.queryByRole("menu")).toBeNull();
   expect(document.activeElement?.getAttribute("role") ?? document.activeElement?.getAttribute("type")).toBe("radio");

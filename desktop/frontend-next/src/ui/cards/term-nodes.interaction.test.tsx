@@ -15,7 +15,7 @@ const noop = async () => undefined as never;
 const same = { entering: [] as string[], onEntered: () => {}, waiting: {}, scroll: { current: null }, onExtInvoke: () => {}, checkpoints: new Map(), onOpenProject: () => {}, onKeepHere: () => {}, takeovers: {} };
 const view = (items: Item[]) => (
   <Transcript items={items} {...same} port={{ workspaceImageURL: () => "" } as never} revision={items.length} hidden={false} focus={null} onApprove={noop} onFullAccess={noop} onPlan={noop} onAnswer={noop} onForget={noop}
-    onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} needsProject={false} />
+    onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} />
 );
 
 const LINES = Array.from({ length: 200 }, (_, n) => `line ${n} of a command's output`).join("\n");

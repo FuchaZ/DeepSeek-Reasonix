@@ -26,7 +26,6 @@ function draw(items: Item[], entering: string[], hidden = false) {
       onExtInvoke={() => {}} onExtSubmit={noop}
       checkpoints={new Map()} onPrepareRewind={noop} onCommitRewind={noop}
       onPrepareFileRevert={noop} onCommitFileRevert={noop}
-      needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
     />,
   );
   const entered = () => [...document.querySelectorAll(".enterbox[data-enter]")].length;
@@ -71,7 +70,6 @@ describe("a card's one entrance", () => {
         checkpoints={new Map()} onPrepareRewind={(async () => undefined) as never}
         onCommitRewind={(async () => undefined) as never}
         onPrepareFileRevert={(async () => undefined) as never} onCommitFileRevert={(async () => undefined) as never}
-        needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
       />
     ) : null);
     expect(entered()).toBe(1);

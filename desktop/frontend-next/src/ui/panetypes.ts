@@ -1,7 +1,8 @@
 import type { ReactNode } from "react";
 import type { AgentPort, ContextBreakdown, McpEntry, SessionStatus, WorkspaceInfo } from "../port/port";
-import type { HubPort, RuntimeView } from "../port/hub";
-import type { ConnectOffer } from "./ConnectNote";
+import type { HubPort, RuntimeView, TreeWorkspace } from "../port/hub";
+import type { RemoteHost } from "../port/remote";
+import type { Adder } from "./addws";import type { ConnectOffer } from "./ConnectNote";
 import type { PaneView } from "../state/paneview";
 
 // PaneReport is what the window's own chrome needs from whichever pane has
@@ -83,11 +84,20 @@ export interface PaneProps {
   onFeedback?: () => void;
   // Open a session this pane made, beside it: a branch is its own conversation.
   onOpenSession?: (path: string) => void;
-  // 这个窗口还没有人选过的项目文件夹。空转录是唯一说得出这句话的地方 —— 那里
-  // 本来就在替一段还没开始的对话说明它该怎么开始。
-  needsProject: boolean;
+  // Open a session another of the user's sessions dispatched to. No root: the
+  // peer may live in another project, and only the path is known for certain.
+  onOpenPeerSession?: (path: string) => void;
+  // The window's own escape for a pane whose folder vanished from disk; the
+  // project question itself lives in the composer's pill now.
   onOpenProject: () => void;
-  onKeepHere: () => void;
+  // The composer's project pill reads the window's remembered folders through
+  // the pane: it is the pane's place, not the composer's. Interaction tests
+  // omit them — a pane with no folders just shows the pill's escape row.
+  projectTree?: TreeWorkspace[];
+  remotes?: RemoteHost[] | null;
+  remoteTrees?: Record<string, TreeWorkspace[] | null>;
+  runtimes?: RuntimeView[];
+  adder?: Adder;
   connect?: ConnectOffer;
   // A prop, not a document read: this pane is memoised past an attribute flip.
   theme: string;

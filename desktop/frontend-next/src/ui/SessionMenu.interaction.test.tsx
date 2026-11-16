@@ -11,7 +11,7 @@ afterEach(cleanup);
 const session = (over: Partial<TreeSession> = {}): TreeSession => ({ path: "/s/a.jsonl", name: "a", title: "第一个", turns: 1, ...over });
 
 function draw(s: TreeSession, extra: { markRead?: () => void; live?: boolean; pinned?: boolean; exporting?: boolean; naming?: boolean; branch?: boolean } = {}) {
-  const on = { onPin: vi.fn(), onRename: vi.fn(), onAutoName: vi.fn(), onPause: vi.fn(), onClose: vi.fn(), onArchive: vi.fn(), onCopyInfo: vi.fn(), onExport: vi.fn(), onDelete: vi.fn(), onBranch: vi.fn() };
+  const on = { onPin: vi.fn(), onRename: vi.fn(), onAutoName: vi.fn(), onPause: vi.fn(), onClose: vi.fn(), onArchive: vi.fn(), onCopyInfo: vi.fn(), onExport: vi.fn(), onBatchSelect: vi.fn(), onDelete: vi.fn(), onBranch: vi.fn() };
   render(<SessionMenu session={s} label="第一个" live={extra.live ?? false} pinned={extra.pinned ?? false} exporting={extra.exporting ?? false} autoNaming={extra.naming ?? false} {...on} onBranch={extra.branch === false ? undefined : on.onBranch} onMarkRead={extra.markRead} />);
   return on;
 }

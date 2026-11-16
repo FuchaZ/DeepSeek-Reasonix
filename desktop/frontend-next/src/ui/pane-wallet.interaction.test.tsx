@@ -16,7 +16,7 @@ const reading = (display: string, available = true): WalletReading => ({ display
 const tree = (port: MockPort, pulse: number) => (
     <Pane port={port as AgentPort} rt={rt} title="w" active visible sideHost={null} side={false}
       onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}} pulse={pulse} findPulse={0}
-      onSettings={() => {}} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
+      onSettings={() => {}} onOpenProject={() => {}}
       theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />
 );
 

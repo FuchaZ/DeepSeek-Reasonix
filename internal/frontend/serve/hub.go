@@ -337,8 +337,7 @@ func (h *Hub) openBound(ctx context.Context, req OpenRequest, inherited *agentco
 	}
 	binding := inherited
 	if req.SessionPath != "" {
-		binding, err = loadOpenComposition(root, req.SessionPath)
-		if err != nil {
+		if binding, err = loadOpenComposition(root, req.SessionPath); err != nil {
 			return nil, err
 		}
 	}
@@ -389,7 +388,8 @@ func (h *Hub) openBound(ctx context.Context, req OpenRequest, inherited *agentco
 	if settings != nil {
 		built.Controller.SetPlanMode(settings.Mode == "plan")
 	}
-	built.Controller.SetDatedSessionPaths(isAutoWorkspace(root)) // before any EnsureSessionPath
+	// Task conversations file themselves by date; set before any EnsureSessionPath.
+	built.Controller.SetDatedSessionPaths(isAutoWorkspace(root))
 	srv := New(built.Controller, bc, h.opts.Serve)
 	if branchModelFallback {
 		srv.branchModelFallback = savedModel

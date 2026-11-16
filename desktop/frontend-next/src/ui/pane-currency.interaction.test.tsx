@@ -31,7 +31,7 @@ describe("the session cost chip when the display currency changes", () => {
     const { container } = render(
       <Pane port={port as AgentPort} rt={rt} title="w" active visible sideHost={null} side={false}
         onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}} pulse={0} findPulse={0}
-        onSettings={() => {}} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
+        onSettings={() => {}} onOpenProject={() => {}}
         theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />,
     );
     const figure = () => container.querySelector<HTMLElement>(".studio-meter-cost b")?.textContent;
@@ -51,7 +51,7 @@ describe("the session cost chip when the display currency changes", () => {
     const { container } = render(
       <Pane port={port as AgentPort} rt={rt} title="w" active visible sideHost={null} side={false}
         onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}} pulse={0} findPulse={0}
-        onSettings={() => {}} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
+        onSettings={() => {}} onOpenProject={() => {}}
         theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />,
     );
     await waitFor(() => expect(container.querySelector(".studio-meterrail")).not.toBeNull());
@@ -86,7 +86,7 @@ describe("the session cost chip when the session billed in two currencies", () =
     const { container } = render(
       <Pane port={port as AgentPort} rt={rt} title="w" active visible sideHost={null} side={false}
         onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}} pulse={0} findPulse={0}
-        onSettings={() => {}} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
+        onSettings={() => {}} onOpenProject={() => {}}
         theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />,
     );
     await waitFor(() => expect(container.querySelector(".studio-meterrail")).not.toBeNull());

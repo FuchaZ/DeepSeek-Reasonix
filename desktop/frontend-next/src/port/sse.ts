@@ -349,6 +349,11 @@ export class SsePort extends SseTerminal implements AgentPort {
     return this.post("/workspace", { path });
   }
 
+  setWorkspaceAuto(): Promise<string> {
+    return this.post0<{ workspaceRoot?: string }>("/workspace", { auto: true })
+      .then((res) => res.workspaceRoot ?? "");
+  }
+
   isolateWorkspace(selection?: import("./workspace").WorktreeSelection) {
     return this.post("/workspace", { isolate: true, worktree: selection });
   }
@@ -390,10 +395,14 @@ export class SsePort extends SseTerminal implements AgentPort {
     await host().openExternal(url);
   }
 
-  async pickFolder(): Promise<string | null> {
-    // Which workspace is running is the kernel's to answer, so it is read here
-    // and handed to the shell rather than kept by either shell -- a picker that
-    // opened on a folder the window remembered would be a second copy of it.
+  async pickFolder(preferred?: string): Promise<string | null> {
+    // A caller that names its starting folder wins — the blank-project dialog
+    // hands "" so the platform's own last-used folder answers instead of the
+    // app's internal workspace. Otherwise which workspace is running is the
+    // kernel's to answer, so it is read here and handed to the shell rather
+    // than kept by either shell -- a picker that opened on a folder the window
+    // remembered would be a second copy of it.
+    if (preferred !== undefined) return host().pickFolder(preferred);
     const startIn = await this.workspaces()
       .then((w) => w.current)
       .catch(() => "");

@@ -24,7 +24,7 @@ it("draws each read of a merged run as its own row in the execution group, as th
   render(<Transcript items={items} entering={[]} onEntered={() => {}} revision={1} waiting={{}} scroll={{ current: null }} hidden={false} focus={null}
     onApprove={noop} onFullAccess={noop} onPlan={noop} onAnswer={noop} onForget={noop} onExtInvoke={() => {}} onExtSubmit={noop}
     checkpoints={new Map()} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop}
-    needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}} />);
+    />);
   const rows = [...document.querySelectorAll(".activity-body .hl")].map((row) => row.querySelector(".arg")?.textContent);
   expect(rows).toEqual(["scripts/export.py", "tests/fixtures/sales.csv"]);
   expect(document.querySelector(".reads-disclosure")).toBeNull();

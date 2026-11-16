@@ -28,6 +28,11 @@ const AdoptedSuffix = ".adopted"
 type List struct {
 	Paths  []string `json:"paths"`
 	Launch string   `json:"launch,omitempty"`
+	// Names are the display names a project reads by in the sidebar: a folder
+	// renamed there keeps its on-disk path and its files whole.
+	Names map[string]string `json:"names,omitempty"`
+	// Pinned are the projects that lead the list, in the order they pinned.
+	Pinned []string `json:"pinned,omitempty"`
 	// Removed are the projects the user took off the sidebar, as opaque
 	// identity keys the caller owns. The folder stops being listed; its files
 	// stay, and asking for it again is what lifts the removal.
@@ -61,6 +66,38 @@ func (l *List) Restore(id string) {
 		return
 	}
 	l.Removed = slices.DeleteFunc(l.Removed, func(removed string) bool { return removed == id })
+}
+
+// SetName records the display name a project reads by; empty clears it.
+func (l *List) SetName(path, name string) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return
+	}
+	name = strings.TrimSpace(name)
+	if name == "" {
+		delete(l.Names, path)
+		return
+	}
+	if l.Names == nil {
+		l.Names = map[string]string{}
+	}
+	l.Names[path] = name
+}
+
+// SetPinned marks or clears a project's pin; a pinned project leads the list.
+func (l *List) SetPinned(path string, pinned bool) {
+	path = strings.TrimSpace(path)
+	if path == "" {
+		return
+	}
+	at := slices.Index(l.Pinned, path)
+	if pinned && at < 0 {
+		l.Pinned = append(l.Pinned, path)
+	}
+	if !pinned && at >= 0 {
+		l.Pinned = append(l.Pinned[:at], l.Pinned[at+1:]...)
+	}
 }
 
 // Read parses the list at path. A missing file or empty path is an empty list.

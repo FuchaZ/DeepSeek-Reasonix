@@ -32,8 +32,7 @@ async function mount(mode: "mount" | "gap") {
   const view = (key: string) => (
     <Pane key={key} port={port} rt={{ id: key, base: "/rt/" + key, root: "/w", name: "w" }}
       title="w" active visible sideHost={null} side={false} onFocus={() => {}} onReport={() => {}}
-      onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-      onOpenProject={() => {}} onKeepHere={() => {}} theme="light" dockW={320} dockMax={640} onDockW={() => {}} />
+      onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="light" dockW={320} dockMax={640} onDockW={() => {}} />
   );
   const mounted = render(view("r1"));
   await act(async () => {});

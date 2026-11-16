@@ -136,6 +136,51 @@ func (h *Hub) projectPage(roots []string, name string, open map[string]string, w
 	return sessionPage{Sessions: rows, Total: total + len(unlisted), Archived: archived, Remaining: remaining, Said: said, Status: status}
 }
 
+// treeSessionRows is the raw material of one workspace's sidebar rows: what a
+// row shows, without subagent traces, covered recovery forks or folded copies.
+// Handlers that act on a row (move, pin, viewed, move-to) enumerate from here,
+// so they never disagree with what /tree answers. unlisted are the pane-driven
+// ones with no transcript yet: the tree pins them above the listed rows.
+func (h *Hub) treeSessionRows(root string) (listed, unlisted []sessionstore.SessionInfo) {
+	rows := h.listTreeSessions(SessionDirFor(root), listingStatusFor(false), false)
+	sortSessions(rows)
+	held := openLookup(h.openSessions())
+	byID := map[string]map[string]sessionstore.SessionInfo{}
+	for _, si := range rows {
+		dir := filepath.Dir(si.Path)
+		if byID[dir] == nil {
+			byID[dir] = map[string]sessionstore.SessionInfo{}
+		}
+		byID[dir][sessionstore.BranchID(si.Path)] = si
+	}
+	listed = make([]sessionstore.SessionInfo, 0, len(rows))
+	shown := make([]treeSession, 0, len(rows))
+	lead := map[string]bool{}
+	for _, si := range rows {
+		if store.IsSubagentTranscriptName(filepath.Base(si.Path)) {
+			continue
+		}
+		inUse := held(si.Path) != ""
+		if !inUse && hiddenRecoveryCopy(si, "") {
+			continue
+		}
+		dir := filepath.Dir(si.Path)
+		if si.Recovered && !inUse {
+			lineage := dir + "\x00" + recoveryLineageRoot(si, byID[dir])
+			if lead[lineage] {
+				continue
+			}
+			lead[lineage] = true
+		}
+		listed = append(listed, si)
+		shown = append(shown, treeSession{Path: si.Path})
+	}
+	for _, row := range h.unlistedOpenSessions(root, shown, rows) {
+		unlisted = append(unlisted, sessionstore.SessionInfo{Path: row.Path})
+	}
+	return listed, unlisted
+}
+
 func sortTreeSessions(listed []sessionstore.SessionInfo, recent bool) {
 	if !recent {
 		sortSessions(listed)

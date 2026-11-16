@@ -528,6 +528,10 @@ export interface AgentPort extends RunningWorkPort, MemoryHoldPort, WorkspacePre
   // Rebuilds the whole runtime against another folder. The conversation does
   // not come along, so the caller has to reload the transcript afterwards.
   setWorkspace(path: string): Promise<void>;
+  // Repoints the runtime at the kernel's own auto workspace — the folder a
+  // rootless session opens in — with a fresh conversation, and answers the
+  // folder it chose so a caller can name where the session landed.
+  setWorkspaceAuto(): Promise<string>;
   isolateWorkspace(selection?: import("./workspace").WorktreeSelection): Promise<void>;
   worktreeSources(): Promise<import("./workspace").WorktreeSources>;
   prepareWorktree(id: string, selection: import("./workspace").WorktreeSelection): Promise<import("./workspace").WorktreePreparation>;

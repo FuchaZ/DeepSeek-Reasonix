@@ -10,7 +10,7 @@ const stable = { entering: [] as string[], onEntered: () => {}, waiting: {}, scr
 const view = (state: SessionState) => (
   <Transcript items={state.items} revision={state.revision} {...stable} hidden={false} focus={null}
     onApprove={noop} onFullAccess={noop} onPlan={noop} onAnswer={noop} onForget={noop} onExtSubmit={noop}
-    onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} needsProject={false} />
+    onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} />
 );
 afterEach(cleanup);
 

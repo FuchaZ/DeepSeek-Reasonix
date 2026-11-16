@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"reasonix/internal/contract/config"
 	"reasonix/internal/state/workspacelist"
@@ -32,7 +33,8 @@ func workspacesPath() string {
 	return ""
 }
 
-// Workspaces is the sidebar's remembered project order. Projects the user
+// Workspaces is the sidebar's remembered project order: the pinned projects
+// lead it, the rest keep the order they were chosen in. Projects the user
 // removed stay out whatever wrote them back — the removal is the user's last
 // word about the folder until they pick it again.
 func Workspaces() []string {
@@ -41,7 +43,38 @@ func Workspaces() []string {
 	if len(list.Removed) > 0 {
 		paths = slices.DeleteFunc(paths, func(dir string) bool { return workspaceRemovedIdentity(list, dir) })
 	}
-	return paths
+	if len(list.Pinned) == 0 {
+		return paths
+	}
+	pinned := map[string]bool{}
+	for _, dir := range list.Pinned {
+		pinned[strings.TrimSpace(dir)] = true
+	}
+	head, tail := []string{}, []string{}
+	for _, dir := range paths {
+		if pinned[strings.TrimSpace(dir)] {
+			head = append(head, dir)
+		} else {
+			tail = append(tail, dir)
+		}
+	}
+	return append(head, tail...)
+}
+
+// workspaceNames reads the display names the sidebar's projects carry.
+func workspaceNames() map[string]string {
+	list, _ := readWorkspaceList(workspacesPath())
+	return list.Names
+}
+
+// workspacePinned reads the pinned paths as a set.
+func workspacePinned() map[string]bool {
+	list, _ := readWorkspaceList(workspacesPath())
+	out := map[string]bool{}
+	for _, dir := range list.Pinned {
+		out[strings.TrimSpace(dir)] = true
+	}
+	return out
 }
 
 // LaunchWorkspaces puts the launch project first without changing sidebar order.
@@ -165,19 +198,19 @@ func keepUsedWorkspace(dir string) {
 	}
 }
 
-// forgetWorkspace takes a folder off the sidebar and records the removal, so no
-// source that lists folders nobody picked — the folder a launch started in, a
-// folder a conversation was held in, a merged older list — puts the row back on
-// the next start. Nothing on disk is touched: the removal is only the sidebar
-// forgetting the folder, and asking for it again lifts it.
+// forgetWorkspace takes a folder off the sidebar and records the removal, so
+// no source that lists folders nobody picked — the folder a launch started in,
+// a folder a conversation was held in, a merged older list — puts the row back
+// on the next start. Nothing on disk is touched: the removal is only the
+// sidebar forgetting the folder, and asking for it again lifts it.
 func forgetWorkspace(dir string) {
 	if dir == "" {
 		return
 	}
 	err := updateWorkspaceList(context.Background(), true, func(list *workspaceList) error {
 		root := projectIdentity(dir)
-		// The auto workspace is not a project; its row is not a removal the
-		// list should remember.
+		// The auto workspace is not a project; its row is the standing 任务
+		// group and no removal of it is recorded.
 		if root != "" && !isAutoWorkspace(dir) {
 			list.Remove(root)
 		}

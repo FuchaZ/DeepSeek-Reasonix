@@ -25,6 +25,9 @@ import { useHistoryPages, useHistorySearch } from "./useHistoryPages";
 import { useBackgroundDeltas } from "./deltas";
 import { PaneShown } from "./shown";
 import { Composer } from "./Composer";
+import { ProjectChoiceContext } from "./projectchoice";
+import { pickerProjects } from "./useNewSessionPicker";
+import { WorkspacePill } from "./WorkspacePill";
 import { draftKey } from "./drafts";
 import { Queue, waiting } from "./Queue";
 import { SlottedView } from "./SlottedView";
@@ -38,7 +41,6 @@ import { useSubmit } from "./usesubmit";
 import { useSurfaceSlots } from "./usesurfaceslots";
 import { useSurfaceReplay } from "./surface-replay";
 import { MeterRail } from "./MeterRail";
-import { DispatchThreadsBar } from "./DispatchThreadsBar";
 import { useAgentRequest } from "./useAgentRequest";
 import { PlanFold } from "./PlanFold";
 import { latestPlanGate, PlanLiveContext, type PlanLive } from "./planLive";
@@ -64,6 +66,7 @@ import { refreshTodos } from "../state/restore";
 import { speedOf } from "./speed";
 import { RuntimeBar } from "./RuntimeBar";
 import { PeerHeldBar } from "./PeerHeldBar";
+import { DispatchThreadsBar } from "./DispatchThreadsBar";
 import { PostureNote, postureNote } from "./PostureNote";
 import { MemorySuggestRow } from "./MemorySuggestRow";
 import { SidePanel } from "./SidePanel";
@@ -104,7 +107,7 @@ const totalsOf = (st: SessionStatus) => ({
   incompleteReason: st.sessionCostQuote?.incompleteReason,
 });
 
-function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFocus, onReport, onSessionChanged, onTurnDone, pulse, findPulse, findTogglePulse = 0, filesPulse = 0, terminalPulse = 0, viewRequest, sessionRef, onSettings, onFeedback, onOpenSession, needsProject, onOpenProject, onKeepHere, connect, theme, dockW, dockMax, onDockW, manualBrowser = false, onManualBrowser, alert, failure }: PaneProps) {
+function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFocus, onReport, onSessionChanged, onTurnDone, pulse, findPulse, findTogglePulse = 0, filesPulse = 0, terminalPulse = 0, viewRequest, sessionRef, onSettings, onFeedback, onOpenSession, onOpenPeerSession, onOpenProject, projectTree = [], remotes = null, remoteTrees = {}, runtimes = [], adder, connect, theme, dockW, dockMax, onDockW, manualBrowser = false, onManualBrowser, alert, failure }: PaneProps) {
   const [s, dispatch] = useReducer(reduce, initialState);
   const [traj, trajDispatch] = useReducer(reduceTraj, initialTraj);
   const [sessionRead, setSessionRead] = useState<SessionRead>({ kind: "pending" });
@@ -511,6 +514,17 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
     });
   }, [rt.id, onReport, status, workspace, title, queue, run, running, blocked, trustWaiting, cost, contextPercent, ctx, mcp, walletDisplay, s.interactions, docked, tab, traj.rows.length, surfaces]);
 
+  // The composer's project pill reads its place and its machine from here —
+  // provided once instead of threading the pane's rows through the composer's
+  // props. A switch re-reads the pane and the window through reloadSession.
+  const choiceSurface = useMemo(() => ({
+    port, host: rt.host, root: status?.workspaceRoot ?? rt.root,
+    hasContent: !!status?.sessionPath, canSwitch: workspace?.canSwitch ?? true, running,
+    projects: pickerProjects(projectTree, remotes, remoteTrees, runtimes)
+      .filter((p) => p.host === rt.host),
+    adder, onChanged: refreshStatus, onSwitched: () => { reloadSession(); }, onError: notify,
+  }), [port, rt.host, status?.workspaceRoot, status?.sessionPath, workspace?.canSwitch, running, projectTree, remotes, remoteTrees, runtimes, adder, refreshStatus, reloadSession, notify]);
+
   return (
     <section
       className="pane"
@@ -567,9 +581,6 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
         onCommitRewind={onCommitRewind}
         onPrepareFileRevert={onPrepareFileRevert}
         onCommitFileRevert={onCommitFileRevert}
-        needsProject={needsProject}
-        onOpenProject={onOpenProject}
-        onKeepHere={onKeepHere}
         onSuggest={(text) => setInserted((was) => ({ n: was.n + 1, text }))}
       />
       </ThoughtFolds.Provider></JobsLiveContext.Provider></AgentRunOpener.Provider></PlanLiveContext.Provider>
@@ -631,6 +642,13 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
       {/* Keep the composer mounted so a half-written prompt survives a visit to
           analysis; hidden removes it from layout without throwing its state
           away. */}
+      {/* The composer's project pill sits above the card, on its left edge: a
+          task pane shows the invitation, a project pane the project's name. */}
+      <div className="composer-top" hidden={tab !== "flow"}>
+        <ProjectChoiceContext.Provider value={choiceSurface}>
+          <WorkspacePill />
+        </ProjectChoiceContext.Provider>
+      </div>
       <div className="compose" hidden={tab !== "flow"} data-rise={isRising() ? "" : undefined}>
         <span className="glowring" aria-hidden="true">
           <i />
@@ -680,7 +698,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
           onOpenJob={jobsLive.open}
           usage={status?.sessionUsage} quote={status?.sessionCostQuote} tariff={status?.tariff} onTariffFlip={refreshStatus}
           authoredTurns={status?.authoredTurns}
-          peers={<DispatchThreadsBar port={port} onOpen={onOpenSession} />}
+          peers={<DispatchThreadsBar port={port} onOpen={onOpenPeerSession} />}
         />
         {reloadFailure && <ReloadNotice failure={reloadFailure} onReload={onReloadSession} />}
         {/* Below the box, under a ceiling of their own. Both arrive unbidden and

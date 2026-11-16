@@ -18,7 +18,7 @@ const same = { entering: [] as string[], onEntered: () => {}, waiting: {}, scrol
 type Reader = (id: string, offset?: number, limit?: number) => Promise<ToolOutputPage>;
 const view = (items: Item[], toolOutput?: Reader) => (
   <Transcript items={items} {...same} port={{ workspaceImageURL: () => "", ...(toolOutput ? { toolOutput } : {}) } as never} revision={items.length} hidden={false} focus={null} onApprove={noop} onFullAccess={noop} onPlan={noop} onAnswer={noop} onForget={noop}
-    onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} needsProject={false} />
+    onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} />
 );
 
 const FULL = "head-" + "x".repeat(OUTPUT_EDGE - 5) + "M".repeat(30_000) + "y".repeat(OUTPUT_EDGE - 5) + "-tail";

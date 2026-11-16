@@ -18,7 +18,6 @@
    the right. The collapse button inside it stays clickable. */
 [data-titlebar="app"] .rail .studio-brand { -webkit-app-region: drag; }
 [data-titlebar="app"] .rail .studio-brand > :is(button, a[href]) { -webkit-app-region: no-drag; }
-.app[data-rail="off"] .rail .studio-brand { -webkit-app-region: no-drag; }
 .rail .studio-brand { height: var(--chrome-h); padding: 0 4px 0 8px; gap: 8px; margin: 0; }
 .rail .studio-brand-lockup { gap: 8px; }
 .rail .studio-brand-logo { margin-left: -9px; }
@@ -46,21 +45,18 @@
 .rail .studio-navrow > small { margin-left: auto; color: var(--faint); font: var(--w-reg) var(--fs-micro)/1.4 var(--ui); }
 /* The bar above the tree starts a new block, the way the settings row is
    separated at the foot: one hairline, inset like the column's own rows. */
-.rail .projects-header { height: 30px; min-height: 30px; padding: 0 2px 0 4px; margin: 4px 0 0; display: flex; align-items: center; position: relative; }
-.rail .projects-header::before { content: ""; position: absolute; left: 10px; right: 10px; top: -4px; height: 1px; background: var(--hair); }
+.rail .projects-header { height: 30px; min-height: 30px; padding: 0 2px 0 12px; margin: 4px 0 0; display: flex; align-items: center; position: relative; }
+.rail .projects-header::before { content: ""; position: absolute; left: 4px; right: 4px; top: -4px; height: 1px; background: var(--hair); }
 .rail .projects-tabs { display: flex; align-items: center; gap: 2px; width: 100%; }
 /* No pill, no fill: the view's name is a word on the column's own background,
    the way the rows above it are. Only the current view is inked. */
 .rail .vtabs { display: inline-flex; gap: 2px; padding: 0; border-radius: var(--r-sm); background: transparent; }
-.rail .vtab { height: 22px; padding: 0 6px; border: 0; border-radius: var(--r-xs); background: transparent; color: var(--muted); font: var(--w-reg) var(--fs-meta) var(--ui); cursor: pointer; }
-.rail .vtab[aria-pressed="true"] { background: transparent; color: var(--text); font-weight: var(--w-med); }
+.rail .vtab { height: 22px; padding: 0 6px; border: 0; border-radius: var(--r-xs); background: transparent; color: var(--muted); font: var(--w-reg) var(--fs-meta) var(--ui); }
+.rail .vtab[aria-current="true"] { color: var(--text); font-weight: var(--w-med); }
 .rail .projects-spacer { flex: 1; }
 .rail .session-filter-trigger { height: 24px; padding: 0 8px; gap: 3px; border-radius: var(--r-sm); font: var(--w-reg) var(--fs-meta) var(--ui); color: var(--muted); background: transparent; }
 .rail .projects-add { width: 28px; height: 28px; padding: 0; border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted); display: inline-grid; place-items: center; flex: none; }
 .rail .projects-add:hover { background: var(--overlay); color: var(--text); }
-/* Fold-all is a pair of straight chevrons, drawn smaller than the plus beside
-   it: the button is a control over the list, not a destination. */
-.rail .projects-fold .studio-icon { width: 14px; height: 14px; }
 .rail .vtabs { flex: none; width: auto; }
 .rail .vtab { flex: none; width: auto; }
 .rail .projects-add:disabled { opacity: .4; cursor: default; }
@@ -73,11 +69,88 @@
 [data-titlebar="app"][data-platform="darwin"] .rail .studio-brand-lockup { margin-left: calc(var(--lights-w) - 10px); }
 @container (max-width: 300px) { [data-titlebar="app"][data-platform="darwin"] .rail .studio-brand-sub { display: none; } }
 .rail .wsnode { padding: 0; }
-/* 任务 is the folder the window itself opened in, not a project someone added.
-   A quiet standing label says so above its rows; the rows themselves stay
-   ordinary project rows, because that folder is still a folder. */
-.rail .wsgroup {
-  display: flex; align-items: center; gap: 8px; height: 28px; margin-top: 6px; padding: 0 8px;
-  box-sizing: border-box; color: var(--faint); font: var(--w-med) var(--fs-micro)/1 var(--ui);
+.rail .wsgroupline {
+  display: flex; align-items: center; margin-top: 6px; width: 100%;
 }
-.rail .wsgroup .studio-icon { width: 13px; height: 13px; flex: none; }
+.rail .wsgroup {
+  display: flex; align-items: center; gap: 4px; height: 28px; padding: 0 8px; flex: 1; min-width: 0;
+  box-sizing: border-box; color: var(--text); font: var(--w-med) var(--fs-meta)/1.3 var(--ui);
+}
+.rail button.wsgroup { border: 0; background: transparent; text-align: left; cursor: pointer; }
+/* Hovering the row paints one bar across label and plus — the two are one
+   control as far as the eye is concerned, so the bar belongs to the row. */
+.rail .wsgroupline { border-radius: var(--r-sm); }
+.rail .wsgroupline:hover:has(button.wsgroup:not(:disabled)) { background: var(--overlay); }
+.rail .wsgroupline:hover button.wsgroup:not(:disabled),
+.rail button.wsgroup:hover:not(:disabled),
+.rail button.wsgroup:focus-visible:not(:disabled) { background: none; }
+.rail .wsgroupline:has(button.wsgroup:disabled) { opacity: .45; }
+.rail button.wsgroup:focus-visible { outline: 1px solid var(--focus); outline-offset: -1px; }
+.rail button.wsgroup:disabled { opacity: .4; cursor: default; }
+/* Every drag in the tree speaks one insertion line: a 2px accent bar drawn on
+   the edge the drop will land at — `before` rides the top edge, `after` the
+   bottom — while the row being carried fades. Group-label rows, project rows
+   and conversation rows all read it the same way, so the place the pointer
+   means is said once, in one voice. The group drop swaps the two runs, so the
+   carried label takes the place of the one it lands on: the line rides the
+   row's bottom edge. */
+.rail .wsgroupline, .rail .wsrow, .rail .sessrow { position: relative; }
+.rail .wsgroupline[data-drop="before"]::before,
+.rail .wsrow[data-drop="before"]::before,
+.rail .sessrow[data-drop="before"]::before,
+.rail .wsgroupline[data-drop="after"]::after,
+.rail .wsrow[data-drop="after"]::after,
+.rail .sessrow[data-drop="after"]::after {
+  content: ""; position: absolute; left: 0; right: 0; top: -1px; height: 2px;
+  border-radius: 1px; background: var(--accent); pointer-events: none; z-index: 1;
+}
+.rail .wsgroupline[data-drop="after"]::after,
+.rail .wsrow[data-drop="after"]::after,
+.rail .sessrow[data-drop="after"]::after { top: auto; bottom: -1px; }
+.rail .wsgroupline[data-dragging], .rail .wsrow[data-dragging], .rail .sessrow[data-dragging] { opacity: .4; }
+/* The run's plus, at the row's right edge: hidden at rest, revealed on hover
+   or focus the way the rows' own actions are — and never part of the drag or
+   the fold. */
+.rail .wsadd-run {
+  flex: none; width: 28px; height: 28px; display: inline-grid; place-items: center;
+  border: 0; border-radius: var(--r-sm); background: transparent; color: var(--faint); cursor: pointer;
+  margin-right: 2px;
+}
+.rail .wsgroupline:not(:hover, :focus-within) .wsadd-run { opacity: 0; pointer-events: none; }
+.rail .wsgroupline .wsadd-run { transition: opacity var(--t-line) ease; }
+.rail .wsadd-run .studio-icon { width: 16px; height: 16px; }
+.rail .wsadd-run:hover:not(:disabled), .rail .wsgroupline:hover .wsadd-run:not(:disabled) { color: var(--text); background: var(--overlay); }
+.rail .wsadd-run:disabled { opacity: .4; cursor: default; }
+/* The projects plus' two-item menu, opened at the pointer's bottom-left. */
+.groupadd {
+  position: fixed; z-index: 90; min-width: 168px; padding: 4px;
+  border: 1px solid var(--border); border-radius: var(--r-md);
+  background: var(--float); color: var(--text); box-shadow: var(--shadow-float);
+}
+.groupadd button {
+  display: flex; align-items: center; gap: 8px; width: 100%; height: 30px; padding: 0 8px;
+  border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted);
+  font: var(--w-reg) var(--fs-ui) var(--ui); text-align: left; cursor: pointer;
+}
+.groupadd button:hover:not(:disabled) { background: var(--overlay); color: var(--text); }
+.groupadd button:disabled { opacity: .4; cursor: default; }
+.groupadd button .studio-icon { width: 14px; height: 14px; color: var(--faint); }
+.rail .wsgroup .wschev { width: 12px; height: 12px; flex: none; color: var(--faint); transform: rotate(-90deg); transition: transform var(--m-line); }
+.rail .wsgroup .wschev[data-open] { transform: none; }
+.rail .wsgroup .wschev[data-leaf] { visibility: hidden; }
+/* The arrow rides right beside the label's own words, not the far edge. */
+/* The 任务列表 head is a fold control too: its arrow answers with the same
+   two shapes the group labels' arrows do. */
+.rail button.vtab { display: inline-flex; align-items: center; cursor: pointer; text-align: left; }
+.rail .vtab .wschev { width: 12px; height: 12px; flex: none; color: var(--faint); transform: rotate(-90deg); transition: transform var(--m-line); }
+.rail .vtab .wschev[data-open] { transform: none; }
+.rail .vtab .wschev[data-leaf] { visibility: hidden; }
+.rail button.vtab:hover:not(:disabled) { background: var(--overlay); }
+.rail button.vtab:disabled { opacity: .4; cursor: default; }
+/* The line an empty run says under its standing label: one quiet row in the
+   label's own inset, at the label's own reading size. */
+.rail .ws-none { padding: 2px 8px 7px; color: var(--faint); font: var(--w-reg) var(--fs-meta)/1.4 var(--ui); }
+/* A month section in the time reading: the row that opens it carries the
+   section's name and its count, quiet enough to skim past. */
+.rail .wstime { display: flex; align-items: baseline; gap: 5px; margin: 4px 0 0; padding: 2px 8px; color: var(--faint); font: var(--w-med) var(--fs-micro)/1.3 var(--ui); }
+.rail .wstime i { font: var(--w-reg) var(--fs-micro)/1 var(--ui); color: var(--ghost); font-style: normal; }

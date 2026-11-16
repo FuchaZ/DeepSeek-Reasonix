@@ -28,8 +28,7 @@ it("reads the host plan after reload, retains the composer entry, and follows to
   });
   const view = render(<Pane port={port} rt={{ id: "p1", root: "/w", name: "w" } as RuntimeView}
     title="w" active visible sideHost={null} side={false} onFocus={() => {}} onReport={() => {}}
-    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-    onOpenProject={() => {}} onKeepHere={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />);
+    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />);
   const fold = () => view.container.querySelector<HTMLButtonElement>('.studio-todo [data-action="plan.fold"]')!;
   const title = () => view.container.querySelector(".studio-todo-sum b")?.textContent;
   await waitFor(() => expect(title()).toBe("计划 · 第 2 / 3 步"));

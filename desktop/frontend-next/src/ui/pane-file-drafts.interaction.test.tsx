@@ -9,7 +9,6 @@ import type { SessionStatus } from "../port/port";
 import { Pane } from "./Pane";
 
 afterEach(cleanup);
-Range.prototype.getClientRects = () => [] as unknown as DOMRectList;
 
 it("keeps a file draft when the initial status confirms the runtime's known workspace", async () => {
   const port = new MockPort();
@@ -24,8 +23,7 @@ it("keeps a file draft when the initial status confirms the runtime's known work
   const user = userEvent.setup();
   render(<Pane port={port} rt={{ id: "r1", base: "/rt/r1", root: "/workspace", name: "workspace" }}
     title="active" active visible sideHost={null} side={false} onFocus={() => {}} onReport={report}
-    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-    onOpenProject={() => {}} onKeepHere={() => {}} theme="light" dockW={560} dockMax={880} onDockW={() => {}} manualBrowser />);
+    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="light" dockW={560} dockMax={880} onDockW={() => {}} manualBrowser />);
   await user.click(await screen.findByRole("button", { name: "a.txt" }));
   const view = await waitFor(() => {
     const element = document.querySelector(".cm-content");

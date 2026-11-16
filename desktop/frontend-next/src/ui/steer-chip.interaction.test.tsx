@@ -42,9 +42,7 @@ async function mount(queue: Queue = emptyQueue()) {
       pulse={0}
       findPulse={0}
       onSettings={() => {}}
-      needsProject={false}
       onOpenProject={() => {}}
-      onKeepHere={() => {}}
       theme="light"
       dockW={320}
       dockMax={640}

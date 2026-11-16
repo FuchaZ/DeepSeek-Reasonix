@@ -11,8 +11,7 @@ afterEach(cleanup);
 function mount(extra: Record<string, unknown>) {
   return render(<Pane port={new MockPort()} rt={{ id: "p1", root: "/w", name: "w" } as RuntimeView}
     title="w" active visible sideHost={null} side={false} onFocus={() => {}} onReport={() => {}}
-    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-    onOpenProject={() => {}} onKeepHere={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} {...extra} />);
+    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} {...extra} />);
 }
 
 describe("where a refused action's reason sits in the pane", () => {

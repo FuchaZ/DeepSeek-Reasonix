@@ -5,7 +5,6 @@ interface Deps {
   focusPane: (id: string) => void;
   setRail: (open: boolean) => void;
   addFolder: () => void;
-  setClaimed: (claimed: boolean) => void;
   showPrefs: (section?: string) => void;
   setFeedback: (mode: "send") => void;
   runtimes: RuntimeView[];
@@ -22,15 +21,11 @@ export function usePaneCallbacks(d: Deps) {
     d.setRail(true);
     d.addFolder();
   });
-  const keepHere = useStable(() => {
-    localStorage.setItem("rx-claim", "off");
-    d.setClaimed(true);
-  });
   const openSettings = useStable((section?: string) => (section ? d.showPrefs(section) : d.showPrefs()));
   const openFeedback = useStable(() => d.setFeedback("send"));
   const openSessionFor = useStableFor(async (id: string, path: string) => {
     const root = d.runtimes.find((r) => r.id === id)?.root;
     await d.openPane({ root, sessionPath: path }).catch(d.fail);
   });
-  return { focusFor, openProject, keepHere, openSettings, openFeedback, openSessionFor };
+  return { focusFor, openProject, openSettings, openFeedback, openSessionFor };
 }

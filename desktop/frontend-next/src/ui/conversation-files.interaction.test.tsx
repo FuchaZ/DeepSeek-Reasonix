@@ -34,7 +34,7 @@ async function mount(remote = false, existingBrowser = false) {
     const [manualBrowser, onManualBrowser] = useState(false);
     return <Pane port={port} rt={{ id: "p1", root: "/work", name: "work", host: remote ? "server" : undefined } as RuntimeView}
       title="work" active visible sideHost={null} side={false} onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}}
-      pulse={0} findPulse={0} onSettings={() => {}} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
+      pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}}
       theme="dark" dockW={560} dockMax={880} onDockW={() => {}} manualBrowser={manualBrowser} onManualBrowser={onManualBrowser} />;
   }
   await act(async () => { render(<Harness />); });

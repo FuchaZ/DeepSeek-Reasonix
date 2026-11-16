@@ -7,13 +7,12 @@ import { t } from "../i18n";
 import logoWordmark from "../assets/logo-wordmark.svg";
 import type { ApprovalMode } from "../port/port";
 import type { HubPort, RuntimeView, TreeWorkspace } from "../port/hub";
-import { workspaceContains } from "../port/hub";
 import type { RemoteHost } from "../port/remote";
 import type { Adder } from "./addws";
 import { ContentMatches } from "./ContentMatches";
 import { SECTION_NAME, SETTINGS } from "./prefsnav";
 import { RailSearch } from "./railsearch";
-import { RemoteHosts, remoteProjectKey, remoteWorkspaces } from "./RemoteHosts";
+import { RemoteHosts, remoteWorkspaces } from "./RemoteHosts";
 import { remoteProjects } from "./remoteProjects";
 import { StudioIcon } from "./StudioIcon";
 import { UpdateNotice } from "./UpdateNotice";
@@ -29,7 +28,7 @@ import { useFileDrop } from "./filedrop";
 import type { PaneView } from "../state/paneview";
 import type { SessionScope } from "./sessionScope";
 import { RailFilterContext } from "./railfilter";
-import { SessionFilter } from "./SessionFilter";
+import { ScopeClock, ScopePicker } from "./SessionFilter";
 
 interface Props {
   hub: HubPort;
@@ -245,15 +244,6 @@ export function Sidebar({
     else next.delete(root);
     setFolded(next);
   };
-  const foldable = [
-    ...tree.filter((ws) => ws.sessions.length || ws.remaining).map((ws) => ws.root),
-    ...shownRemotes.flatMap((host) => remoteWorkspaces(host, remoteTrees[host.name], runtimes)
-      .filter((ws) => ws.sessions.length || ws.total || !remoteTrees[host.name] || runtimes.some((rt) => rt.host === host.name && workspaceContains(ws, rt.root)))
-      .map((ws) => remoteProjectKey(host.name, ws.root))),
-  ];
-  const allFolded = foldable.length > 0 && foldable.every((key) => folded.has(key));
-  const toggleAll = () => setFolded(allFolded
-    ? new Set([...folded].filter((key) => !foldable.includes(key))) : new Set([...folded, ...foldable]));
 
   return (
     <>
@@ -297,7 +287,7 @@ export function Sidebar({
         {!navShown && <SidebarDestinations wallet={wallet} approval={approval} online={online} schedules={schedules} onGo={onSettings} onFiles={onFiles}
           onNew={() => void startConversation().catch(onError)} onSearch={() => setPalette(true)} />}
       </div>
-      <RailFilterContext.Provider value={<SessionFilter scope={railScope} counts={scopeCounts} onScope={setRailScope} />}>
+      <RailFilterContext.Provider value={{ clock: <ScopeClock />, scope: <ScopePicker scope={railScope} counts={scopeCounts} onScope={setRailScope} /> }}>
       <RailSearch>
       <ContentMatches hub={hub} tree={tree} onOpen={onOpen} onError={onError} onReference={onReferenceSession} />
       <Workspaces
@@ -308,9 +298,6 @@ export function Sidebar({
         runtimes={runtimes}
         active={active}
         folded={folded}
-        onToggleAll={toggleAll}
-        allFolded={allFolded}
-        canFold={foldable.length > 0}
         onFold={onFold}
         reload={reloadTree}
         retry={retryTree ? () => void retryTree() : undefined}

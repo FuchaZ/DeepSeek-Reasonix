@@ -13,8 +13,8 @@ function menu(over: Partial<SessionMenuProps> = {}, session: Partial<TreeSession
     session: { path: "/p/a.jsonl", archived: false, runtimeId: "rt-1", ...session } as TreeSession,
     label: "上一次的会话", live: false, pinned: false, exporting: false, autoNaming: false,
     onPin: vi.fn(), onMarkRead: vi.fn(), onRename: vi.fn(), onAutoName: vi.fn(), onPause: vi.fn(), onClose: vi.fn(),
-    onArchive: vi.fn(), onBranch: vi.fn(), onCopyInfo: vi.fn(), onExport: vi.fn(), onDelete: vi.fn(),
-    onMove: vi.fn(), canMove: { up: true, down: true }, onMoveTo: vi.fn(), ...over,
+    onArchive: vi.fn(), onBranch: vi.fn(), onCopyInfo: vi.fn(), onExport: vi.fn(), onBatchSelect: vi.fn(), onDelete: vi.fn(),
+    onMoveTo: vi.fn(), ...over,
   };
   render(<SessionMenu {...props} />);
   return props;
@@ -24,15 +24,26 @@ const groups = () => [...document.querySelectorAll(".session-pop-group")].map((g
   [...g.querySelectorAll("[data-action]")].map((b) => b.getAttribute("data-action") + (b.getAttribute("data-value") ? `:${b.getAttribute("data-value")}` : "")));
 
 describe("the session menu", () => {
-  it("sorts what can be done into position, name, content, destination and ending", () => {
+  it("sorts what can be done into position, name, content, picking, destination and ending", () => {
     menu();
     expect(groups()).toEqual([
-      ["session.pin", "session.move:-1", "session.move:1"],
+      ["session.pin"],
       ["session.rename-start", "session.auto-name", "session.mark-read"],
       ["session.branch", "session.copy-info", "session.export:md", "session.export:json"],
+      ["session.selection:start"],
       ["session.move-to-start", "session.archive:archive"],
       ["session.close", "session.delete"],
     ]);
+  });
+
+  it("hands the whole conversation to the batch-select entry", async () => {
+    const p = menu({}, { path: "/p/b.jsonl" });
+    const item = screen.getByRole("menuitem", { name: /批量管理/ });
+    expect(item.getAttribute("data-action")).toBe("session.selection");
+    expect(item.getAttribute("data-value")).toBe("start");
+    expect(item.getAttribute("data-target")).toBe("/p/b.jsonl");
+    await userEvent.click(item);
+    expect(p.onBatchSelect).toHaveBeenCalledExactlyOnceWith(expect.objectContaining({ path: "/p/b.jsonl" }));
   });
 
   it("puts one export entry in the content group, with the two formats as choices", async () => {

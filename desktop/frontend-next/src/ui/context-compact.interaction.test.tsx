@@ -31,7 +31,7 @@ async function mount(running = false, side = false) {
     <Pane port={port} rt={{ id: "compact", root: "/workspace", name: "Workspace", base: "/rt/compact" }}
       title="Workspace" active visible sideHost={side ? host : null} side={side}
       onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}} pulse={0} findPulse={0}
-      onSettings={settings} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
+      onSettings={settings} onOpenProject={() => {}}
       theme="light" dockW={320} dockMax={640} onDockW={() => {}} />
   </>);
   view.container.append(host);

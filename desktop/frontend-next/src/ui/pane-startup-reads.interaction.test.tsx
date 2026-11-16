@@ -61,8 +61,7 @@ async function mount(running = false, pathless = false) {
       <Chrome port={port} status={report?.status ?? null} workspace={report?.workspace ?? null} title="active" steer={0} theme="light" onTheme={() => {}} onFind={() => {}} view="flow" rows={0} surfaces={0} onView={() => {}} />
       <Pane port={port} rt={{ id: "r1", base: "/rt/r1", root: snapshot.workspaceRoot!, name: "workspace", sessionPath }}
         title="active" active visible sideHost={null} side={false} onFocus={() => {}} onReport={onReport}
-        onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-        onOpenProject={() => {}} onKeepHere={() => {}} theme="light" dockW={320} dockMax={640} onDockW={() => {}} />
+        onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="light" dockW={320} dockMax={640} onDockW={() => {}} />
     </>;
   }
   const view = render(<Window />);

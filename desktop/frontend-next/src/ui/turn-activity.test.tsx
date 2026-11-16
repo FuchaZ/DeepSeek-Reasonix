@@ -38,9 +38,6 @@ function draw(items: Item[]) {
       onCommitRewind={noop}
       onPrepareFileRevert={noop}
       onCommitFileRevert={noop}
-      needsProject={false}
-      onOpenProject={() => {}}
-      onKeepHere={() => {}}
     />,
   );
   return document.querySelector(".chunk") as HTMLElement;

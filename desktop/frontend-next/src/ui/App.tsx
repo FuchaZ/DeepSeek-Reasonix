@@ -67,7 +67,6 @@ import { useTreeRead } from "./useTreeRead";
 import { useSidebarOpen } from "./sidebaropen";
 import { useOpenPane } from "./useOpenPane";
 import { useOpenRemotePane } from "./useOpenRemotePane";
-import { useNewConversation } from "./useNewConversation";
 import { markSettled } from "../boot/gate";
 import type { PaneView } from "../state/paneview";
 import { usePaneSessionRefs } from "./usePaneSessionRefs";
@@ -343,6 +342,11 @@ export function App({ hub }: { hub: HubPort }) {
   }, [active, panePorts, hidePrefs]);
 
   const openPane = useOpenPane({ hub, runtimes, panePorts, active, reportsRef, runsRef, setRuntimes, setActive, setTakeover, reloadPanes: refreshPanes, sw });
+  // Pane memoizes on its props and the project pill rides one into every pane,
+  // so the opener the adder ends in goes through a ref: a tab switch must not
+  // hand every pane a new adder identity.
+  const openPaneRef = useRef(openPane);
+  openPaneRef.current = openPane;
 
   // Awaitable because deleting a conversation has to close its pane first and
   // then wait: the kernel refuses to erase a transcript its runtime still holds,
@@ -358,16 +362,17 @@ export function App({ hub }: { hub: HubPort }) {
   );
 
   const openPeerSession = useCallback((path: string) => void openPane({ sessionPath: path }).catch(fail), [openPane, fail]);
+  // Pane memoizes on its props; the opener rides a ref so a tab switch does not
+  // hand every pane a new identity and re-render them all.
+  const openPeerSessionRef = useRef(openPeerSession);
+  openPeerSessionRef.current = openPeerSession;
+  const openPeerSessionStable = useCallback((path: string) => openPeerSessionRef.current(path), []);
 
   const openFromSidebar = useSidebarOpen<PaneView>(runtimes, openPane, setActive, setViewRequests, "flow");
-  const adder = useAddWorkspace(hub, reloadTree, fail, (workspace) => openPane({ root: workspace.root }));
-  // 每个窗口都有一个根 —— 没选过项目时那是它碰巧启动的地方。两者读起来一样，
-  // 于是「从哪加项目」这句问题永远问不出口；只有内核说的 remembered 分得开。
-  const [claimed, setClaimed] = useState(() => localStorage.getItem("rx-claim") === "off");
-  const { focusFor, openProject, keepHere, openSettings, openFeedback, openSessionFor } = usePaneCallbacks({
-    focusPane, setRail, addFolder: () => adder.add(), setClaimed, showPrefs, setFeedback, runtimes, openPane, fail,
+  const adder = useAddWorkspace(hub, reloadTree, fail, useCallback((workspace) => openPaneRef.current({ root: workspace.root }), []));
+  const { focusFor, openProject, openSettings, openFeedback, openSessionFor } = usePaneCallbacks({
+    focusPane, setRail, addFolder: () => adder.add(), showPrefs, setFeedback, runtimes, openPane, fail,
   });
-  const needsProject = treeRead && !claimed && tree.every((ws) => !ws.remembered);
 
   useFoldAway("rail", setRail);
   const navRail = useNavRail(rail);
@@ -457,7 +462,12 @@ export function App({ hub }: { hub: HubPort }) {
   const { errorBar, note, bar } = useWindowNotices({ error, setError, onReport: reportError, tree, port: machineRt ? machinePort : null, feedbackOpen: feedback !== null });
   const activeWorkspace = tree.find((ws) => !activeRuntime?.host && workspaceContains(ws, activeRuntime?.root)) ?? tree[0];
   const newSessionRoot = activeWorkspace?.root;
-  const startConversation = useNewConversation(active, runtimes, newSessionRoot, openPane, openRemotePane);
+  // 新建会话 opens straight away and no root is sent: the kernel answers a
+  // rootless open with its own auto workspace, the tree's 任务 area. Which
+  // project a session belongs to is decided afterwards, in the composer's
+  // project pill. Only the per-project 新建 in the tree names a root — its row
+  // already names the project.
+  const startNewSession = useCallback(() => openPane({}).catch(fail), [openPane, fail]);
 
   usePaneForSheets({
     settings: !!settings,
@@ -541,6 +551,7 @@ export function App({ hub }: { hub: HubPort }) {
       <BrowserLogin />
 
       <Chrome
+        task={tree.some((ws) => ws.auto && ws.root === (report.status?.workspaceRoot || ""))}
         host={runtimes.find((rt) => rt.id === active)?.host}
         port={activePort}
         status={report.status}
@@ -566,7 +577,7 @@ export function App({ hub }: { hub: HubPort }) {
             onSearch={() => setPalette(true)}
             onNew={() => {
               hidePrefs();
-              void startConversation().catch(fail);
+              startNewSession();
             }}
             feedbackUnread={feedbackUnread}
             shown={navRail.shown}
@@ -603,7 +614,7 @@ export function App({ hub }: { hub: HubPort }) {
           adder={adder}
           opening={sw.path}
           onOpen={openFromSidebar}
-          onNew={startConversation}
+          onNew={() => startNewSession()}
           onOpenRemote={openRemotePane}
           onFocusPane={focusPane}
           onClosePanes={closePanes}
@@ -681,12 +692,16 @@ export function App({ hub }: { hub: HubPort }) {
                   alert={rt.id === active && !errorBar ? note : undefined}
                   failure={rt.id === active ? errorBar : undefined}
                   connect={first.connect}
-                  needsProject={needsProject}
                   onOpenProject={openProject}
-                  onKeepHere={keepHere}
+                  projectTree={tree}
+                  remotes={remotes}
+                  remoteTrees={remoteTrees}
+                  runtimes={runtimes}
+                  adder={adder}
                   onSettings={openSettings}
                   onFeedback={FEEDBACK_RETIRED ? undefined : openFeedback}
                   onOpenSession={openSessionFor(rt.id)}
+                  onOpenPeerSession={openPeerSessionStable}
                   theme={scheme}
                   dockW={shownDockW}
                   dockMax={dockLimit}
@@ -703,13 +718,13 @@ export function App({ hub }: { hub: HubPort }) {
                 {!treeRead ? null : tree.length === 0 ? (
                   <>
                     <p className="h">{t("app.you_can_start_without_a")}</p>
-                    <button data-action="session.new" onClick={() => void startConversation().catch(fail)}>{t("common.start_a_new_session")}</button>
+                    <button data-action="session.new" onClick={startNewSession}>{t("common.start_a_new_session")}</button>
                     <button data-action="workspace.add" disabled={adder.busy} onClick={() => adder.add()}>{t("app.add_folder")}</button>
                   </>
                 ) : (
                   <>
                     <p className="h">{t("app.pick_one_on_the_left")}</p>
-                    <button data-action="session.new" onClick={() => void startConversation().catch(fail)}>{t("common.start_a_new_session")}</button>
+                    <button data-action="session.new" onClick={startNewSession}>{t("common.start_a_new_session")}</button>
                   </>
                 )}
               </div>

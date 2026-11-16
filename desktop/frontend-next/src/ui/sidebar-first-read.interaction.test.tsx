@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
 import "./testkit";
 import { App } from "./App";
 import { MockHub } from "../port/mock_hub";
@@ -24,18 +24,20 @@ function hubWithHeldTree() {
 }
 
 // Before the kernel has answered, an empty tree is an unread one, and saying
-// "no folders" there reads as data that was lost.
+// "no projects" there reads as data that was lost.
 it("says the folders are being read until the first tree read settles", async () => {
   const { hub, answer } = hubWithHeldTree();
   render(<App hub={hub} />);
 
   expect(await screen.findByText("正在读取文件夹…")).toBeTruthy();
-  expect(screen.queryByText("尚无文件夹")).toBeNull();
+  expect(screen.queryByText("暂无项目")).toBeNull();
+  expect(screen.queryByText("暂无任务")).toBeNull();
   expect(screen.queryByText("先打开一个项目")).toBeNull();
 
   await act(async () => answer([]));
 
-  expect(await screen.findByText("尚无文件夹")).toBeTruthy();
+  expect(await screen.findByText("暂无项目")).toBeTruthy();
+  expect(screen.getByText("暂无任务")).toBeTruthy();
   expect(screen.queryByText("正在读取文件夹…")).toBeNull();
 });
 
@@ -72,6 +74,9 @@ it("offers a new session in the main area when there are no folders", async () =
   expect(start).toBeTruthy();
   expect(empty.querySelector('button[data-action="workspace.add"]')).toBeTruthy();
 
+  // The pane opens at once and the open asks for no root at all — the kernel
+  // answers with its own auto workspace, which is what the prompt says.
   await act(async () => { start!.click(); });
-  expect(opened).toEqual([{ root: undefined }]);
+  await waitFor(() => expect(opened).toEqual([{ root: undefined }]));
+  expect(screen.queryByRole("dialog", { name: "选择项目" })).toBeNull();
 });

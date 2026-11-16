@@ -40,7 +40,7 @@ function transcript(items: Item[], onWithdraw: (id: string) => void = () => {}) 
       hidden={false} focus={null} onApprove={noop} onFullAccess={noop} onPlan={noop}
       onAnswer={noop} onForget={noop} onExtInvoke={() => {}} onExtSubmit={noop} checkpoints={new Map()}
       onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop}
-      onCommitFileRevert={noop} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}} onWithdraw={onWithdraw}
+      onCommitFileRevert={noop} onWithdraw={onWithdraw}
     />
   );
 }

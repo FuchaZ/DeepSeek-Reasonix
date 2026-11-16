@@ -22,9 +22,9 @@ export interface WorkspacesProps {
   retry?: () => void;
   paging?: TreePaging;
   previewLimit?: number;
-  onToggleAll?: () => void;
-  allFolded?: boolean;
-  canFold?: boolean;
+  // The group heads fold a whole run at once. The roots arrive already chosen,
+  // so the window writes its fold set once and every row's chevron reads the
+  // same resting state back.
   // The session path being opened, or empty. The row shows it selected and busy
   // before the kernel answers; the owner clears it on failure.
   opening?: string;

@@ -16,6 +16,19 @@ export function useWorkspaceDrag(order: string[], place: (root: string, before: 
     const box = e.currentTarget.getBoundingClientRect();
     return e.clientY < box.top + box.height / 2 ? "before" : "after";
   };
+  /** The side the row will actually land on. A row dropped on the edge it
+   *  already sits at would be a move of zero — the line would promise a place
+   *  and nothing would happen — so on the neighbour that edge flips: carrying
+   *  a row onto the row just below lands under it, onto the row just above
+   *  lands over it. Both the painted line and the drop read this one answer. */
+  const effectiveEdge = (root: string, edge: Edge): Edge => {
+    const from = order.indexOf(dragging);
+    const to = order.indexOf(root);
+    if (from < 0 || to < 0 || from === to) return edge;
+    if (edge === "before" && to === from + 1) return "after";
+    if (edge === "after" && to === from - 1) return "before";
+    return edge;
+  };
   const beforeOf = (root: string, edge: Edge) => (edge === "before" ? root : order[order.indexOf(root) + 1] ?? "");
 
   const start = useCallback((e: DragEvent, root: string) => {
@@ -27,7 +40,7 @@ export function useWorkspaceDrag(order: string[], place: (root: string, before: 
     if (!mine(e, root)) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = "move";
-    const edge = edgeOf(e);
+    const edge = effectiveEdge(root, edgeOf(e));
     setOver((was) => (was?.root === root && was.edge === edge ? was : { root, edge }));
   };
   const leave = (root: string) => setOver((was) => (was?.root === root ? null : was));
@@ -38,7 +51,7 @@ export function useWorkspaceDrag(order: string[], place: (root: string, before: 
   const drop = (e: DragEvent, root: string) => {
     if (!mine(e, root)) return;
     e.preventDefault();
-    const before = beforeOf(root, edgeOf(e));
+    const before = beforeOf(root, effectiveEdge(root, edgeOf(e)));
     const from = dragging;
     end();
     const at = order.indexOf(from);

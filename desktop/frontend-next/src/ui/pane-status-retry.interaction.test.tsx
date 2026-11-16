@@ -33,7 +33,7 @@ async function mount() {
   const view = render(
     <Pane port={port} rt={{ id: "r1", base: "/rt/r1", root: "/workspace", name: "workspace", sessionPath: "/sessions/a.jsonl" }} title="a" active={false}
       visible={false} sideHost={null} side={false} onFocus={() => {}} onReport={onReport} onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}}
-      needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}} theme="light" dockW={320} dockMax={640} onDockW={() => {}} />,
+      onOpenProject={() => {}} theme="light" dockW={320} dockMax={640} onDockW={() => {}} />,
   );
   const send = (event: WireEvent | WireEvent["kind"]) => act(() => deliver?.(typeof event === "string" ? { kind: event } : event));
   const lastLive = () => onReport.mock.calls.at(-1)?.[1].live;

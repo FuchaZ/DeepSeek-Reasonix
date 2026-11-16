@@ -2,6 +2,7 @@
 @import "./settings.css" layer(design);
 @import "./sidebar.css" layer(design);
 @import "./sesscard.css" layer(design);
+@import "./rail-menu.css" layer(design);
 @import "./rows.css" layer(design);
 @import "./queue.css" layer(design);
 @import "./notices.css" layer(design);

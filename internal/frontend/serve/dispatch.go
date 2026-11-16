@@ -143,8 +143,8 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text, role
 	}
 	// Across projects the user's outgoing answer rules: "never" refuses every
 	// dispatch into another project, and "paired" lets through only what this
-	// session already has there, so a fresh pane refuses.
-	if !own {
+	// session already has there (a reuse or pending hit), so a fresh pane refuses.
+	if cross := !own; cross {
 		switch config.LoadForEdit(config.UserConfigPath()).PeersCrossProject() {
 		case config.PeersCrossProjectNever:
 			return control.DispatchResult{}, projectError(control.ErrDispatchCrossProject, root)

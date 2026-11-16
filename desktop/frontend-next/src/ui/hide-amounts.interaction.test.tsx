@@ -35,9 +35,7 @@ function open(port: MockPort) {
       pulse={0}
       findPulse={0}
       onSettings={() => {}}
-      needsProject={false}
       onOpenProject={() => {}}
-      onKeepHere={() => {}}
       theme="dark"
       dockW={560}
       dockMax={880}

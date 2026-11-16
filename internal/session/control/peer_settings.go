@@ -145,20 +145,20 @@ func (c *Controller) SavePeersSettings(patch PeersPatch) (PeersSettings, error) 
 		if patch.OpenNested != nil {
 			p.OpenNested = *patch.OpenNested
 		}
-		if patch.CrossProject != nil {
-			switch *patch.CrossProject {
-			case config.PeersCrossProjectAlways, config.PeersCrossProjectPaired, config.PeersCrossProjectNever:
-				p.CrossProject = *patch.CrossProject
-			default:
-				return fmt.Errorf("%w: %q", ErrPeerCrossProjectInvalid, *patch.CrossProject)
-			}
-		}
 		if patch.Incoming != nil {
 			switch *patch.Incoming {
 			case config.IncomingAsk, config.IncomingDispatch, config.IncomingAlways:
 				p.Incoming = *patch.Incoming
 			default:
 				return fmt.Errorf("%w: %q", ErrPeerIncomingInvalid, *patch.Incoming)
+			}
+		}
+		if patch.CrossProject != nil {
+			switch *patch.CrossProject {
+			case config.PeersCrossProjectAlways, config.PeersCrossProjectPaired, config.PeersCrossProjectNever:
+				p.CrossProject = *patch.CrossProject
+			default:
+				return fmt.Errorf("%w: %q", ErrPeerCrossProjectInvalid, *patch.CrossProject)
 			}
 		}
 		return nil

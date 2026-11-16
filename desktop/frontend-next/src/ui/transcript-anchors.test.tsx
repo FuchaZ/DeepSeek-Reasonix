@@ -22,7 +22,7 @@ describe("a transcript row", () => {
       <Transcript items={items} entering={[]} onEntered={() => {}} revision={1} waiting={{}} scroll={{ current: null }} hidden={false}
         focus={null} onApprove={noop} onFullAccess={noop} onPlan={noop} onAnswer={noop} onForget={noop}
         onExtInvoke={() => {}} onExtSubmit={noop} checkpoints={new Map()} onPrepareRewind={noop} onCommitRewind={noop}
-        onPrepareFileRevert={noop} onCommitFileRevert={noop} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}} />,
+        onPrepareFileRevert={noop} onCommitFileRevert={noop} />,
     );
     for (const id of ["u1", "s1", "t1"]) expect(document.querySelector(`[data-item="${id}"]`), id).not.toBeNull();
   });

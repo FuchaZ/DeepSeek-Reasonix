@@ -24,8 +24,7 @@ async function mount() {
   const submit = vi.spyOn(port, "submitExtensionForm").mockResolvedValue(undefined);
   render(<Pane port={port} rt={{ id: "r1", base: "/rt/r1", root: "/w", name: "w" }}
     title="w" active visible sideHost={null} side={false} onFocus={() => {}} onReport={() => {}}
-    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-    onOpenProject={() => {}} onKeepHere={() => {}} theme="light" dockW={320} dockMax={640} onDockW={() => {}} />);
+    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="light" dockW={320} dockMax={640} onDockW={() => {}} />);
   await act(async () => {});
   const publish = (body: Pick<ExtensionSurface, "kind" | "form" | "status">) => act(() => emit({
     kind: "extension_surface", extension: {

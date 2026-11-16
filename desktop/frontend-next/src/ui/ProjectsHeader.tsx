@@ -1,40 +1,47 @@
 import { useContext } from "react";
 import { t } from "../i18n";
 import type { Adder } from "./addws";
-import { StudioIcon } from "./StudioIcon";
 import { RailFilterContext } from "./railfilter";
+import { StudioIcon } from "./StudioIcon";
+import { WsMark } from "./WsMark";
 
-/** The row above the tree: which view is on, the fold-all control, the session
- *  filter, and the way into a new project. Ordering by recency lives in the
- *  filter menu, beside the scopes it reorders, rather than as a control of its
- *  own up here. */
-export function ProjectsHeader({ adder, onToggleAll, allFolded, canFold, searching, onSelect, selecting, canSelect }: {
+/** The row above the tree: the view's name, the session filter and the way
+ *  into picking conversations. The name folds both runs at once — every folder
+ *  that can fold, and every empty run's note — with the same arrow the group
+ *  labels answer to; folding a single group lives on its own label. The check
+ *  starts a picking session, because it acts on the whole list the way the
+ *  fold does. */
+export function ProjectsHeader({ adder, bothFolded, searching, onToggleBoth, onSelect, selecting, canSelect }: {
   adder: Adder;
-  onToggleAll?: () => void;
-  allFolded?: boolean;
-  canFold?: boolean;
+  bothFolded?: boolean;
   searching?: boolean;
-  /** Start picking conversations. The control sits beside fold-all because both
-   *  act on the whole list, and a project row grows a checkbox once it is on. */
+  onToggleBoth?: () => void;
+  /** Start picking conversations: the same mode a session's own menu opens,
+   *  offered here because it acts on the list rather than on one row. */
   onSelect?: () => void;
   selecting?: boolean;
   canSelect?: boolean;
 }) {
-  const filter = useContext(RailFilterContext);
+  const rail = useContext(RailFilterContext);
+  const said = t(bothFolded ? "session.expand_all_groups" : "session.collapse_all_groups");
   return (
     <div className="projects-header">
       <div className="projects-tabs">
-        <div className="vtabs" role="group" aria-label={t("session.session_view")}>
-          <button type="button" className="vtab" data-action="session.view" data-value="projects" aria-pressed="true">{t("common.project")}</button>
-        </div>
+        <button type="button" className="vtab" aria-current="true"
+          data-action="workspace.fold-all" data-value="both"
+          disabled={!onToggleBoth || searching}
+          aria-expanded={onToggleBoth ? !bothFolded : undefined}
+          title={said} aria-label={said}
+          onClick={onToggleBoth}>
+          {t("session.task_list")}
+          <WsMark open={onToggleBoth ? !bothFolded : undefined} />
+        </button>
         <span className="projects-spacer" />
-        {onToggleAll && (
-          <button className="projects-add projects-fold" data-action="workspace.fold-all" disabled={!canFold || searching} aria-expanded={!allFolded}
-            title={t(searching ? "session.projects_expand_automatically_while_searching" : allFolded ? "session.expand_all_projects" : "session.collapse_all_projects")} aria-label={t(allFolded ? "session.expand_all_projects" : "session.collapse_all_projects")} onClick={onToggleAll}>
-            <StudioIcon name={allFolded ? "unfoldAll" : "foldAll"} />
-          </button>
-        )}
-        {filter}
+        {rail?.clock}
+        <button className="projects-add" data-busy={adder.busy ? "" : undefined} disabled={adder.busy}
+          title={t("session.open_project")} aria-label={t("session.open_project")} data-action="workspace.add" onClick={() => adder.add()}>
+          <StudioIcon name="plus" />
+        </button>
         {onSelect && (
           <button className="projects-add projects-select" data-action="session.selection" data-value="start"
             data-on={selecting ? "" : undefined} aria-pressed={selecting}
@@ -43,10 +50,7 @@ export function ProjectsHeader({ adder, onToggleAll, allFolded, canFold, searchi
             <StudioIcon name="check" />
           </button>
         )}
-        <button className="projects-add" data-busy={adder.busy ? "" : undefined} disabled={adder.busy}
-          title={t("session.open_project")} aria-label={t("session.open_project")} data-action="workspace.add" onClick={() => adder.add()}>
-          <StudioIcon name="plus" />
-        </button>
+        {rail?.scope}
       </div>
     </div>
   );

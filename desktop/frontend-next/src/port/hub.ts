@@ -106,6 +106,8 @@ export interface OpenWithTarget {
 }
 
 export interface TreeWorkspace {
+  displayName?: string;
+  pinned?: boolean;
 	listingState?: "discovering" | "indexing" | "ready" | "degraded";
 	listingRevision?: number;
 	countsComplete?: boolean;
@@ -122,6 +124,9 @@ export interface TreeWorkspace {
   // True when the user chose this folder. A window always has a root — the one
   // it happened to launch in — and only this tells that apart from a project.
   remembered?: boolean;
+  // True for the app's own folder, where a conversation with no project lands:
+  // the sidebar draws it as the 任务 group, never as a project row.
+  auto?: boolean;
   // Every conversation the folder lists, loaded or not, and how many of those
   // are archived. `sessions` is only the newest of them; a kernel that predates
   // paging sends neither, and then `sessions` is all there is.
@@ -214,10 +219,16 @@ export interface HubPort extends SharePort {
   tree(window?: TreeWindow): Promise<TreeWorkspace[]>;
   /** What this session dispatched: the hub's book, by the session's path. */
   dispatchThreads(path: string): Promise<DispatchThread[]>;
+  /** The name a project reads by in the sidebar; the folder keeps its own. */
+  setWorkspaceDisplayName(path: string, name: string): Promise<void>;
+  /** Pin or unpin a project: a pinned one leads the list. */
+  setWorkspacePinned(path: string, pinned: boolean): Promise<void>;
   /** Conversations, in every workspace, that say these words. */
   searchHistory(query: string): Promise<HistorySearch>;
   onTreeChanged(listener: () => void): () => void;
-  addWorkspace(path: string): Promise<TreeWorkspace>;
+  /** Remember a folder, or — with `name` — create that empty folder inside it
+   *  first: a blank project is a chosen, empty folder, then remembered. */
+  addWorkspace(path: string, name?: string): Promise<TreeWorkspace>;
   removeWorkspace(path: string): Promise<void>;
   /** Show a listed project's folder in the system file manager. */
   revealWorkspace(path: string): Promise<void>;
@@ -290,7 +301,10 @@ export interface HubPort extends SharePort {
   // separate read so the page can choose a usable fallback before invoking a
   // host-only action.
   hostCapabilities(): Promise<HostCapabilities>;
-  pickFolder(): Promise<string | null>;
+  // preferred starts the OS picker at a given folder; undefined keeps each
+  // host's own default (the running workspace), and "" hands the choice to
+  // the platform's last-used directory.
+  pickFolder(preferred?: string): Promise<string | null>;
   // Machine settings resolve a local owner; workspace reads can pin a runtime.
   machinePort(runtimeId?: string): AgentPort;
   // Absolute paths of every file dropped anywhere on the window. It belongs
@@ -399,12 +413,20 @@ export class SseHub implements HubPort {
     return this.get<DispatchThread[]>("/dispatch-threads?path=" + encodeURIComponent(path));
   }
 
+  setWorkspaceDisplayName(path: string, name: string) {
+    return this.post<void>("/tree/workspaces/display-name", { path, name });
+  }
+
+  setWorkspacePinned(path: string, pinned: boolean) {
+    return this.post<void>("/tree/workspaces/pin", { path, pinned });
+  }
+
   searchHistory(query: string) {
     return this.get<HistorySearch>("/history/search?q=" + encodeURIComponent(query));
   }
 
-  addWorkspace(path: string) {
-    return this.post<TreeWorkspace>("/tree/workspaces", { path });
+  addWorkspace(path: string, name?: string) {
+    return this.post<TreeWorkspace>("/tree/workspaces", { path, name: name ?? "" });
   }
 
   async revealWorkspace(path: string) {
@@ -642,8 +664,8 @@ export class SseHub implements HubPort {
     };
   }
 
-  async pickFolder() {
-    const shellPath = await this.shell.pickFolder();
+  async pickFolder(preferred?: string) {
+    const shellPath = await this.shell.pickFolder(preferred ?? "");
     if (shellPath !== null) return shellPath;
 
     // A browser cannot reveal an absolute local path, but this UI is served by
@@ -653,7 +675,7 @@ export class SseHub implements HubPort {
       method: "POST",
       headers: { "content-type": "application/json" },
       credentials: "same-origin",
-      body: "{}",
+      body: JSON.stringify({ startIn: preferred ?? "" }),
     });
     if (res.status === 501 || res.status === 404) return null;
     if (!res.ok) await SseHub.fail("/host/pick-folder", res);

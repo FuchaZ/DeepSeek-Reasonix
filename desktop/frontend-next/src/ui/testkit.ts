@@ -39,6 +39,12 @@ globalThis.matchMedia ??= ((query: string) =>
 Element.prototype.scrollIntoView ??= function scrollIntoView() {};
 Element.prototype.scrollTo ??= function scrollTo() {};
 
+// jsdom lays no text out, so a Range has no client rects to report. The
+// occlusion hit-test reads them to ask whether a point lands on text, and in
+// jsdom the honest answer is "no rects" — without the stub every test that
+// paints a tooltip's answer logs an unhandled TypeError from the browser API.
+Range.prototype.getClientRects ??= (() => [] as unknown as DOMRectList) as unknown as Range["getClientRects"];
+
 // jsdom has no viewport, so it has no intersections to report. The transcript
 // mounts a block when one is near, and without this it asks an observer that
 // does not exist. Reporting everything as near is the right answer here: these

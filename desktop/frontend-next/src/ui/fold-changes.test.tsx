@@ -48,9 +48,6 @@ function draw(items: Item[]) {
       onCommitRewind={noop}
       onPrepareFileRevert={noop}
       onCommitFileRevert={noop}
-      needsProject={false}
-      onOpenProject={() => {}}
-      onKeepHere={() => {}}
     />,
   );
 }

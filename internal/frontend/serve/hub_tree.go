@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
+
 	"os"
 	"path/filepath"
 	"reasonix/internal/base/workspaceid"
@@ -31,6 +32,8 @@ func (h *Hub) registerTreeRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /history/search", historySearch)
 	mux.HandleFunc("GET /tree/events", h.treeEvents)
 	mux.HandleFunc("GET /tree/events/replay", h.treeEventsReplay)
+	mux.HandleFunc("POST /tree/workspaces/display-name", h.setWorkspaceDisplayName)
+	mux.HandleFunc("POST /tree/workspaces/pin", h.setWorkspacePinned)
 	mux.HandleFunc("POST /tree/workspaces", h.addWorkspace)
 	mux.HandleFunc("POST /tree/workspaces/remove", h.removeWorkspace)
 	mux.HandleFunc("POST /tree/workspaces/move", h.moveWorkspace)
@@ -61,15 +64,20 @@ func (h *Hub) tree(w http.ResponseWriter, r *http.Request) {
 	}
 	open := h.openSessions()
 	roots := groupWorkspaces(h.roots())
+	names := workspaceNames()
+	pinned := workspacePinned()
 	out := make([]treeWorkspace, 0, len(roots))
 	for _, ref := range roots {
 		// Open means a pane is driving this folder — true from the moment one is
 		// opened, before its first turn has written a transcript to list.
+		auto := isAutoWorkspace(ref.root)
 		node := treeWorkspace{
 			Root: ref.root, Name: fileutil.RootName(ref.root),
+			DisplayName: names[ref.root], Pinned: pinned[ref.root],
 			WorkspaceRoots: ref.roots,
 			Isolated:       worktree.IsManagedPath(ref.root, config.DeliveryWorktreeDir()),
 			Remembered:     ref.remembered,
+			Auto:           auto,
 			Sessions:       []treeSession{},
 		}
 		for _, root := range ref.roots {
@@ -79,7 +87,9 @@ func (h *Hub) tree(w http.ResponseWriter, r *http.Request) {
 			node.Missing = true
 		}
 		page := h.projectPage(ref.roots, node.Name, open, window, window.limitFor(ref.root))
-		if !ref.remembered && !page.Said && (page.Status == nil || page.Status.CountsComplete) {
+		// The 任务 group is a standing section, so the app's own folder is listed
+		// even before anything was said in it — an unremembered project is not.
+		if !ref.remembered && !auto && !page.Said && (page.Status == nil || page.Status.CountsComplete) {
 			continue
 		}
 		node.Sessions, node.Total, node.Archived, node.Remaining = page.Sessions, page.Total, page.Archived, page.Remaining
@@ -261,17 +271,24 @@ func (h *Hub) syncPins(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// listedSessionPaths maps each conversation the kernel lists in a known
+// listedSessionPaths maps each conversation the sidebar lists in a known
 // workspace to the listed path, so a client-supplied path is only ever used
-// through the value the kernel itself reported.
+// through the value the kernel itself reported. The sidebar is the authority
+// on what is listed: a conversation a pane is driving counts before its first
+// transcript is on disk, and a trace or fork no row shows does not.
 func (h *Hub) listedSessionPaths() map[string]string {
 	out := map[string]string{}
+	seen := map[string]bool{}
 	for _, ref := range h.sessionRoots() {
-		infos, err := sessionstore.ListSessionOrder(SessionDirFor(ref.dir))
-		if err != nil {
+		if seen[SessionDirFor(ref.dir)] {
 			continue
 		}
-		for _, si := range infos {
+		seen[SessionDirFor(ref.dir)] = true
+		listed, unlisted := h.treeSessionRows(ref.dir)
+		for _, si := range listed {
+			out[sessionstore.CanonicalSessionPath(si.Path)] = si.Path
+		}
+		for _, si := range unlisted {
 			out[sessionstore.CanonicalSessionPath(si.Path)] = si.Path
 		}
 	}
@@ -377,9 +394,12 @@ func recoveryLineageRoot(si sessionstore.SessionInfo, byID map[string]sessionsto
 
 // addWorkspace remembers a folder without opening it. Adding and opening are
 // separate acts: the sidebar lists what you work on, panes are what you drive.
+// addWorkspace remembers a folder without opening it. Adding and opening are
+// separate acts: the sidebar lists what you work on, panes are what you drive.
 func (h *Hub) addWorkspace(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Path string `json:"path"`
+		Name string `json:"name"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		badBody(w)
@@ -389,6 +409,25 @@ func (h *Hub) addWorkspace(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err)
 		return
+	}
+	// A named add makes the folder first: a blank project is an empty, chosen
+	// folder inside the one the picker returned, never a rename of it.
+	if name := strings.TrimSpace(body.Name); name != "" {
+		if strings.ContainsAny(name, `/\`) || name == "." || name == ".." {
+			refuse(w, http.StatusBadRequest, "workspace.bad_name", "that name cannot be a folder", nil)
+			return
+		}
+		created := filepath.Join(dir, name)
+		if st, statErr := os.Stat(created); statErr != nil {
+			if os.Mkdir(created, 0o755) != nil {
+				writeErr(w, http.StatusInternalServerError, errors.New("could not create the folder"))
+				return
+			}
+		} else if !st.IsDir() {
+			refuse(w, http.StatusConflict, "workspace.name_taken", "a file with that name is already there", nil)
+			return
+		}
+		dir = created
 	}
 	if err := addRememberedWorkspace(r.Context(), dir); err != nil {
 		if errors.Is(err, errWorkspaceListFull) {
@@ -544,65 +583,6 @@ func sessionHolder(held *sessionstore.SessionLeaseError) map[string]any {
 	return map[string]any{"pid": held.Info.PID, "host": held.Info.Hostname}
 }
 
-// exportSession returns the transcript only after applying the same workspace
-// boundary as rename and removal. The shell owns where the copy is saved; the
-// kernel owns which path is safe to read.
-func (h *Hub) exportSession(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		Path string `json:"path"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
-		badBody(w)
-		return
-	}
-	path, err := filepath.Abs(strings.TrimSpace(body.Path))
-	name := filepath.Base(path)
-	if err != nil || !filepath.IsLocal(name) || !store.IsSessionTranscriptName(name) {
-		refuse(w, http.StatusBadRequest, codeSessionBadPath, "the session path could not be resolved", nil)
-		return
-	}
-	// The file's own directory is the opened root: task conversations live in
-	// dated directories under the sessions tree, which the boundary check
-	// proved owned. The validated local base name cannot leave it.
-	dir := filepath.Dir(path)
-	if !h.ownsSessionDir(dir) {
-		refuse(w, http.StatusForbidden, "session.outside_workspace", "path outside a known workspace", nil)
-		return
-	}
-	path = filepath.Join(dir, name)
-	root, err := os.OpenRoot(dir)
-	if err != nil {
-		writeErr(w, http.StatusInternalServerError, err)
-		return
-	}
-	defer root.Close()
-	info, err := root.Lstat(name)
-	if err != nil {
-		writeErr(w, http.StatusInternalServerError, err)
-		return
-	}
-	if !info.Mode().IsRegular() {
-		refuse(w, http.StatusForbidden, "session.outside_workspace", "session export requires a regular transcript", nil)
-		return
-	}
-	loaded, err := sessionstore.LoadSession(path)
-	if err != nil {
-		writeErr(w, http.StatusInternalServerError, err)
-		return
-	}
-	content, err := root.ReadFile(name)
-	if loaded.Composition() != nil {
-		content, err = sessionstore.ExportNativeArchive(path)
-	}
-	if err != nil {
-		writeErr(w, http.StatusInternalServerError, err)
-		return
-	}
-	writeJSON(w, struct {
-		Name    string `json:"name"`
-		Content string `json:"content"`
-	}{Name: strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)), Content: string(content)})
-}
 
 // ownsSessionDir reports whether dir sits inside a workspace's sessions tree
 // this hub lists, which is the boundary a delete may not reach past.
@@ -645,6 +625,7 @@ type rootRef struct {
 
 // roots returns the sidebar's folders: everything remembered, plus whatever a
 // pane is driving, so an open workspace can never be missing from the tree.
+// A folder the user removed stays out of both until they ask for it again.
 func (h *Hub) roots() []rootRef {
 	paths := Workspaces()
 	saved := map[string]bool{}
@@ -671,6 +652,14 @@ func (h *Hub) roots() []rootRef {
 	}
 	for _, rt := range h.localRuntimes() {
 		add(rt.Server.Controller().WorkspaceRoot())
+	}
+	// The app's own folder stands in the tree once it exists, pane or no pane:
+	// the 任务 group holds its conversations, and closing a pane must not take
+	// the written ones off the list.
+	if auto := config.AutoWorkspaceDir(); auto != "" {
+		if st, err := os.Stat(auto); err == nil && st.IsDir() {
+			add(auto)
+		}
 	}
 	return out
 }

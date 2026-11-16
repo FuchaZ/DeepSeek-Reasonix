@@ -17,8 +17,7 @@ it("drops the goal card once its end button has cleared the goal, with no turn r
   const submit = vi.spyOn(port, "submit").mockImplementation(async (text) => { if (text === "/goal clear") goal = ""; });
   render(<Pane port={port} rt={{ id: "p1", root: "/w", name: "w" } as RuntimeView}
     title="w" active visible sideHost={null} side={false} onFocus={() => {}} onReport={() => {}}
-    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} needsProject={false}
-    onOpenProject={() => {}} onKeepHere={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />);
+    onSessionChanged={() => {}} pulse={0} findPulse={0} onSettings={() => {}} onOpenProject={() => {}} theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />);
   await userEvent.click(await screen.findByRole("button", { name: /目标/, expanded: false }));
   await userEvent.click(await screen.findByRole("button", { name: "退出目标" }));
   expect(submit).toHaveBeenCalledWith("/goal clear");

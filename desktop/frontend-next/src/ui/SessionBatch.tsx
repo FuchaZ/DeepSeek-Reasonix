@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type Dispatch, type SetStateAction } from "react";
 import { current, t } from "../i18n";
 import type { HubPort, TreeSession } from "../port/hub";
+import { StudioIcon } from "./StudioIcon";
 import { clearDraftForSession } from "./drafts";
 
 /** The selected rows that are still on screen; a row that leaves the displayed set leaves the selection. */
@@ -17,7 +18,7 @@ export function useSelectedRows(displayed: TreeSession[], selection: Set<string>
   return [...new Map(displayed.filter((row) => selection?.has(row.path)).map((row) => [row.path, row])).values()];
 }
 
-export function SessionBatch({ hub, selection, selected, displayed, onSelect, onExit, onBusy, onClose, onArchive, liveIds, reload, onError }: {
+export function SessionBatch({ hub, selection, selected, displayed, onSelect, onExit, onBusy, onClose, onArchive, autoRoot, liveIds, reload, onError }: {
   hub: HubPort;
   selection: Set<string> | null;
   selected: TreeSession[];
@@ -27,6 +28,9 @@ export function SessionBatch({ hub, selection, selected, displayed, onSelect, on
   onBusy: (busy: boolean) => void;
   onClose: (ids: string[]) => Promise<void>;
   onArchive: (path: string, archived: boolean, runtimeId?: string) => Promise<void>;
+  /** The auto workspace's root: a selected row writing there is a task
+   *  conversation, and its delete takes the whole footprint. */
+  autoRoot?: string;
   liveIds: (ids: string[]) => string[];
   reload: () => Promise<void>;
   onError: (e: unknown) => void;
@@ -36,7 +40,9 @@ export function SessionBatch({ hub, selection, selected, displayed, onSelect, on
   const deleteButton = useRef<HTMLButtonElement>(null);
   const doneButton = useRef<HTMLButtonElement>(null);
   const pending = phase !== "idle" && phase !== "confirm";
-  const running = liveIds(selected.flatMap((row) => row.runtimeId ? [row.runtimeId] : [])).length > 0;
+  const asking = phase === "confirm";
+  const liveSelected = new Set(liveIds(selected.flatMap((row) => row.runtimeId ? [row.runtimeId] : [])));
+  const running = liveSelected.size > 0;
   const blocked = pending || running || selected.length === 0;
   const all = displayed.length > 0 && displayed.every((row) => selection?.has(row.path));
   const restore = selected.length > 0 && selected.every((row) => row.archived);
@@ -84,24 +90,30 @@ export function SessionBatch({ hub, selection, selected, displayed, onSelect, on
     deleteButton.current?.focus();
   };
 
+  // The two kinds the delete speaks about: a task conversation's footprint is
+  // its own, a project conversation's sits in a folder that stays.
+  const taskCount = autoRoot ? selected.filter((row) => row.workspaceRoot === autoRoot).length : 0;
+  const projectCount = selected.length - taskCount;
   if (selection === null) return null;
   return (
     <div className="session-batch" aria-busy={pending}>
       <div className="session-batch-head">
-        <span role="status">{t("session.n_sessions_selected", { n: selected.length })}</span>
-        <button ref={doneButton} data-action="session.selection" data-value="end" disabled={pending} onClick={() => { cancel(); onSelect(null); }}>{t("session.done_selecting")}</button>
-      </div>
-      <div className="session-batch-actions">
         <button data-action="session.selection" data-value={all ? "clear" : "all"} disabled={phase !== "idle" || displayed.length === 0}
           aria-label={t(all ? "session.deselect_displayed_sessions" : "session.select_all_displayed_sessions")}
           onClick={() => {
             const next = new Set(selection);
             for (const row of displayed) { if (all) next.delete(row.path); else next.add(row.path); }
             onSelect(next);
-          }}>{t(all ? "session.deselect_all" : "session.select_visible")}</button>
-        <button data-action="session.batch-archive" data-value={restore ? "restore" : "archive"} disabled={blocked || phase === "confirm"}
+          }}>{t(all ? "session.deselect_everything" : "session.select_all")}</button>
+        <span role="status">{t("session.n_sessions_selected", { n: selected.length })}</span>
+        <button ref={doneButton} className="x" data-action="session.selection" data-value="end" disabled={pending}
+          aria-label={t("session.done_selecting")} title={t("session.done_selecting")}
+          onClick={() => { cancel(); onSelect(null); }}><StudioIcon name="close" /></button>
+      </div>
+      <div className="session-batch-actions">
+        <button data-action="session.batch-archive" data-value={restore ? "restore" : "archive"} disabled={blocked || asking}
           aria-label={t(restore ? "session.unarchive_selected_sessions" : "session.archive_selected_sessions")} onClick={() => void run(restore ? "restore" : "archive")}>{t(restore ? "common.unarchive" : "common.archived_2")}</button>
-        <button ref={deleteButton} data-action="session.batch-delete" disabled={blocked || phase === "confirm"} aria-label={t("session.delete_selected_sessions")}
+        <button ref={deleteButton} className="danger" data-action="session.batch-delete" disabled={blocked || asking} aria-label={t("session.delete_selected_sessions")}
           onClick={() => { setPhase("confirm"); onBusy(true); }}>{t("common.delete")}</button>
       </div>
       {running && <p>{t("session.selected_sessions_are_running_stop")}</p>}
@@ -112,7 +124,8 @@ export function SessionBatch({ hub, selection, selected, displayed, onSelect, on
           <div className="wsconfirm-t">
             <span className="q">{t("session.delete_n_sessions", { n: selected.length })}</span>
             <span className="session-batch-names">{selected.map((row) => row.title || row.name).join(current() === "zh" ? "、" : ", ")}</span>
-            <span className="h">{t("common.deletes_it_together_with_its")}</span>
+            {taskCount > 0 && <span className="h">{t("session.batch_delete_tasks_hint", { n: taskCount })}</span>}
+            {projectCount > 0 && <span className="h">{t("session.batch_delete_projects_hint", { n: projectCount })}</span>}
           </div>
           <div className="wsconfirm-a">
             <button autoFocus data-action="layer.dismiss" onClick={cancel}>{t("common.cancel")}</button>
@@ -120,6 +133,7 @@ export function SessionBatch({ hub, selection, selected, displayed, onSelect, on
           </div>
         </div>
       )}
+
     </div>
   );
 }

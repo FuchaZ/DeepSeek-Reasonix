@@ -198,6 +198,14 @@ export class MockHub implements HubPort {
     return Promise.resolve([]);
   }
 
+  setWorkspaceDisplayName(_path: string, _name: string) {
+    return Promise.resolve();
+  }
+
+  setWorkspacePinned(_path: string, _pinned: boolean) {
+    return Promise.resolve();
+  }
+
   tree(window?: TreeWindow) {
     const open = new Map(this.views.filter((v) => v.sessionPath).map((v) => [v.sessionPath!, v.id]));
     return Promise.resolve(

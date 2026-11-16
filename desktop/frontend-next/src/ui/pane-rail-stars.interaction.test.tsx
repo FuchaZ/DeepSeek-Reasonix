@@ -22,7 +22,7 @@ port.history = async () => [
 const pane = (rt: RuntimeView, port: AgentPort) => (
   <Pane port={port} rt={rt} title="w" active visible sideHost={null} side={false}
     onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}} pulse={0} findPulse={0}
-    onSettings={() => {}} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
+    onSettings={() => {}} onOpenProject={() => {}}
     theme="dark" dockW={560} dockMax={880} onDockW={() => {}} />
 );
 

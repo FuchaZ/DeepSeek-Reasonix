@@ -77,9 +77,7 @@ export class MockPort extends MockWorkspace implements AgentPort {
     efforts: {},
   };
 
-  async roles(): Promise<RoleAssignments> {
-    return this.assigned;
-  }
+  async roles(): Promise<RoleAssignments> { return this.assigned; }
 
   async setRole(role: string, ref: string, effort?: string) {
     if (role === "web_search") {
@@ -91,9 +89,7 @@ export class MockPort extends MockWorkspace implements AgentPort {
 
   overrides: Record<string, RoleOverride[]> = {};
 
-  async roleOverrides(): Promise<Record<string, RoleOverride[]>> {
-    return this.overrides;
-  }
+  async roleOverrides(): Promise<Record<string, RoleOverride[]>> { return this.overrides; }
 
   async clearRoleOverride(role: string, key: string) {
     this.overrides = { ...this.overrides, [role]: (this.overrides[role] ?? []).filter((o) => o.key !== key) };
@@ -231,6 +227,8 @@ export class MockPort extends MockWorkspace implements AgentPort {
     this.state.cwd = path;
     await this.newSession();
   }
+
+  setWorkspaceAuto() { return this.setWorkspace("~/workspaces/auto").then(() => "~/workspaces/auto"); }
 
   async worktreeSources(): Promise<import("./workspace").WorktreeSources> {
     return mockWorktreeSources(this.state.workspaceRoot ?? "", this.branchState.branch);

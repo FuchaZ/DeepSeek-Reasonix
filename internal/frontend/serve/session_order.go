@@ -106,7 +106,10 @@ func midpointRank(group []sessionstore.SessionInfo, at int) (map[string]float64,
 }
 
 // moveSession places one conversation a step up or down in its project's list.
-// The list is the kernel's, so the window shows the same order after a reload.
+// The list is the sidebar's own — the same rows and order /tree answers — so a
+// step the window shows is one a reload keeps. A conversation a pane is
+// driving has no transcript on disk yet and sits pinned above the placed ones;
+// moving it answers without error and without a rank to write.
 func (h *Hub) moveSession(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Path      string `json:"path"`
@@ -125,18 +128,31 @@ func (h *Hub) moveSession(w http.ResponseWriter, r *http.Request) {
 		refuse(w, http.StatusBadRequest, codeSessionBadPath, "the session path could not be resolved", nil)
 		return
 	}
-	path, ok := h.listedSessionPaths()[sessionstore.CanonicalSessionPath(abs)]
-	if !ok {
+	root := h.sessionTreeRoot(abs)
+	if root == "" {
 		refuse(w, http.StatusForbidden, "session.outside_workspace", "path outside a known workspace", nil)
 		return
 	}
-	order, err := sessionstore.ListSessions(filepath.Dir(path))
-	if err != nil {
-		writeErr(w, http.StatusInternalServerError, err)
+	canonical := sessionstore.CanonicalSessionPath(abs)
+	listed, unlisted := h.treeSessionRows(root)
+	path := ""
+	for _, si := range listed {
+		if sessionstore.CanonicalSessionPath(si.Path) == canonical {
+			path = si.Path
+			break
+		}
+	}
+	if path == "" {
+		for _, si := range unlisted {
+			if sessionstore.CanonicalSessionPath(si.Path) == canonical {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+		}
+		refuse(w, http.StatusForbidden, "session.outside_workspace", "path outside a known workspace", nil)
 		return
 	}
-	sortSessions(order)
-	updates, ok := rankUpdatesForStep(order, path, body.Direction)
+	updates, ok := rankUpdatesForStep(listed, path, body.Direction)
 	if !ok {
 		w.WriteHeader(http.StatusNoContent)
 		return

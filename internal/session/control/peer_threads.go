@@ -27,17 +27,16 @@ const peerThreadWindow = 30 * 24 * time.Hour
 
 // PeerThread is one session this one has sent to, and where that stands.
 type PeerThread struct {
-	Key         string `json:"key"`
-	Title       string `json:"title,omitempty"`
-	Project     string `json:"project,omitempty"`
-	SessionPath string `json:"sessionPath,omitempty"`
-	// Role is the name the sender opened this partner under, where it was a
-	// dispatch: one project can hold several, and the role is what tells them
-	// apart once the panes are gone.
-	Role      string          `json:"role,omitempty"`
-	State     PeerThreadState `json:"state"`
-	Since     time.Time       `json:"since"`
-	MessageID string          `json:"messageId"`
+	Key string `json:"key"`
+	// Role is the name the sender dispatched this session under, as the serving
+	// pane's dispatch book remembers it; empty for a thread no dispatch opened.
+	Role        string          `json:"role,omitempty"`
+	Title       string          `json:"title,omitempty"`
+	Project     string          `json:"project,omitempty"`
+	SessionPath string          `json:"sessionPath,omitempty"`
+	State       PeerThreadState `json:"state"`
+	Since       time.Time       `json:"since"`
+	MessageID   string          `json:"messageId"`
 }
 
 // PeerThreads lists the sessions this one has sent a message to, newest first.

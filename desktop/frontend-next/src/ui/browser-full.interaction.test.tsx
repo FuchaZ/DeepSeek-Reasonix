@@ -25,7 +25,7 @@ function open(active = true, setup?: (port: MockPort) => void) {
     return <><ViewSwitch view={browser ? "browser" : "flow"} rows={0} surfaces={0} onView={(to) => setReq((r) => ({ to, n: (r?.n ?? 0) + 1 }))} /><Pane port={port} rt={{ id: "wide", root: "/fixture", name: "Fixture" } as RuntimeView}
       title="Fixture" active={active} visible={active} sideHost={null} side={false}
       onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}} pulse={0} findPulse={0}
-      onSettings={() => {}} needsProject={false} onOpenProject={() => {}} onKeepHere={() => {}}
+      onSettings={() => {}} onOpenProject={() => {}}
       theme="light" dockW={560} dockMax={880} onDockW={width}
       manualBrowser={browser} onManualBrowser={setBrowser} viewRequest={req} /></>;
   }

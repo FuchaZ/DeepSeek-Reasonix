@@ -19,7 +19,7 @@ const items: Item[] = [
 const draw = (anchor: string | null) => render(
   <NewAnswerAnchor.Provider value={anchor}>
     <Transcript items={items} {...same} revision={1} hidden={false} focus={null} onApprove={noop} onFullAccess={noop} onPlan={noop} onAnswer={noop} onForget={noop}
-      onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} needsProject={false} />
+      onExtSubmit={noop} onPrepareRewind={noop} onCommitRewind={noop} onPrepareFileRevert={noop} onCommitFileRevert={noop} />
   </NewAnswerAnchor.Provider>,
 );
 

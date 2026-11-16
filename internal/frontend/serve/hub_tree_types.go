@@ -11,6 +11,10 @@ type treeWorkspace struct {
 	RecentOffset    *int   `json:"recentOffset,omitempty"`
 	Root            string `json:"root"`
 	Name            string `json:"name"`
+	// DisplayName is the name the person gave the project in the sidebar;
+	// Name stays the folder's own.
+	DisplayName string `json:"displayName,omitempty"`
+	Pinned      bool   `json:"pinned,omitempty"`
 	// WorkspaceRoots are the working directories belonging to this project.
 	WorkspaceRoots []string `json:"workspaceRoots,omitempty"`
 	Isolated       bool     `json:"isolated,omitempty"`
@@ -20,6 +24,9 @@ type treeWorkspace struct {
 	// one it happened to launch in — and a client that cannot tell the two apart
 	// shows "never picked a project" as if it were a project.
 	Remembered bool `json:"remembered,omitempty"`
+	// Auto marks the app's own folder, where a conversation with no project
+	// lands: the sidebar draws it as the 任务 group, never as a project row.
+	Auto bool `json:"auto,omitempty"`
 	// Total counts every conversation the workspace lists, loaded or not, and
 	// Archived the share of them that are archived. Sessions is the newest of
 	// them, as many as the request's window asked for.

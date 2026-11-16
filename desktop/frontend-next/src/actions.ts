@@ -121,6 +121,25 @@ export const ACTIONS: UIAction[] = [
   { id: "appearance.session-tabs", kind: "view", target: "none", proof: "interaction" },
   { id: "appearance.esc-stop", kind: "view", target: "none", proof: "interaction" },
   { id: "appearance.page-sleep", kind: "view", target: "none", proof: "interaction" },
+  { id: "workspace.project", kind: "kernel-mutation", target: "optional", proof: "interaction" },
+  // The pill's 添加新项目: the submenu opens the two ways in, and the blank one
+  // makes an empty, named folder inside the folder the picker returned.
+  { id: "workspace.add-menu", kind: "view", target: "none", proof: "interaction" },
+  { id: "workspace.add-group", kind: "view", target: "none", proof: "interaction" },
+  { id: "workspace.add-existing", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
+  { id: "workspace.add-blank", kind: "view", target: "none", proof: "interaction" },
+  { id: "workspace.create", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
+  { id: "session.sort", kind: "view", target: "none", proof: "interaction" },
+  { id: "session.new-task", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
+  // The bytes reach the host as the file is chosen, before anything is sent:
+  // the picker's button only opens a dialog, and this is where the upload is.
+  { id: "workspace.fold", kind: "view", target: "none", proof: "interaction" },
+  { id: "workspace.rename-start", kind: "view", target: "entity", proof: "interaction" },
+  { id: "workspace.rename", kind: "kernel-mutation", target: "entity", proof: "authority-effect" },
+  { id: "workspace.rename-close", kind: "view", target: "none", proof: "interaction" },
+  { id: "workspace.pin", kind: "kernel-mutation", target: "entity", proof: "authority-effect" },
+  { id: "workspace.archive-sessions", kind: "kernel-mutation", target: "entity", proof: "authority-effect" },
+  { id: "workspace.copy-dir", kind: "view", target: "entity", proof: "interaction" },
   { id: "workspace.configure", kind: "view", target: "none", proof: "interaction" },
   { id: "workspace.prepare-cancel", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
   { id: "workspace.prepare-details", kind: "view", target: "none", proof: "interaction" },
@@ -263,7 +282,6 @@ export const ACTIONS: UIAction[] = [
   { id: "ext.scope", kind: "view", target: "none", proof: "interaction" },
   { id: "ext.scope-back", kind: "navigation", target: "none", proof: "interaction" },
   { id: "session.import-native-choose", kind: "view", target: "none", proof: "interaction" },
-  { id: "session.filter-clear", kind: "view", target: "none", proof: "interaction" },
   { id: "queue.to-steer", kind: "kernel-mutation", target: "entity", proof: "interaction" },
   { id: "steer.withdraw", kind: "kernel-mutation", target: "entity", proof: "interaction" },
 
