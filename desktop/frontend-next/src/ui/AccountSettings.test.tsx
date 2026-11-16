@@ -31,6 +31,14 @@ it("carries no sign-in of its own: the page is about the app, not an identity", 
   expect(screen.queryByText("账号")).toBeNull();
 });
 
+it("names this build's maintainer, the repository it comes from, and the original author", () => {
+  draw();
+  expect(document.querySelector('[data-action="community.author"]')?.textContent).toBe("FuchaZ");
+  expect(document.querySelector('[data-action="community.repo"]')?.textContent).toBe("https://github.com/FuchaZ/DeepSeek-Reasonix");
+  // The build descends from the upstream project; its author is named, not linked.
+  expect(document.querySelector(".comm-name")?.textContent).toBe("esengine");
+});
+
 it("shows versions and diagnostics inline", async () => {
   draw();
   await waitFor(() => expect(document.querySelector("#set-versions .vnow")).toBeTruthy());

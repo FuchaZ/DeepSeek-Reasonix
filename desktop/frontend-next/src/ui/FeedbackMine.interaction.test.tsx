@@ -81,7 +81,7 @@ describe("my feedback", () => {
     await listed("FB-2H8P-4WD7");
     pick("FB-2H8P-4WD7");
     await userEvent.click(screen.getByRole("link", { name: "#11302" }));
-    expect(onFile).toHaveBeenCalledWith("https://github.com/esengine/DeepSeek-Reasonix/issues/11302");
+    expect(onFile).toHaveBeenCalledWith("https://github.com/FuchaZ/DeepSeek-Reasonix/issues/11302");
   });
 
   it("says so when nothing was ever sent", async () => {
@@ -191,15 +191,15 @@ describe("refreshing", () => {
     const read = (receipt: string) => [...pick(receipt).querySelectorAll<HTMLAnchorElement>("a[data-action='feedback.link']")].map((a) => [a.href, a.rel]);
     const links = [...read("FB-AAAA-0001"), ...read("FB-AAAA-0002")];
     expect(links.map(([href]) => href)).toEqual([
-      "https://github.com/esengine/DeepSeek-Reasonix/issues/11350",
-      "https://github.com/esengine/DeepSeek-Reasonix/issues/1",
-      "https://github.com/esengine/DeepSeek-Reasonix/issues/11302",
+      "https://github.com/FuchaZ/DeepSeek-Reasonix/issues/11350",
+      "https://github.com/FuchaZ/DeepSeek-Reasonix/issues/1",
+      "https://github.com/FuchaZ/DeepSeek-Reasonix/issues/11302",
     ]);
     for (const [, rel] of links) expect(rel).toBe("noopener noreferrer");
     expect(document.body.innerHTML).not.toContain("evil.example");
     pick("FB-AAAA-0001");
     await userEvent.click(document.querySelector<HTMLAnchorElement>("a[data-action='feedback.link']")!);
-    expect(onFile).toHaveBeenCalledWith("https://github.com/esengine/DeepSeek-Reasonix/issues/11350");
+    expect(onFile).toHaveBeenCalledWith("https://github.com/FuchaZ/DeepSeek-Reasonix/issues/11350");
   });
 
   it("does not link an issue number that is not a positive integer", async () => {

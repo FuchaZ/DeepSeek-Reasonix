@@ -1,7 +1,9 @@
 // What the 关于 page still needs to say about who made this build. The
 // community card, the contributor list and the sponsorship links are gone, so
-// only the maintainer is left here.
+// the maintainer and the project this build descends from are what is left.
 export const COMMUNITY = {
-  author: "esengine",
-  authorUrl: "https://github.com/esengine",
+  author: "FuchaZ",
+  authorUrl: "https://github.com/FuchaZ",
+  repoUrl: "https://github.com/FuchaZ/DeepSeek-Reasonix",
+  upstreamAuthor: "esengine",
 } as const;

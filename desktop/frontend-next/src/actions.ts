@@ -294,6 +294,7 @@ export const ACTIONS: UIAction[] = [
   // Asking again for a read that was refused. Nothing changes on either side,
   // and the refusal that put the button on screen is what makes it worth one.
   { id: "community.author", kind: "shell-native", target: "none", proof: "interaction" },
+  { id: "community.repo", kind: "shell-native", target: "none", proof: "interaction" },
   ...FEEDBACK_ACTIONS,
   ...WORKBENCH_ACTIONS,
   { id: "side.collapse", kind: "view", target: "none", proof: "interaction" },

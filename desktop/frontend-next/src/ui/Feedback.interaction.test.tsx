@@ -564,7 +564,7 @@ describe("refusals", () => {
     expect((await screen.findByRole("alert")).textContent).toContain("稍等片刻再试，也可以直接到 GitHub 提交问题");
     expect(body().value).toBe("Neutral report fixture");
     await userEvent.click(screen.getByRole("button", { name: "去 GitHub" }));
-    expect(port.openExternal).toHaveBeenCalledWith("https://github.com/esengine/DeepSeek-Reasonix/issues/new/choose");
+    expect(port.openExternal).toHaveBeenCalledWith("https://github.com/FuchaZ/DeepSeek-Reasonix/issues/new/choose");
   });
 
   it("points a duplicate at My feedback and a disabled channel at GitHub", async () => {

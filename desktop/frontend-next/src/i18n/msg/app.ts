@@ -77,6 +77,8 @@ export const APP: Messages = {
   "app.open_workbench": { zh: "打开工作台", en: "Open workbench" },
   "app.openai_compatible": { zh: "OpenAI 兼容", en: "OpenAI-compatible" },
   "app.openai_style": { zh: "OpenAI 风格", en: "OpenAI style" },
+  "app.original_author": { zh: "原作者", en: "Original author" },
+  "app.maintainer": { zh: "维护者", en: "Maintainer" },
   "app.path_to_the_executable": { zh: "可执行文件路径", en: "Path to the executable" },
   "app.pick_one_on_the_left": { zh: "从左栏选择，或在当前文件夹新建", en: "Pick one on the left, or start a new one in this folder" },
   "app.point_at_an_executable": { zh: "指定一个可执行文件", en: "Point at an executable" },

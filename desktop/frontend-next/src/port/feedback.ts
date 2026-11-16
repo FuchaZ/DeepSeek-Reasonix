@@ -245,7 +245,7 @@ export interface FeedbackBoardMe {
   delisted: boolean;
 }
 
-export const FEEDBACK_REPO_ISSUES = "https://github.com/esengine/DeepSeek-Reasonix/issues/";
+export const FEEDBACK_REPO_ISSUES = "https://github.com/FuchaZ/DeepSeek-Reasonix/issues/";
 
 export const FEEDBACK_NEXT_VERSION = "next";
 

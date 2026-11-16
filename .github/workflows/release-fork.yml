@@ -1,0 +1,144 @@
+name: Release Studio (fork)
+
+# This fork publishes Windows only, from a z-prefixed tag (z2.62.0). Upstream's
+# release-studio.yml signs with the original project's Certum and minisign keys
+# and mirrors the result to the original catalog; this repository holds neither,
+# so the bundle here is unsigned and the release is a GitHub release alone.
+
+on:
+  push:
+    tags: ["z[0-9]*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing z tag to publish (for example z2.62.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-fork-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  build-windows:
+    name: build and publish Windows amd64
+    runs-on: windows-latest
+    outputs:
+      tag: ${{ steps.version.outputs.tag }}
+      version: ${{ steps.version.outputs.version }}
+      sha: ${{ steps.version.outputs.sha }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ inputs.tag || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Resolve the tag, the version and the notes file
+        id: version
+        shell: bash
+        env:
+          IN_TAG: ${{ inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          tag="${IN_TAG:-$REF_NAME}"
+          if [[ ! "$tag" =~ ^z([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "::error::a fork release tag is zMAJOR.MINOR.PATCH, got: $tag"
+            exit 1
+          fi
+          version="${tag#z}"
+          notes="release-notes/studio/${version}.md"
+          if [ ! -f "$notes" ]; then
+            echo "::error::$notes must exist before this tag can be released"
+            exit 1
+          fi
+          # The tag has to be on the studio line: publishing a commit from
+          # another branch would ship a Studio build that carries none of it.
+          git fetch --no-tags origin studio:refs/remotes/origin/studio
+          if ! git merge-base --is-ancestor HEAD origin/studio; then
+            echo "::error::$tag is not on studio history"
+            exit 1
+          fi
+          sha="$(git rev-parse HEAD)"
+          { echo "tag=$tag"; echo "version=$version"; echo "sha=$sha"; } >> "$GITHUB_OUTPUT"
+          echo "resolved $tag -> $version at $sha"
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
+        with:
+          version: 10
+          run_install: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: "24"
+          cache: pnpm
+          cache-dependency-path: |
+            desktop/frontend-next/pnpm-lock.yaml
+            desktop/electron/pnpm-lock.yaml
+
+      - name: Build the SPA
+        working-directory: desktop/frontend-next
+        shell: bash
+        run: pnpm install --frozen-lockfile && pnpm build
+
+      - name: Build the kernel
+        working-directory: desktop/electron
+        shell: bash
+        env:
+          REASONIX_VERSION: ${{ steps.version.outputs.version }}
+        run: pnpm install --frozen-lockfile && pnpm run build:host
+
+      # The installer only. A portable archive is the upstream line's second
+      # package; this fork publishes the one file its users are told to run.
+      - name: Package the installer
+        working-directory: desktop/electron
+        shell: bash
+        run: |
+          version="${{ steps.version.outputs.version }}"
+          pnpm exec electron-builder --win nsis --x64 -c.extraMetadata.version="$version"
+          ls -la ../../dist/ReasonixStudio-*
+
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: studio-windows-amd64
+          path: dist/ReasonixStudio-windows-amd64-installer.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: publish the GitHub release
+    needs: build-windows
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ needs.build-windows.outputs.sha }}
+
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: studio-windows-amd64
+          path: dist
+
+      - name: Publish the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.build-windows.outputs.tag }}
+          VERSION: ${{ needs.build-windows.outputs.version }}
+        shell: bash
+        run: |
+          test -f dist/ReasonixStudio-windows-amd64-installer.exe || { echo "::error::the installer is missing"; exit 1; }
+          (cd dist && sha256sum ReasonixStudio-* > SHA256SUMS.txt)
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file "release-notes/studio/${VERSION}.md" \
+            dist/ReasonixStudio-windows-amd64-installer.exe \
+            dist/SHA256SUMS.txt

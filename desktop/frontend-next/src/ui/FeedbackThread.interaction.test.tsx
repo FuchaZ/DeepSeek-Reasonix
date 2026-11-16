@@ -123,7 +123,7 @@ describe("a question waiting for the reporter", () => {
     if (code === FEEDBACK_CODE.unavailable) {
       expect(alert.textContent).toContain("重发前先刷新列表确认是否送达");
       await userEvent.click(screen.getByRole("button", { name: "去 GitHub" }));
-      expect(onFile).toHaveBeenCalledWith("https://github.com/esengine/DeepSeek-Reasonix/issues/new/choose");
+      expect(onFile).toHaveBeenCalledWith("https://github.com/FuchaZ/DeepSeek-Reasonix/issues/new/choose");
     }
     await waitFor(() => expect(port.myFeedback).toHaveBeenCalledTimes(code === FEEDBACK_CODE.notReplyable ? 2 : 1));
   });

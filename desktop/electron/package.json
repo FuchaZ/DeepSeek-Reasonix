@@ -3,8 +3,8 @@
   "version": "0.0.0",
   "private": true,
   "description": "Electron shell for Reasonix Studio over the loopback host",
-  "homepage": "https://github.com/esengine/DeepSeek-Reasonix",
-  "author": "esengine <esengine@users.noreply.github.com>",
+  "homepage": "https://github.com/FuchaZ/DeepSeek-Reasonix",
+  "author": "FuchaZ",
   "main": "src/main.js",
   "scripts": {
     "start": "electron .",
