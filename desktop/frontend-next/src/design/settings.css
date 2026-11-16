@@ -441,6 +441,7 @@
 .changed-keys { display: flex; flex-direction: column; gap: 4px; margin: 4px 0 0; padding: 8px 0 2px; border-top: 1px solid var(--hair); list-style: none; }
 .changed-keys li { color: var(--muted); font: var(--w-reg) var(--fs-meta) var(--mono); }
 .prefs-card > .grp { grid-template-columns: minmax(0, 1fr) fit-content(320px); }
+.prefs-card > .grp:has(> .grp-items > :is(.seg, select)) > .grp-items > :is(.seg, select) { align-self: flex-end; }
 .prefs-main > :is(.prefs-pagetitle, .page-index) { max-width: none; margin-inline: 0; }
 .prefs-main > .page-index { position: sticky; top: -24px; z-index: 2; padding-block: 12px; background: var(--surface); border-bottom: 1px solid var(--hair); }
 .apply[data-usual] { display: none; }
