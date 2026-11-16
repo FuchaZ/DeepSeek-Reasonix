@@ -23,6 +23,7 @@ var (
 	ErrDispatchUntrusted      = errors.New("the user declined to trust that project, so no task is sent there; they can change it by opening the project in a window and trusting it")
 	ErrDispatchAwaitingTrust  = errors.New("the user has not yet answered whether to trust that project; its window is open and shows the question, and your task was not sent (do not retry in a loop: ask the user to answer it there, then dispatch again)")
 	ErrDispatchSameProject    = errors.New("that is this session's own project: no other window is needed, do the work here or use a sub-agent")
+	ErrDispatchCrossProject   = errors.New("the user's cross-project dispatch setting refuses that task (peers.cross_project in the user config): handing a task to another of their projects is limited to panes of yours already open there, or is off entirely")
 	ErrDispatchFailed         = errors.New("could not open a session in that project")
 	ErrDispatchLimit          = errors.New("this session already has as many dispatched sessions open as your ceiling allows (peers.max_dispatched_sessions)")
 )

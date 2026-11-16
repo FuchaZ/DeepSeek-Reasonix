@@ -38,6 +38,7 @@ import { useSubmit } from "./usesubmit";
 import { useSurfaceSlots } from "./usesurfaceslots";
 import { useSurfaceReplay } from "./surface-replay";
 import { MeterRail } from "./MeterRail";
+import { DispatchThreadsBar } from "./DispatchThreadsBar";
 import { useAgentRequest } from "./useAgentRequest";
 import { PlanFold } from "./PlanFold";
 import { latestPlanGate, PlanLiveContext, type PlanLive } from "./planLive";
@@ -679,6 +680,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
           onOpenJob={jobsLive.open}
           usage={status?.sessionUsage} quote={status?.sessionCostQuote} tariff={status?.tariff} onTariffFlip={refreshStatus}
           authoredTurns={status?.authoredTurns}
+          peers={<DispatchThreadsBar port={port} onOpen={onOpenSession} />}
         />
         {reloadFailure && <ReloadNotice failure={reloadFailure} onReload={onReloadSession} />}
         {/* Below the box, under a ceiling of their own. Both arrive unbidden and

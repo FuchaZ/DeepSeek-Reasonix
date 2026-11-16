@@ -137,8 +137,22 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text, role
 	// This session's own project opens a second session only once the person
 	// allowed dispatch_to_project: "always allow" on the card is that yes. Until
 	// then the old rule stands and no window is opened for the same folder.
-	if sameFolder(root, sender.WorkspaceRoot()) && !sender.DispatchIntoSelfAllowed() {
+	own := sameFolder(root, sender.WorkspaceRoot())
+	if own && !sender.DispatchIntoSelfAllowed() {
 		return control.DispatchResult{}, projectError(control.ErrDispatchSameProject, root)
+	}
+	// Across projects the user's outgoing answer rules: "never" refuses every
+	// dispatch into another project, and "paired" lets through only what this
+	// session already has there, so a fresh pane refuses.
+	if !own {
+		switch config.LoadForEdit(config.UserConfigPath()).PeersCrossProject() {
+		case config.PeersCrossProjectNever:
+			return control.DispatchResult{}, projectError(control.ErrDispatchCrossProject, root)
+		case config.PeersCrossProjectPaired:
+			if h.runtimeByID(h.dispatch.get(from.ID, root, role)) == nil && h.runtimeByID(h.dispatch.getPending(from.ID, root, role)) == nil {
+				return control.DispatchResult{}, projectError(control.ErrDispatchCrossProject, root)
+			}
+		}
 	}
 	target := h.runtimeByID(h.dispatch.get(from.ID, root, role))
 	var secret []byte

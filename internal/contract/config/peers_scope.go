@@ -32,6 +32,9 @@ func (h heldScope) narrowPeers(c *Config) {
 	if c.Peers.Incoming != h.peers.Incoming {
 		c.ignoreProject("peers.incoming", c.Peers.Incoming, ProjectUserOnly)
 	}
+	if c.Peers.CrossProject != h.peers.CrossProject {
+		c.ignoreProject("peers.cross_project", c.Peers.CrossProject, ProjectUserOnly)
+	}
 	if c.Peers.OpenNested != h.peers.OpenNested {
 		c.ignoreProject("peers.open_nested", fmt.Sprintf("%t", c.Peers.OpenNested), ProjectUserOnly)
 	}

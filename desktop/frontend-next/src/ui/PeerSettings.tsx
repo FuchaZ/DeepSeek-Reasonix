@@ -47,6 +47,26 @@ export function PeerSettings({ port, settings, onSaved }: { port: AgentPort; set
         </span>
         <Switch data-action="peers.dispatch" on={state.dispatch} busy={off || !state.enabled} label={t("remote.let_the_model_hand_a")} onClick={() => void save({ dispatch: !state.dispatch })} />
       </div>
+      <div className="lrow" id="set-peers-cross-project" data-setting="peers-cross-project">
+        <span className="tx">
+          <span className="lb">{t("remote.cross_project")}</span>
+          <span className="ds">{t("remote.cross_project_ds")}</span>
+        </span>
+        <div className="seg" role="radiogroup" aria-label={t("remote.cross_project")}>
+          {/* The three answers are spelled out here rather than built from the
+              value: a key assembled at run time is one no scan can find, so a
+              missing string would only show up as its own key name on screen. */}
+          {([
+            ["always", t("remote.cross_project_always"), t("remote.cross_project_always_ds")],
+            ["paired", t("remote.cross_project_paired"), t("remote.cross_project_paired_ds")],
+            ["never", t("remote.cross_project_never"), t("remote.cross_project_never_ds")],
+          ] as const).map(([k, label, hint]) => (
+            <button key={k} role="radio" data-action="peers.cross-project" data-value={k} disabled={off || !state.enabled || !state.dispatch}
+              aria-checked={state.cross_project === k} title={hint}
+              onClick={() => void save({ cross_project: k })}>{label}</button>
+          ))}
+        </div>
+      </div>
       <div className="lrow">
         <span className="tx">
           <span className="lb">{t("remote.what_another_session_may_send")}</span>

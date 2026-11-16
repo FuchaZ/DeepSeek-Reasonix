@@ -25,7 +25,7 @@ afterEach(() => {
 });
 
 const settings = (over: Partial<PeersSettings> = {}): PeersSettings => ({
-  enabled: false, dispatch: false, release_projects: [], max_dispatch_depth: 1, max_dispatched_sessions: 8, open_nested: false, incoming: "dispatch", path: "/home/me/.reasonix/config.toml", applies: "next_turn", pending: false, available: true, ...over,
+  enabled: false, dispatch: false, release_projects: [], max_dispatch_depth: 1, max_dispatched_sessions: 8, open_nested: false, incoming: "dispatch", cross_project: "always", path: "/home/me/.reasonix/config.toml", applies: "next_turn", pending: false, available: true, ...over,
 });
 
 function portWith(initial: PeersSettings) {

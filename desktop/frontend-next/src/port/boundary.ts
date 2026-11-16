@@ -173,6 +173,9 @@ export interface PeerHeld {
 /** What another of the user's sessions may send without a card. */
 export type PeerIncoming = "ask" | "dispatch" | "always";
 
+/** What the model may hand to a session in another of the user's projects. */
+export type PeerCrossProject = "always" | "paired" | "never";
+
 export type PeerThreadState = "waiting" | "working" | "replied" | "declined";
 
 export interface PeerThread {
@@ -214,6 +217,9 @@ export interface PeersSettings {
   // What another session of the user's may send without a card: ask, dispatch (a
   // paired session only) or always.
   incoming: PeerIncoming;
+  // What the model may hand to a session in another of the user's projects:
+  // always, paired (only a pane this session already has open there) or never.
+  cross_project: PeerCrossProject;
   path: string;
   applies: "next_turn";
   pending: boolean;
@@ -230,6 +236,7 @@ export interface PeersSettingsEdit {
   max_dispatched_sessions?: number;
   open_nested?: boolean;
   incoming?: PeerIncoming;
+  cross_project?: PeerCrossProject;
 }
 
 export type PeerRemember = "project" | "none";

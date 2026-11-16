@@ -36,6 +36,7 @@ var constraints = map[string]Entry{
 	"desktop.status_bar_items":                      {Via: viaList((*config.Config).SetDesktopStatusBarItems)},
 	"agent.compact_ratio":                           {Via: viaFloat((*config.Config).SetCompactRatio)},
 	"peers.incoming":                                {Via: viaString((*config.Config).SetPeersIncoming)},
+	"peers.cross_project":                           {Via: viaString((*config.Config).SetPeersCrossProject)},
 	"agent.advisor_model":                           {Free: true},
 	"agent.auto_plan_classifier":                    {Free: true},
 	"agent.decision_model":                          {Free: true},

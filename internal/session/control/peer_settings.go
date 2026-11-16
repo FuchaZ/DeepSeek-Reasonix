@@ -14,6 +14,8 @@ var (
 	ErrPeerProjectInvalid = errors.New("a released project must be an absolute folder path")
 	// ErrPeerIncomingInvalid is an answer that is not one of the three.
 	ErrPeerIncomingInvalid = errors.New(`incoming must be "ask", "dispatch" or "always"`)
+	// ErrPeerCrossProjectInvalid is an answer that is not one of the three.
+	ErrPeerCrossProjectInvalid = errors.New(`cross_project must be "always", "paired" or "never"`)
 	// ErrPeerCeilingInvalid is a dispatch ceiling below zero; 0 is how a ceiling is removed.
 	ErrPeerCeilingInvalid = errors.New("a dispatch ceiling is a count of 0 or more")
 	// ErrPeerRememberDenied is a "remember" attached to a denial; only an approval
@@ -24,7 +26,8 @@ var (
 )
 
 func settingsWriteError(err error) error {
-	if err == nil || errors.Is(err, ErrPeerProjectInvalid) || errors.Is(err, ErrPeerCeilingInvalid) || errors.Is(err, ErrPeerIncomingInvalid) {
+	if err == nil || errors.Is(err, ErrPeerProjectInvalid) || errors.Is(err, ErrPeerCeilingInvalid) ||
+		errors.Is(err, ErrPeerIncomingInvalid) || errors.Is(err, ErrPeerCrossProjectInvalid) {
 		return err
 	}
 	return fmt.Errorf("%w: %w", ErrPeerSettingsUnwritable, err)
@@ -53,11 +56,15 @@ type PeersSettings struct {
 	OpenNested bool `json:"open_nested"`
 	// Incoming is what another session of the user's may send without a card:
 	// ask, dispatch (a paired session only) or always.
-	Incoming  string `json:"incoming"`
-	Path      string `json:"path"`
-	Applies   string `json:"applies"`
-	Pending   bool   `json:"pending"`
-	Available bool   `json:"available"`
+	Incoming string `json:"incoming"`
+	// CrossProject is what this session's model may hand to a session in another
+	// of the user's projects: always, paired (only a pane of this session's
+	// already open there) or never.
+	CrossProject string `json:"cross_project"`
+	Path         string `json:"path"`
+	Applies      string `json:"applies"`
+	Pending      bool   `json:"pending"`
+	Available    bool   `json:"available"`
 }
 
 // PeersPatch is a partial update: a nil field is left as it is, and a non-nil
@@ -71,6 +78,7 @@ type PeersPatch struct {
 	MaxDispatchedSessions *int
 	OpenNested            *bool
 	Incoming              *string
+	CrossProject          *string
 }
 
 // PeerRemember says what a decision on a held message also writes down.
@@ -92,8 +100,8 @@ func (c *Controller) peersSettingsFrom(cfg config.PeersConfig) PeersSettings {
 	out := PeersSettings{
 		Enabled: cfg.Enabled, Dispatch: cfg.Enabled && cfg.Dispatch, Path: config.UserConfigPath(),
 		MaxDispatchDepth: max(cfg.MaxDispatchDepth, 0), MaxDispatchedSessions: max(cfg.MaxDispatchedSessions, 0), OpenNested: cfg.OpenNested,
-		Incoming: cfg.Incoming,
-		Applies:  "next_turn", Available: p != nil && p.root != "", ReleaseProjects: []PeerReleased{},
+		Incoming: cfg.Incoming, CrossProject: cfg.CrossProject,
+		Applies: "next_turn", Available: p != nil && p.root != "", ReleaseProjects: []PeerReleased{},
 	}
 	for _, path := range cfg.ReleaseProjects {
 		out.ReleaseProjects = append(out.ReleaseProjects, PeerReleased{Path: path, Name: filepath.Base(path)})
@@ -136,6 +144,14 @@ func (c *Controller) SavePeersSettings(patch PeersPatch) (PeersSettings, error) 
 		}
 		if patch.OpenNested != nil {
 			p.OpenNested = *patch.OpenNested
+		}
+		if patch.CrossProject != nil {
+			switch *patch.CrossProject {
+			case config.PeersCrossProjectAlways, config.PeersCrossProjectPaired, config.PeersCrossProjectNever:
+				p.CrossProject = *patch.CrossProject
+			default:
+				return fmt.Errorf("%w: %q", ErrPeerCrossProjectInvalid, *patch.CrossProject)
+			}
 		}
 		if patch.Incoming != nil {
 			switch *patch.Incoming {

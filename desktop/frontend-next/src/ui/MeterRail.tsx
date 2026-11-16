@@ -1,4 +1,4 @@
-import { useCallback, useId, useRef, useState, type CSSProperties } from "react";
+import { useCallback, useId, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { t } from "../i18n";
 import { money } from "../i18n/format";
 import type { ContextBreakdown, JobEntry, JobOutput, McpEntry, SessionUsage } from "../port/port";
@@ -21,7 +21,7 @@ import { MASK, type Wallet } from "./wallet";
 import type { SpeedSummary } from "./speed";
 
 /** The numbers about this turn, in one row under the composer. */
-export function MeterRail({ tps, trail, running, speed, metrics, ctx, mcp, compact, cost, turnCost = [], wallet, hideAmounts, tasks, jobs, onSettings, onCancelJob, onReadJob, onReadProcesses, onOpenRun, onStopCall, onClearJobs, onOpenJob, usage, quote, tariff, onTariffFlip, authoredTurns }: {
+export function MeterRail({ tps, trail, running, speed, metrics, ctx, mcp, compact, cost, turnCost = [], wallet, hideAmounts, tasks, jobs, onSettings, onCancelJob, onReadJob, onReadProcesses, onOpenRun, onStopCall, onClearJobs, onOpenJob, usage, quote, tariff, onTariffFlip, authoredTurns, peers }: {
   tps: number;
   trail: number[];
   running: boolean;
@@ -53,6 +53,10 @@ export function MeterRail({ tps, trail, running, speed, metrics, ctx, mcp, compa
   // How many turns the person opened. Absent until the status arrives, which
   // draws no count: a zero there would report a session nobody had started.
   authoredTurns?: number;
+  // The rail's own slot for the session's 会话互聊 chip — self-polling, so the
+  // meter stays a reader of what it is handed and renders nothing when the
+  // conversation has no dispatches out.
+  peers?: ReactNode;
 }) {
   const speedDetailId = useId();
   const [meterOpen, setMeterOpen] = useState(false);
@@ -117,6 +121,7 @@ export function MeterRail({ tps, trail, running, speed, metrics, ctx, mcp, compa
       )}
       {tariff && <TariffChip tariff={tariff} onFlip={onTariffFlip ?? (() => {})} />}
       {authoredTurns !== undefined && <span className="studio-meter-static studio-meter-turns"><span>{t("composer.turn_count")}</span><b>{authoredTurns}</b></span>}
+      {peers}
       {cost.length > 0 && <span className="studio-meter-cost"><StudioIcon name="coin" /><span>{t("common.this_session_2")}</span>{hideAmounts ? <b>{MASK}</b> : cost.map((m) => <b key={m.currency}>{money(m.amount, m.currency)}</b>)}</span>}
       {cost.length > 0 && turnCost.some((m) => m.amount > 0) && <span className="studio-meter-cost"><span>{t("composer.this_turn")}</span>{hideAmounts ? <b>{MASK}</b> : turnCost.map((m) => <b key={m.currency}>{money(m.amount, m.currency)}</b>)}</span>}
       <button className="studio-meter-mask" type="button" data-action="metrics.hide-amounts" aria-pressed={hideAmounts} aria-label={hideAmounts ? t("composer.show_amounts") : t("composer.hide_amounts")} title={hideAmounts ? t("composer.show_amounts") : t("composer.hide_amounts")} onClick={() => setHidesAmounts(!hideAmounts)}><StudioIcon name={hideAmounts ? "eyeoff" : "eye"} /></button>

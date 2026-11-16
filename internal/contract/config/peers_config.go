@@ -35,10 +35,14 @@ type PeersConfig struct {
 	// ask, take one from a paired session, or take any. Only the asking is
 	// skipped; what it starts runs under this session's approvals. User file only.
 	Incoming string `toml:"incoming"`
+	// CrossProject is what this session's model may hand to a session in another
+	// of the user's projects: any of them, only a pane this session already has
+	// open there, or none. It is the sending side's answer; user file only.
+	CrossProject string `toml:"cross_project"`
 }
 
 func defaultPeers() PeersConfig {
-	return PeersConfig{Enabled: true, Dispatch: true, MaxDispatchDepth: DefaultMaxDispatchDepth, MaxDispatchedSessions: DefaultMaxDispatchedSessions, Incoming: IncomingDispatch}
+	return PeersConfig{Enabled: true, Dispatch: true, MaxDispatchDepth: DefaultMaxDispatchDepth, MaxDispatchedSessions: DefaultMaxDispatchedSessions, Incoming: IncomingDispatch, CrossProject: PeersCrossProjectAlways}
 }
 
 // The three answers to "what arrives from another session of mine".
@@ -82,6 +86,51 @@ func (c *Config) SetPeersIncoming(answer string) error {
 		c.Peers.Incoming = IncomingAlways
 	default:
 		return fmt.Errorf("incoming %q: must be ask|dispatch|always", answer)
+	}
+	return nil
+}
+
+// The three answers to "what may be handed to another of the user's projects":
+// the outgoing side of a dispatch, on the session that sends it.
+const (
+	// PeersCrossProjectAlways lets a task go to any of the user's projects. It is
+	// the default: the dispatch switch itself is already the user's standing yes
+	// to sending across projects.
+	PeersCrossProjectAlways = "always"
+	// PeersCrossProjectPaired lets a task go only to a pane the sending session
+	// already has in that project, decided or still waiting on trust; a fresh
+	// pane would be a new agreement the user has not made yet.
+	PeersCrossProjectPaired = "paired"
+	// PeersCrossProjectNever sends no task into another project at all.
+	PeersCrossProjectNever = "never"
+)
+
+// PeersCrossProject is the configured answer, defaulted when unset or unknown.
+func (c *Config) PeersCrossProject() string {
+	if c == nil {
+		return PeersCrossProjectAlways
+	}
+	switch c.Peers.CrossProject {
+	case PeersCrossProjectAlways, PeersCrossProjectPaired, PeersCrossProjectNever:
+		return c.Peers.CrossProject
+	}
+	return PeersCrossProjectAlways
+}
+
+// SetPeersCrossProject records what this session's model may hand to another of
+// the user's projects. Only the three answers are legal, and anything else is
+// refused rather than defaulted: a narrower answer must not be chosen by a
+// value nobody meant. An empty answer is the default, always.
+func (c *Config) SetPeersCrossProject(answer string) error {
+	switch strings.ToLower(strings.TrimSpace(answer)) {
+	case "", PeersCrossProjectAlways:
+		c.Peers.CrossProject = PeersCrossProjectAlways
+	case PeersCrossProjectPaired:
+		c.Peers.CrossProject = PeersCrossProjectPaired
+	case PeersCrossProjectNever:
+		c.Peers.CrossProject = PeersCrossProjectNever
+	default:
+		return fmt.Errorf("cross_project %q: must be always|paired|never", answer)
 	}
 	return nil
 }
@@ -148,7 +197,8 @@ func renderServeAndPeers(b *strings.Builder, c *Config) {
 func renderPeersSection(b *strings.Builder, c *Config) {
 	p := c.Peers
 	customCeilings := p.MaxDispatchDepth != DefaultMaxDispatchDepth || p.MaxDispatchedSessions != DefaultMaxDispatchedSessions
-	if p.Enabled && p.Dispatch && len(p.ReleaseProjects) == 0 && !customCeilings && !p.OpenNested && (p.Incoming == "" || p.Incoming == IncomingDispatch) {
+	if p.Enabled && p.Dispatch && len(p.ReleaseProjects) == 0 && !customCeilings && !p.OpenNested &&
+		(p.Incoming == "" || p.Incoming == IncomingDispatch) && (p.CrossProject == "" || p.CrossProject == PeersCrossProjectAlways) {
 		return
 	}
 	b.WriteString("[peers]\n")
@@ -162,6 +212,9 @@ func renderPeersSection(b *strings.Builder, c *Config) {
 	}
 	if p.Incoming != "" && p.Incoming != IncomingDispatch {
 		fmt.Fprintf(b, "incoming = %q   # ask | dispatch | always: what another session of yours may send without a card; user file only\n", p.Incoming)
+	}
+	if p.CrossProject != "" && p.CrossProject != PeersCrossProjectAlways {
+		fmt.Fprintf(b, "cross_project = %q   # always | paired | never: what may be handed to a session in another of your projects; user file only\n", p.CrossProject)
 	}
 	if customCeilings {
 		fmt.Fprintf(b, "max_dispatch_depth = %d   # how many sessions deep a dispatch may chain; 0 for no ceiling\n", p.MaxDispatchDepth)

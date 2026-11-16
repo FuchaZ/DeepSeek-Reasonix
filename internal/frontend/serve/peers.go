@@ -22,6 +22,7 @@ const (
 	codePeerBadProject  = "peer.invalid_project"
 	codePeerBadCeiling  = "peer.invalid_ceiling"
 	codePeerBadIncoming = "peer.invalid_incoming"
+	codePeerBadCross    = "peer.invalid_cross_project"
 	codePeerRemember    = "peer.remember_denied"
 	codePeerSettings    = "peer.settings_unwritable"
 )
@@ -58,13 +59,14 @@ func (s *Server) savePeersSettings(w http.ResponseWriter, r *http.Request) {
 		MaxSessions     *int      `json:"max_dispatched_sessions"`
 		OpenNested      *bool     `json:"open_nested"`
 		Incoming        *string   `json:"incoming"`
+		CrossProject    *string   `json:"cross_project"`
 	}
 	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 64<<10)).Decode(&body); err != nil ||
-		(body.Enabled == nil && body.Dispatch == nil && body.ReleaseProjects == nil && body.MaxDepth == nil && body.MaxSessions == nil && body.OpenNested == nil && body.Incoming == nil) {
+		(body.Enabled == nil && body.Dispatch == nil && body.ReleaseProjects == nil && body.MaxDepth == nil && body.MaxSessions == nil && body.OpenNested == nil && body.Incoming == nil && body.CrossProject == nil) {
 		badBody(w)
 		return
 	}
-	got, err := s.ctl().SavePeersSettings(control.PeersPatch{Enabled: body.Enabled, Dispatch: body.Dispatch, ReleaseProjects: body.ReleaseProjects, MaxDispatchDepth: body.MaxDepth, MaxDispatchedSessions: body.MaxSessions, OpenNested: body.OpenNested, Incoming: body.Incoming})
+	got, err := s.ctl().SavePeersSettings(control.PeersPatch{Enabled: body.Enabled, Dispatch: body.Dispatch, ReleaseProjects: body.ReleaseProjects, MaxDispatchDepth: body.MaxDepth, MaxDispatchedSessions: body.MaxSessions, OpenNested: body.OpenNested, Incoming: body.Incoming, CrossProject: body.CrossProject})
 	if err != nil {
 		refusePeer(w, err)
 		return
@@ -182,6 +184,10 @@ func refusePeer(w http.ResponseWriter, err error) {
 		refuse(w, http.StatusBadRequest, codePeerBadProject, "a released project must be an absolute folder path", nil)
 	case errors.Is(err, control.ErrPeerCeilingInvalid):
 		refuse(w, http.StatusBadRequest, codePeerBadCeiling, "a dispatch ceiling is a count of 0 or more", nil)
+	case errors.Is(err, control.ErrPeerIncomingInvalid):
+		refuse(w, http.StatusBadRequest, codePeerBadIncoming, `incoming must be "ask", "dispatch" or "always"`, nil)
+	case errors.Is(err, control.ErrPeerCrossProjectInvalid):
+		refuse(w, http.StatusBadRequest, codePeerBadCross, `cross_project must be "always", "paired" or "never"`, nil)
 	case errors.Is(err, control.ErrPeerSettingsUnwritable):
 		saveFailed(w, http.StatusInternalServerError, codePeerSettings, err)
 	case errors.Is(err, control.ErrPeerRememberDenied):
