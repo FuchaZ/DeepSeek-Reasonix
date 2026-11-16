@@ -46,7 +46,6 @@ export function EditConn({
   const [models, setModels] = useState<string[]>(seededModels);
   const [picked, setPicked] = useState<string[]>(entry.models);
   const [aliases, setAliases] = useState<Record<string, string>>(entry.modelAliases ?? {});
-  const [hidePrefix, setHidePrefix] = useState(entry.hideModelPrefix === true);
   const [vision, setVision] = useState<string[]>(seededVision);
   const [visionSettable, setVisionSettable] = useState<string[] | undefined>(
     entry.visionSettable ? [...new Set([...entry.visionSettable, ...(initialCheck?.vision ?? [])])] : undefined,
@@ -242,7 +241,6 @@ export function EditConn({
     baseUrl: baseUrl.trim(),
     apiKey: apiKey.trim(),
     models: picked,
-    ...(hidePrefix !== (entry.hideModelPrefix === true) && { hideModelPrefix: hidePrefix }),
     modelAliases: Object.fromEntries(Object.entries(aliases).filter(([m, value]) => picked.includes(m) && value.trim()).map(([m, value]) => [m, value.trim()])),
     default: picked.includes(def) ? def : picked[0] ?? "",
     vision: vision.filter((m) => picked.includes(m)),
@@ -376,19 +374,6 @@ export function EditConn({
         {picked.length > 0 && <ModelPrices models={picked} value={priceText} onChange={setPriceText} official={entry.officialPricing === true} stored={entry.modelPrices ?? {}} labels={entry.modelShorts}
           onOpenSource={(url) => void Promise.resolve(port.openExternal(url)).catch(() => {})} />}
         {picked.length > 0 && <div className="fields"><BillingModeField value={billing} onChange={setBilling} /></div>}
-      </div>
-
-      <div className="vway" data-field="hide-model-prefix">
-        <span className="lb">{t("models.hide_the_shared_prefix")}</span>
-        <div className="seg" role="group" aria-label={t("models.model_name_prefix_of_name", { name: entry.displayName?.trim() || entry.name })}>
-          {[true, false].map((on) => (
-            <button key={String(on)} type="button" data-action="provider.draft" data-value={`hide-model-prefix:${on}`}
-              aria-pressed={hidePrefix === on} disabled={busy !== ""} onClick={() => setHidePrefix(on)}>
-              {t(on ? "models.on" : "common.off")}
-            </button>
-          ))}
-        </div>
-        <span className="why">{t("models.the_same_prefix_a_routing")}</span>
       </div>
 
       <div className="mlist">

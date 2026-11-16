@@ -47,21 +47,19 @@ function drawEdit(entry: Partial<ProviderEntry> = {}) {
   } as ProviderEntry;
   const port = { editProvider, protocols: vi.fn(async () => []), checkProvider: vi.fn(async () => ({ ok: true, models: [] })) } as unknown as Port;
   render(<EditConn entry={full} port={port} busy="" setBusy={() => {}} onDone={vi.fn()} onRevert={() => {}} />);
-  return { editProvider, group: screen.getByRole("group", { name: "mag 的模型名前缀" }) };
+  return { editProvider };
 }
 
-it("starts off, turns on with a click, and sends the choice with the model ids untouched", async () => {
-  const { editProvider, group } = drawEdit();
-  expect(within(group).getByRole("button", { name: "关" }).getAttribute("aria-pressed")).toBe("true");
-  await userEvent.click(within(group).getByRole("button", { name: "开" }));
+// The prefix toggle is retired — the kernel's display_name parsing and the
+// aliases it prefills took the work over. A stored choice rides along unread:
+// the form neither shows it nor sends it, and the save leaves the field alone.
+it("saves without touching a stored prefix choice", async () => {
+  const { editProvider } = drawEdit({ hideModelPrefix: true, modelShorts: { "group/a": "a", "group/b": "b" } });
+  // The save only answers a changed form: a nudge to the address makes the
+  // draft dirty, and the payload stays the form's own answer to what it holds.
+  await userEvent.type(screen.getByLabelText("接口地址"), "8");
   await userEvent.click(screen.getByRole("button", { name: /保存/ }));
-  expect(editProvider.mock.calls[0]?.[0]).toMatchObject({ hideModelPrefix: true, models: ["group/a", "group/b"] });
-});
-
-it("shows a stored choice as on and sends it off when turned off", async () => {
-  const { editProvider, group } = drawEdit({ hideModelPrefix: true, modelShorts: { "group/a": "a", "group/b": "b" } });
-  expect(within(group).getByRole("button", { name: "开" }).getAttribute("aria-pressed")).toBe("true");
-  await userEvent.click(within(group).getByRole("button", { name: "关" }));
-  await userEvent.click(screen.getByRole("button", { name: /保存/ }));
-  expect(editProvider.mock.calls[0]?.[0]).toMatchObject({ hideModelPrefix: false });
+  const payload = editProvider.mock.calls[0]?.[0] as Record<string, unknown>;
+  expect(payload.hideModelPrefix).toBeUndefined();
+  expect(payload).toMatchObject({ models: ["group/a", "group/b"] });
 });

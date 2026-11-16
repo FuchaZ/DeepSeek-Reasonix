@@ -10,44 +10,60 @@ import (
 
 func labelOf(e ProviderEntry, model string) string { return e.ModelShort(model) }
 
-func TestHideModelPrefixDropsTheSharedGroupFromTheDisplayOnly(t *testing.T) {
-	e := ProviderEntry{Models: []string{"group/deepseek-v4.1-flash", "group/glm-5-flash"}, HideModelPrefix: true}
-	if got := labelOf(e, "group/deepseek-v4.1-flash"); got != "deepseek-v4.1-flash" {
-		t.Fatalf("short = %q", got)
-	}
-	if got := labelOf(e, "group/glm-5-flash"); got != "glm-5-flash" {
-		t.Fatalf("short = %q", got)
+// A relay's ids carry the upstream group in front, and one entry may mix
+// groups: the display reads each model by its last path segment, which the
+// mark and the account heading make unambiguous. The id and ref never change,
+// and a stored toggle rides along unread.
+func TestTheModelReadsByItsLastSegmentByDefault(t *testing.T) {
+	e := ProviderEntry{Models: []string{
+		"group/deepseek-v4.1-flash", "auto/dfmodel", "workbuddy-ai/glm-5.3-flash",
+	}}
+	for _, model := range e.Models {
+		want := model[strings.LastIndex(model, "/")+1:]
+		if got := labelOf(e, model); got != want {
+			t.Fatalf("%s short = %q, want %q", model, got, want)
+		}
 	}
 	if e.Models[0] != "group/deepseek-v4.1-flash" {
 		t.Fatal("the model id the wire carries was changed")
 	}
 }
 
-func TestHideModelPrefixIsOffUnlessAskedAndNeedsAPrefixEveryModelShares(t *testing.T) {
-	off := ProviderEntry{Models: []string{"group/a", "group/b"}}
-	if got := labelOf(off, "group/a"); got != "" {
-		t.Fatalf("off by default, short = %q", got)
+func TestAnIdWithoutASlashIsDrawnAsItIs(t *testing.T) {
+	e := ProviderEntry{Models: []string{"deepseek-chat"}}
+	if got := labelOf(e, "deepseek-chat"); got != "" {
+		t.Fatalf("short = %q, want the id drawn as it is", got)
 	}
-	mixed := ProviderEntry{Models: []string{"group/a", "other/b", "plain"}, HideModelPrefix: true}
-	for _, m := range mixed.Models {
-		if got := labelOf(mixed, m); got != "" {
-			t.Fatalf("no prefix is shared, yet %q reads %q", m, got)
+}
+
+func TestTwoDoorsOntoOneModelReadAlike(t *testing.T) {
+	e := ProviderEntry{Models: []string{"group/glm-5.3-flash", "auto/glm-5.3-flash", "group/qwen3.8-flash"}}
+	// Two doors onto one model read alike, and that is honest: the door
+	// heading above the rows carries the distinction.
+	if got := labelOf(e, "group/glm-5.3-flash"); got != "glm-5.3-flash" {
+		t.Fatalf("group/glm-5.3-flash short = %q", got)
+	}
+	if got := labelOf(e, "auto/glm-5.3-flash"); got != "glm-5.3-flash" {
+		t.Fatalf("auto/glm-5.3-flash short = %q", got)
+	}
+	if got := labelOf(e, "group/qwen3.8-flash"); got != "qwen3.8-flash" {
+		t.Fatalf("qwen3.8-flash short = %q", got)
+	}
+}
+
+func TestAnAliasPrefilledFromTheDoorReadsInstead(t *testing.T) {
+	// The alias the refresh prefilled is the row's own display name; the short
+	// form stays for the places that read it, and the label chain prefers the
+	// alias.
+	e := ProviderEntry{Models: []string{"group/glm-5.3-flash", "auto/dfmodel"}, ModelAliases: map[string]string{"group/glm-5.3-flash": "GLM 5.3 FLASH", "auto/dfmodel": "DeepSeek-Flash"}}
+	for _, m := range e.Models {
+		if got := labelOf(e, m); got != m[strings.LastIndex(m, "/")+1:] {
+			t.Fatalf("%s short = %q", m, got)
 		}
 	}
-	nested := ProviderEntry{Models: []string{"team/group/a", "team/group/b"}, HideModelPrefix: true}
-	if got := labelOf(nested, "team/group/a"); got != "a" {
-		t.Fatalf("nested short = %q, want the whole shared path dropped", got)
-	}
 }
 
-func TestHideModelPrefixKeepsTheModelsThatWouldBeIndistinguishable(t *testing.T) {
-	e := ProviderEntry{Models: []string{"group/x", "group/y"}, ModelAliases: map[string]string{"group/y": "x"}, HideModelPrefix: true}
-	if got := labelOf(e, "group/x"); got != "" {
-		t.Fatalf("group/x would read the same as the alias of group/y, short = %q", got)
-	}
-}
-
-func TestHideModelPrefixRoundTripsThroughTheConfigFile(t *testing.T) {
+func TestHideModelPrefixStillRoundTripsThroughTheConfigFile(t *testing.T) {
 	cfg := &Config{Providers: []ProviderEntry{{Name: "mag", Kind: "openai", BaseURL: "https://m.example/v1", Models: []string{"group/a"}, HideModelPrefix: true}}}
 	out := RenderTOMLForScope(cfg, RenderScopeUser)
 	if !strings.Contains(out, "hide_model_prefix = true") {

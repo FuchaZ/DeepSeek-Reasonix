@@ -51,7 +51,10 @@ func TestHidingTheSharedModelPrefixIsDisplayOnlyAndReachesEveryListing(t *testin
 		Shorts map[string]string `json:"modelShorts"`
 	}
 	getJSON(t, srv.URL+"/providers", &after)
-	if len(after) != 1 || after[0].Hide || len(after[0].Shorts) != 0 {
-		t.Fatalf("switched off, yet %+v", after)
+	// The switch stores what the provider asked for, but the kernel's short is
+	// the model's own last path segment either way — the door's display names
+	// ride beside the shorts, and what the screen hides is the UI's business.
+	if len(after) != 1 || after[0].Hide || after[0].Shorts["grp/alpha"] != "alpha" || after[0].Shorts["grp/beta"] != "beta" {
+		t.Fatalf("shorts read the last segment with the switch off, got %+v", after)
 	}
 }
