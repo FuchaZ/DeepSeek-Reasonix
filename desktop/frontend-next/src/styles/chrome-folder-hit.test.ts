@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import app from "./app.css?raw";
 import shell from "../design/shell.css?raw";
+import sidebar from "../design/sidebar.css?raw";
 import studio from "./studio.css?raw";
 
 // With the workspace column shut, the chrome's left edge carries the drawer
@@ -25,5 +26,16 @@ describe("the project mark stays a control in a collapsed title bar", () => {
     expect(app).toMatch(/\[data-titlebar="app"\] \.chrome \{ -webkit-app-region: drag \}/);
     expect(shell).toMatch(/\.chrome \{[^}]*position: relative/);
     expect(studio).toMatch(/\.app\[data-rail="off"\] \{ --rail-toggle-gap: 50px; \}/);
+  });
+
+  it("strips the folded rail's brand of its drag region", () => {
+    // The rail folds to zero width without clipping its children, so the brand's
+    // layout box keeps spanning the corner the folder mark then occupies. A drag
+    // region there is submitted to the OS regardless of the rail's opacity or
+    // pointer-events, and no z-order among drag surfaces can lift the mark back.
+    const rule = sidebar.match(/\.app\[data-rail="off"\] \.rail \.studio-brand\s*\{([^}]*)\}/);
+    expect(rule, "no rail-off drag-strip rule for the brand row").not.toBeNull();
+    expect(rule![1]).toMatch(/-webkit-app-region:\s*no-drag/);
+    expect(sidebar).toMatch(/\[data-titlebar="app"\] \.rail \.studio-brand\s*\{[^}]*drag/);
   });
 });

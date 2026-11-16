@@ -34,6 +34,7 @@ try {
       const crumb = document.querySelector(".chrome .crumb-context");
       const nav = document.querySelector(".nav");
       const menu = document.querySelector(".studio-menu");
+      const brand = document.querySelector(".rail .studio-brand");
       const r = folder.getBoundingClientRect();
       const z = (el) => el ? Number(getComputedStyle(el).zIndex) || 0 : 0;
       const samples = [];
@@ -51,11 +52,21 @@ try {
         folderZ: z(folder),
         region: getComputedStyle(folder).webkitAppRegion,
         crumbRegion: getComputedStyle(crumb).webkitAppRegion,
+        // The rail folds to zero width without clipping its children, so the
+        // brand keeps a full-width layout box spanning the corner the mark
+        // then occupies. A drag region on it reaches the OS despite the rail's
+        // opacity and pointer-events, and no z-order among drag surfaces
+        // restores the mark's press.
+        brandRect: brand ? brand.getBoundingClientRect().width : 0,
+        brandRegion: brand ? getComputedStyle(brand).webkitAppRegion : "none",
       };
     });
     check(`${rail}: every point on the folder mark belongs to the button`, at.reached, JSON.stringify(at.rect));
     check(`${rail}: the crumb outranks the fixed corner layers`, at.crumbZ > at.navZ && at.crumbZ > at.menuZ, JSON.stringify({ crumb: at.crumbZ, nav: at.navZ, menu: at.menuZ }));
     check(`${rail}: the mark is out of the drag region while the crumb stays draggable`, at.region === "no-drag" && at.crumbRegion === "drag", `${at.region}/${at.crumbRegion}`);
+    if (rail === "off") {
+      check(`${rail}: the folded rail's brand holds no drag region over the corner`, at.brandRegion !== "drag", `brand w=${Math.round(at.brandRect)} region=${at.brandRegion}`);
+    }
   }
   await page.close();
 } finally {

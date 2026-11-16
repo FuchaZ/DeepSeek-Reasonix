@@ -18,6 +18,7 @@
    the right. The collapse button inside it stays clickable. */
 [data-titlebar="app"] .rail .studio-brand { -webkit-app-region: drag; }
 [data-titlebar="app"] .rail .studio-brand > :is(button, a[href]) { -webkit-app-region: no-drag; }
+.app[data-rail="off"] .rail .studio-brand { -webkit-app-region: no-drag; }
 .rail .studio-brand { height: var(--chrome-h); padding: 0 4px 0 8px; gap: 8px; margin: 0; }
 .rail .studio-brand-lockup { gap: 8px; }
 .rail .studio-brand-logo { margin-left: -9px; }

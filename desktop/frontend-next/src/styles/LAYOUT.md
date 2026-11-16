@@ -118,6 +118,11 @@ the picker and keyboard navigation.
   the control rather than to the window corner. The rest of the crumb stays
   draggable. Only the title-bar shell needs the lift; a browser tab neither
   draws those layers nor has a window to drag.
+- The fold itself must not leave a drag surface behind. The rail closes to zero
+  width without clipping its children, so the brand row keeps its full layout
+  box spanning that corner; its drag region would reach the OS through a
+  surface nothing paints, under one no z-order among drag surfaces can lift.
+  With the rail off, the brand holds no region at all.
 - macOS floats its window controls over the window's corner, not over this row.
   Whichever element owns that corner reserves them — `.chrome` collapsed, the
   rail head open — and both read `--lights-w` / `--lights-h`. The swap inside
