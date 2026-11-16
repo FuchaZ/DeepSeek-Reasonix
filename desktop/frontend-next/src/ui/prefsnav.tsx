@@ -178,6 +178,11 @@ export const SETTINGS: SettingEntry[] = [
   { section: "session", anchor: "ask-timeout", title: "safety.question_wait_time", scope: "machine", apply: "immediate", keywords: ["ask", "跳过", "无人回答", "长任务", "超时", "自动继续"] },
   { section: "session", anchor: "turn-narration", title: "settings.narration_between_tool_calls", scope: "machine", apply: "immediate", keywords: ["叙述", "总结", "小轮", "工具之间", "详细", "简短", "思路", "监控", "narration"] },
   { section: "session", anchor: "progress-watch", title: "panels.long_stretches_without_progress", scope: "machine", apply: "immediate", keywords: ["暂停", "无进展", "空转", "卡住", "循环", "轮次", "token"] },
+  // The web answers what the model may reach while answering — a behaviour
+  // question, not a permission boundary; the sandbox beside the shell keeps
+  // that one.
+  { section: "session", anchor: "web-access", title: "models.web_search_and_fetch", scope: "machine", apply: "on-open", keywords: ["搜索", "searxng", "deepseek", "抓取", "计费", "付费", "web search", "fetch"] },
+  { section: "session", anchor: "browser-tools", title: "common.built_in_browser", scope: "machine", apply: "runtime-rebuild", keywords: ["browser", "网页", "chrome", "浏览器工具"] },
   { section: "peers", anchor: "peers", title: "remote.messages_between_sessions_experimental", scope: "machine", apply: "next-turn", keywords: ["peer", "会话间", "互聊", "会话互聊", "消息", "发送", "批准", "挂起", "另一个会话"] },
   { section: "peers", anchor: "peer-projects", within: "peers", title: "remote.projects_allowed_through", scope: "machine", apply: "next-turn", keywords: ["放行", "项目", "不再询问", "长期", "撤销", "peer", "release", "会话间", "会话互聊"] },
   // The two ceilings on handing a task over: how deep a dispatch may chain, and
@@ -208,10 +213,6 @@ export const SETTINGS: SettingEntry[] = [
   // so the save reaches only sessions opened afterwards; the handler rebuilds
   // nothing.
   { section: "tools", anchor: "write-lease", title: "session.several_sessions_writing_one_project", scope: "machine", apply: "on-open", keywords: ["lease", "写锁", "并行", "多会话", "乐观", "optimistic", "write_lease", "等待"] },
-  { section: "tools", anchor: "web-access", title: "models.web_search_and_fetch", scope: "machine", apply: "on-open", keywords: ["搜索", "searxng", "deepseek", "抓取", "计费", "付费", "web search", "fetch"] },
-  // The tools are bound while a runtime is assembled, and the save rebuilds this
-  // one. The shared [browser] enabled key belongs to the 1.x command line.
-  { section: "tools", anchor: "browser-tools", title: "common.built_in_browser", scope: "machine", apply: "runtime-rebuild", keywords: ["browser", "网页", "chrome", "浏览器工具"] },
 
   { section: "ext", anchor: "mods", title: "Claude Code mod", scope: "machine", apply: "on-open", hidden: !MODS_SHOWN, keywords: ["mod", "钩子", "hook", "Claude Code", "完全信任", "插件", "扩展"] },
   { section: "ext", anchor: "plugins", title: "settings.plugin_packages", scope: "machine", apply: "immediate", keywords: ["安装"] },
@@ -226,25 +227,25 @@ export const SETTINGS: SettingEntry[] = [
   { section: "display", anchor: "folding", title: "chat.transcript_folding", scope: "machine", apply: "immediate", keywords: ["展开", "收起", "思考", "执行过程", "步骤", "输出", "简报", "fold"] },
   { section: "display", anchor: "plan-progress", title: "plan.show_collapsed_plan_progress", scope: "machine", apply: "immediate", keywords: ["计划", "进度条", "待办", "收起", "todo", "plan", "progress", "collapsed"] },
   { section: "display", anchor: "message-times", title: "settings.message_times", scope: "machine", apply: "immediate", keywords: ["消息时间", "时间戳", "落时间", "悬停", "message times", "timestamp"] },
+  { section: "display", anchor: "session-tabs", title: "session.session_tabs", scope: "machine", apply: "immediate", keywords: ["标签", "会话切换", "tabs", "session"] },
+  { section: "display", anchor: "session-quick-actions", title: "session.session_row_buttons", scope: "machine", apply: "immediate", keywords: ["会话", "归档", "删除", "快捷", "按钮", "hover", "archive", "delete", "session", "row", "sidebar"] },
+  { section: "display", anchor: "navrail", title: "settings.icon_rail", scope: "machine", apply: "immediate", keywords: ["侧边栏", "导航", "图标", "sidebar", "nav"] },
+  { section: "display", anchor: "naventries", title: "settings.navigation_entries", scope: "machine", apply: "immediate", keywords: ["侧边栏", "导航", "隐藏", "排序", "自定义", "入口", "sidebar", "nav", "hide", "reorder", "customize"] },
+  { section: "display", anchor: "live-grace", title: "settings.keep_finished_sessions_in_running", scope: "machine", apply: "immediate", keywords: ["进行中", "完成", "保留", "过滤", "running", "grace", "sidebar"] },
   { section: "display", anchor: "changed-files", title: "settings.file_changes", scope: "machine", apply: "immediate", keywords: ["改动", "变更", "文件", "已更改", "药丸", "输入框"] },
   { section: "display", anchor: "present-files", title: "settings.ai_file_delivery_cards", scope: "machine", apply: "on-open", keywords: ["文件交付", "交付卡片", "文件预览", "present_files", "tools.present_files", "PDF", "CSV", "HTML", "file delivery", "preview"] },
   { section: "display", anchor: "office-preview", title: "common.office_document_preview", scope: "machine", apply: "immediate", keywords: ["office", "word", "excel", "docx", "xlsx", "工作台", "预览", "文档", "表格"] },
   { section: "display", anchor: "new-answer-marker", title: "settings.new_answer_divider", scope: "machine", apply: "immediate", keywords: ["未读", "新回答", "分隔线", "分割线", "unread", "new", "divider", "marker", "transcript"] },
   { section: "display", anchor: "feedback-level-notices", title: "feedback.level_notices", scope: "machine", apply: "immediate", hidden: FEEDBACK_RETIRED, keywords: ["等级", "晋级", "升级", "反馈", "提示"] },
 
-  { section: "controls", anchor: "keys", title: "settings.keyboard_shortcuts", scope: "machine", apply: "immediate", keywords: ["shortcut", "keyboard", "ctrl", "cmd", "esc", "home", "查找", "搜索", "运行分析", "工作台"] },
-  { section: "controls", anchor: "global-shortcut", title: "settings.global_show_hide_shortcut", scope: "machine", apply: "immediate", keywords: ["global", "show", "hide", "shortcut", "keyboard", "全局", "显示", "隐藏"] },
-  { section: "controls", anchor: "esc-stop", title: "safety.esc_stops_a_task", scope: "machine", apply: "immediate", keywords: ["esc", "停止", "中断", "确认", "误触", "stop"] },
-  { section: "controls", anchor: "session-tabs", title: "session.session_tabs", scope: "machine", apply: "immediate", keywords: ["标签", "会话切换", "tabs", "session"] },
-  { section: "controls", anchor: "session-quick-actions", title: "session.session_row_buttons", scope: "machine", apply: "immediate", keywords: ["会话", "归档", "删除", "快捷", "按钮", "hover", "archive", "delete", "session", "row", "sidebar"] },
-  { section: "controls", anchor: "navrail", title: "settings.icon_rail", scope: "machine", apply: "immediate", keywords: ["侧边栏", "导航", "图标", "sidebar", "nav"] },
-  { section: "controls", anchor: "naventries", title: "settings.navigation_entries", scope: "machine", apply: "immediate", keywords: ["侧边栏", "导航", "隐藏", "排序", "自定义", "入口", "sidebar", "nav", "hide", "reorder", "customize"] },
-  { section: "controls", anchor: "live-grace", title: "settings.keep_finished_sessions_in_running", scope: "machine", apply: "immediate", keywords: ["进行中", "完成", "保留", "过滤", "running", "grace", "sidebar"] },
   { section: "controls", anchor: "running-message-intent", title: "settings.messages_sent_while_running", scope: "machine", apply: "immediate", keywords: ["插话", "排队", "下一轮", "steer", "queue", "followup", "running"] },
   { section: "controls", anchor: "composer-hint", title: "composer.composer_hint", scope: "machine", apply: "immediate", keywords: ["占位", "任务", "提示", "输入框", "placeholder", "composer", "hint"] },
   { section: "controls", anchor: "open-session-limit", title: "settings.session_tabs_kept_open", scope: "machine", apply: "immediate", keywords: ["标签", "窗格", "收起", "保留", "tabs", "panes", "warm", "内存", "memory"] },
   { section: "controls", anchor: "live-stream-budget", title: "settings.session_tabs_kept_live", scope: "machine", apply: "immediate", keywords: ["连接", "实时", "标签", "窗格", "卡死", "停止", "connection", "stream", "tabs", "stuck", "busy"] },
   { section: "controls", anchor: "page-sleep", title: "settings.idle_page_sleep", scope: "machine", apply: "immediate", keywords: ["休眠", "睡眠", "空闲", "内存", "收起", "browser", "page", "sleep", "memory"] },
+  { section: "controls", anchor: "keys", title: "settings.keyboard_shortcuts", scope: "machine", apply: "immediate", keywords: ["shortcut", "keyboard", "ctrl", "cmd", "esc", "home", "查找", "搜索", "运行分析", "工作台"] },
+  { section: "controls", anchor: "global-shortcut", title: "settings.global_show_hide_shortcut", scope: "machine", apply: "immediate", keywords: ["global", "show", "hide", "shortcut", "keyboard", "全局", "显示", "隐藏"] },
+  { section: "controls", anchor: "esc-stop", title: "safety.esc_stops_a_task", scope: "machine", apply: "immediate", keywords: ["esc", "停止", "中断", "确认", "误触", "stop"] },
 
   { section: "appearance", anchor: "scheme", title: "settings.palette", scope: "machine", apply: "immediate", keywords: ["主题", "theme", "色板", "高级外观", "导入主题", "自定义颜色", "colours"] },
   { section: "appearance", anchor: "wallpaper", title: "look.wallpaper", scope: "machine", apply: "immediate", keywords: ["背景", "图片"] },

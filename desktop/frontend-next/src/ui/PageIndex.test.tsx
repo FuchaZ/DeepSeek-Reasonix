@@ -46,7 +46,7 @@ describe("which settings a page's index lists", () => {
   it("follows the order the page draws its blocks in", () => {
     expect(pageIndexOf(SETTINGS, "session").map((e) => e.anchor)).toEqual([
       "agent-presets", "plan-approval", "ask-timeout", "turn-narration", "progress-watch",
-      "hooks", "scheduled-runs",
+      "web-access", "browser-tools", "hooks", "scheduled-runs",
     ]);
   });
 

@@ -4,7 +4,7 @@ import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { App } from "./App";
-import { OpsSettings } from "./OpsSettings";
+import { SessionTabsSetting } from "./SessionTabsSetting";
 import { MockHub } from "../port/mock_hub";
 import { setShowsSessionTabs } from "../state/prefs";
 
@@ -31,7 +31,7 @@ async function hub(panes = 2) {
 function draw(kernel: MockHub) {
   return render(<>
     <App hub={kernel} />
-    <OpsSettings />
+    <SessionTabsSetting />
   </>);
 }
 

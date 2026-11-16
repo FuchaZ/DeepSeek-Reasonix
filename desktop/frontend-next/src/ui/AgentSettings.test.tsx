@@ -18,10 +18,10 @@ function draw() {
   return go;
 }
 
-it("is three cards of single rows, the collaboration blocks and the display switches living elsewhere", async () => {
+it("is four cards of single rows: the web answers what the model may reach, and it lives beside the plan questions", async () => {
   draw();
-  expect([...document.querySelectorAll(".prefs-card > header h3")].map((h) => h.textContent)).toEqual(["人设与预设", "计划与提问", "自动化"]);
-  for (const id of ["persona", "agent-presets", "plan-approval", "ask-timeout", "turn-narration", "progress-watch", "hooks", "scheduled-runs"]) {
+  expect([...document.querySelectorAll(".prefs-card > header h3")].map((h) => h.textContent)).toEqual(["人设与预设", "计划与提问", "联网", "自动化"]);
+  for (const id of ["persona", "agent-presets", "plan-approval", "ask-timeout", "turn-narration", "progress-watch", "web-access", "browser-tools", "hooks", "scheduled-runs"]) {
     await waitFor(() => expect(document.querySelector(`[data-setting="${id}"]`), id).toBeTruthy());
   }
   // The collaboration blocks moved to the session cross-chat page, and the

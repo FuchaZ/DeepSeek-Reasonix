@@ -18,16 +18,18 @@ function draw(mode: "ask" | "yolo" = "ask") {
   return { onMode };
 }
 
-it("is three cards, every block one row with its scope and when it takes effect", async () => {
+it("is two cards, every block one row with its scope and when it takes effect", async () => {
   draw();
-  expect([...document.querySelectorAll(".prefs-card > header h3")].map((h) => h.textContent)).toEqual(["批准", "沙箱与执行", "联网"]);
-  for (const id of ["approval", "rules", "external-origin", "tool-list", "sandbox", "shell", "write-lease", "web-access", "browser-tools"]) {
+  expect([...document.querySelectorAll(".prefs-card > header h3")].map((h) => h.textContent)).toEqual(["批准", "沙箱与执行"]);
+  for (const id of ["approval", "rules", "external-origin", "tool-list", "sandbox", "shell", "write-lease"]) {
     await waitFor(() => expect(document.querySelector(`.prefs-card > [data-setting="${id}"], .prefs-card [data-setting="${id}"]`), id).toBeTruthy());
   }
   expect(document.querySelector('[data-setting="approval"] .apply')?.textContent).toContain("本机");
   // The lease bounds who may write at once, the sandbox bounds where — the
-  // same page now answers both halves of writing.
+  // same page now answers both halves of writing. The web answers what the
+  // model may reach, so it lives on the agent page now.
   expect(document.querySelector('[data-setting="write-lease"]')?.closest(".prefs-card")?.querySelector("h3")?.textContent).toBe("沙箱与执行");
+  for (const id of ["web-access", "browser-tools"]) expect(document.querySelector(`[data-setting="${id}"]`), id).toBeNull();
 });
 
 it("picks an approval mode while rules and tool controls stay expanded", async () => {

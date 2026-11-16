@@ -1,7 +1,6 @@
 import { t } from "../i18n";
 import type { AgentPort, ApprovalMode } from "../port/port";
 import { APPROVALS, approvalNote } from "./approvals";
-import { BrowserTools } from "./BrowserTools";
 import { ExternalOrigin } from "./ExternalOrigin";
 import { Group } from "./Group";
 import { Rules } from "./Rules";
@@ -10,7 +9,6 @@ import { SectionCard } from "./SectionCard";
 import { SegChoice, SettingRow } from "./SettingRow";
 import { Shell } from "./Shell";
 import { ToolList } from "./ToolList";
-import { WebAccess } from "./WebAccess";
 import { WriteLease } from "./WriteLease";
 
 interface Props {
@@ -46,10 +44,6 @@ export function SafetySettings({ port, mode, busy, onMode, onChanged }: Props) {
         <Group id="write-lease" title={t("session.several_sessions_writing_one_project")} hint={t("safety.when_two_sessions_edit_one")}>
           <WriteLease port={port} />
         </Group>
-      </SectionCard>
-      <SectionCard title={t("safety.web")}>
-        <WebAccess port={port} />
-        <BrowserTools port={port} onChanged={onChanged} />
       </SectionCard>
     </>
   );

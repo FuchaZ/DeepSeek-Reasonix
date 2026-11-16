@@ -460,7 +460,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
           )}
 
           {at === "display" && <ChatDisplaySettings port={port} />}
-          {at === "controls" && <OpsSettings />}
+          {at === "controls" && <OpsSettings landed={landed} />}
 
           {at === "ext" && (
             <>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { t } from "../i18n";
 import type { AgentPort } from "../port/port";
 import { AgentPresets } from "./AgentPresets";
+import { BrowserTools } from "./BrowserTools";
 import { Hooks } from "./Hooks";
 import { Group } from "./Group";
 import { ScheduledRuns } from "./ScheduledRuns";
@@ -11,6 +12,7 @@ import { PlanApproval } from "./PlanApproval";
 import { ProgressWatch } from "./ProgressWatch";
 import { SectionCard } from "./SectionCard";
 import { TurnNarrationSetting } from "./TurnNarrationSetting";
+import { WebAccess } from "./WebAccess";
 
 interface Props {
   port: AgentPort;
@@ -58,6 +60,10 @@ export function AgentSettings({ port, persona, onPersona, onChanged }: Props) {
         <AskTimeout port={port} />
         <TurnNarrationSetting port={port} />
         <ProgressWatch port={port} />
+      </SectionCard>
+      <SectionCard title={t("safety.web")}>
+        <WebAccess port={port} />
+        <BrowserTools port={port} onChanged={onChanged} />
       </SectionCard>
       <SectionCard title={t("settings.automation")}>
         <Group id="hooks" title={t("settings.hooks")} hint={hooksHint}>

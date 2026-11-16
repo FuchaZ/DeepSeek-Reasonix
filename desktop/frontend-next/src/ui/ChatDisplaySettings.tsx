@@ -6,12 +6,17 @@ import { FeedbackLevelNoticeSetting } from "./FeedbackLevelNoticeSetting";
 import { Folding } from "./Folding";
 import { FoldWorkSetting } from "./FoldWorkSetting";
 import { Group } from "./Group";
+import { LiveGraceSection } from "./LiveGraceSection";
 import { MessageTimesSetting } from "./MessageTimesSetting";
+import { NavEntriesSection } from "./NavEntriesSection";
+import { NavRailSection } from "./NavRailSection";
 import { NewAnswerSection } from "./NewAnswerSection";
 import { OfficePreviewSection } from "./OfficePreviewSection";
 import { PlanProgressSection } from "./PlanProgressSection";
 import { PresentFiles } from "./PresentFiles";
 import { SectionCard } from "./SectionCard";
+import { SessionQuickSection } from "./SessionQuickSection";
+import { SessionTabsSetting } from "./SessionTabsSetting";
 
 export function ChatDisplaySettings({ port }: { port: AgentPort }) {
   return (
@@ -21,6 +26,13 @@ export function ChatDisplaySettings({ port }: { port: AgentPort }) {
         <Folding />
         <PlanProgressSection />
         <MessageTimesSetting />
+      </SectionCard>
+      <SectionCard title={t("settings.tabs_and_navigation_card")}>
+        <SessionTabsSetting />
+        <SessionQuickSection />
+        <NavRailSection />
+        <NavEntriesSection />
+        <LiveGraceSection />
       </SectionCard>
       <SectionCard title={t("settings.files_and_previews_card")}>
         <ChangedFilesSetting port={port} />
