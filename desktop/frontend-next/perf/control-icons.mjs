@@ -118,7 +118,9 @@ try {
     assert.ok(await page.locator(".studio-model-menu .menu-current.lucide-check").count() > 0, `${label}: selection uses a library check`);
     await page.keyboard.press("Escape");
     await page.locator('[data-action="chrome.settings"]').evaluate((button) => button.click());
-    await page.locator('.prefs-nav [data-value="controls"]').click();
+    // 导航入口 answers what the conversation shows around itself, so its
+    // reorder buttons live on the conversation-display page now.
+    await page.locator('.prefs-nav [data-value="display"]').click();
     await page.setViewportSize({ width, height: 900 });
     const order = page.locator('[data-action="appearance.nav-entry-move"]');
     await order.first().scrollIntoViewIfNeeded();
