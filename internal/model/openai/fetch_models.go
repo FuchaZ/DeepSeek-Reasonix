@@ -99,8 +99,12 @@ func FetchModelsWithOptions(ctx context.Context, baseURL, apiKey string, opts Fe
 // says it serves for that model. Endpoints is empty for the listings that say
 // nothing, which is most of them.
 type ListedModel struct {
-	ID        string
-	Endpoints []string
+	ID string
+	// DisplayName is what the listing calls this model itself, when that
+	// differs from the id — a relay's own display naming. Display only: nothing
+	// routes by it, and empty is the common answer.
+	DisplayName string
+	Endpoints   []string
 }
 
 // FetchModelListing is FetchModelsWithOptions without discarding what each row
@@ -145,6 +149,9 @@ func FetchModelListing(ctx context.Context, baseURL, apiKey string, opts FetchMo
 	var result struct {
 		Data []struct {
 			ID string `json:"id"`
+			// Some relays rename what they serve for display while keeping the
+			// ID on the wire — the field magpie's per-client naming writes.
+			DisplayName string `json:"display_name"`
 			// Some relays name the wires they serve per model. It is the
 			// endpoint answering for itself, which beats inferring the answer
 			// from the shape of this listing — see ListedModel.Endpoints.
@@ -161,7 +168,7 @@ func FetchModelListing(ctx context.Context, baseURL, apiKey string, opts FetchMo
 		if id == "" {
 			continue
 		}
-		out = append(out, ListedModel{ID: id, Endpoints: trimmedLower(m.SupportedEndpointTypes)})
+		out = append(out, ListedModel{ID: id, DisplayName: strings.TrimSpace(m.DisplayName), Endpoints: trimmedLower(m.SupportedEndpointTypes)})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out, nil

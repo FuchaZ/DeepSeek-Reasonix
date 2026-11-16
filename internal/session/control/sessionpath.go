@@ -17,7 +17,7 @@ func (c *Controller) EnsureSessionPath() {
 	if c.SessionPath() != "" || c.SessionDir() == "" {
 		return
 	}
-	c.SetFreshSessionPath(sessionstore.NewSessionPath(c.SessionDir(), c.Label()))
+	c.SetFreshSessionPath(c.freshPath())
 }
 
 // SetOnSessionPathChanged installs the handler that moves write authority onto

@@ -74,6 +74,8 @@ export const SETTINGS: Messages = {
   "settings.make_the_interface_smaller_larger": { zh: "缩小 / 放大 / 复原界面", en: "Make the interface smaller / larger / its default size" },
   "settings.mcp_services_you_connected_yourself": { zh: "已接入的 MCP 服务。其提供的能力与内置工具等同，列出的每一项均可访问文件与数据。关闭后立即从本轮工具列表中移除，重启后保持关闭。", en: "MCP services you connected yourself. What they give the agent is as real as a built-in tool: every entry here can act on your files and data. Turning one off removes it from this turn's tool list immediately, and it stays off after a restart." },
   "settings.memory_usage_storage_backup": { zh: "记忆、用量、存储、备份", en: "Memory, usage, storage, backup" },
+  "settings.message_times": { zh: "消息时间", en: "Message times" },
+  "settings.message_times_hint": { zh: "鼠标移到消息上时显示它的时间：发送的与模型返回的都会带上。", en: "Reveal a message's time while you point at it: the ones you sent and the ones the model returned both carry their stamp." },
   "settings.messages_sent_while_running": { zh: "运行中发送消息", en: "Messages sent while running" },
   "settings.model_discovery_is_off_only": { zh: "模型自动发现已关闭：仅显式指定的技能会运行。开关立即生效，自下一条消息起，无需新建会话。", en: "Model discovery is off: only the skills you name by hand will run. The switch takes effect at once, from your next message — no new session needed." },
   "settings.models_by_use": { zh: "按用途选择模型", en: "Models by use" },

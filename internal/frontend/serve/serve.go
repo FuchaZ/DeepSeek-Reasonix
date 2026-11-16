@@ -93,6 +93,9 @@ type Server struct {
 	// siblings lists the other local panes open on the same workspace, set by
 	// the hub; nil for a server outside one.
 	siblings func(self *Server) []*Server
+	// hubThreads reads one session's dispatch record out of the hub's book,
+	// by the session's path; set by the hub for its own panes, nil elsewhere.
+	hubThreads func(path string) []DispatchThread
 	// resolver is what every rebuild of this pane resolves models through, set
 	// by the hub. Nil leaves boot reading this machine's own config.
 	resolver provider.Resolver

@@ -34,46 +34,42 @@ func ArchiveInactiveSessions(dir string, now time.Time, idle time.Duration, hold
 	if dir == "" || idle <= 0 {
 		return 0, nil
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
-		return 0, err
-	}
 	archived := 0
 	var errs error
-	for _, e := range entries {
-		name := e.Name()
-		if e.IsDir() || !store.IsSessionTranscriptName(name) || store.IsSubagentTranscriptName(name) {
-			continue
-		}
-		path := filepath.Join(dir, name)
-		if !IsVisibleSession(path) || (hold != nil && hold(path)) {
-			continue
-		}
-		cheap, _, err := LoadBranchMeta(path)
-		if err != nil || !archivable(path, cheap, now, idle) {
-			continue
-		}
-		if beforeArchiveLock != nil {
-			beforeArchiveLock(path)
-		}
-		err = UpdateBranchMeta(path, false, func(m *BranchMeta) error {
-			if !archivable(path, *m, now, idle) {
-				return errNotInactive
+	walkErr := eachSessionDir(dir, func(sub string, entries []os.DirEntry) {
+		for _, e := range entries {
+			name := e.Name()
+			if e.IsDir() || !store.IsSessionTranscriptName(name) || store.IsSubagentTranscriptName(name) {
+				continue
 			}
-			m.Archived = true
-			m.AutoArchivedAt = now
-			return nil
-		})
-		switch {
-		case err == nil:
-			archived++
-		case !errors.Is(err, errNotInactive):
-			errs = errors.Join(errs, err)
+			path := filepath.Join(sub, name)
+			if !IsVisibleSession(path) || (hold != nil && hold(path)) {
+				continue
+			}
+			cheap, _, err := LoadBranchMeta(path)
+			if err != nil || !archivable(path, cheap, now, idle) {
+				continue
+			}
+			if beforeArchiveLock != nil {
+				beforeArchiveLock(path)
+			}
+			err = UpdateBranchMeta(path, false, func(m *BranchMeta) error {
+				if !archivable(path, *m, now, idle) {
+					return errNotInactive
+				}
+				m.Archived = true
+				m.AutoArchivedAt = now
+				return nil
+			})
+			switch {
+			case err == nil:
+				archived++
+			case !errors.Is(err, errNotInactive):
+				errs = errors.Join(errs, err)
+			}
 		}
-	}
+	})
+	errs = errors.Join(errs, walkErr)
 	return archived, errs
 }
 

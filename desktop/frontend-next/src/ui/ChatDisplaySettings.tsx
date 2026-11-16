@@ -6,6 +6,7 @@ import { FeedbackLevelNoticeSetting } from "./FeedbackLevelNoticeSetting";
 import { Folding } from "./Folding";
 import { FoldWorkSetting } from "./FoldWorkSetting";
 import { Group } from "./Group";
+import { MessageTimesSetting } from "./MessageTimesSetting";
 import { NewAnswerSection } from "./NewAnswerSection";
 import { OfficePreviewSection } from "./OfficePreviewSection";
 import { PlanProgressSection } from "./PlanProgressSection";
@@ -19,6 +20,7 @@ export function ChatDisplaySettings({ port }: { port: AgentPort }) {
         <FoldWorkSetting port={port} />
         <Folding />
         <PlanProgressSection />
+        <MessageTimesSetting />
       </SectionCard>
       <SectionCard title={t("settings.files_and_previews_card")}>
         <ChangedFilesSetting port={port} />

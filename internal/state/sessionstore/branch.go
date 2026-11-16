@@ -564,51 +564,49 @@ func sameInFlightTurn(a, b InFlightTurnMeta) bool {
 }
 
 func ListBranches(dir string) ([]BranchInfo, error) {
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
 	var out []BranchInfo
-	for _, e := range entries {
-		if e.IsDir() || !store.IsSessionTranscriptName(e.Name()) {
-			continue
-		}
-		info, err := e.Info()
-		if err != nil {
-			continue
-		}
-		path := filepath.Join(dir, e.Name())
-		if !IsVisibleSession(path) {
-			continue
-		}
-		preview, turns := previewSession(path)
-		if turns == 0 {
-			continue
-		}
-		meta, ok, err := LoadBranchMeta(path)
-		if err != nil || !ok {
-			// An unreadable sidecar is an absent one: the branch is still a
-			// conversation on disk, and dropping it let a caller read "the turn
-			// did not continue here" out of a read failure.
-			meta = BranchMeta{
-				ID:        BranchID(path),
-				CreatedAt: info.ModTime().UTC(),
-				UpdatedAt: info.ModTime().UTC(),
+	err := eachSessionDir(dir, func(sub string, entries []os.DirEntry) {
+		for _, e := range entries {
+			if e.IsDir() || !store.IsSessionTranscriptName(e.Name()) {
+				continue
 			}
+			info, err := e.Info()
+			if err != nil {
+				continue
+			}
+			path := filepath.Join(sub, e.Name())
+			if !IsVisibleSession(path) {
+				continue
+			}
+			preview, turns := previewSession(path)
+			if turns == 0 {
+				continue
+			}
+			meta, ok, err := LoadBranchMeta(path)
+			if err != nil || !ok {
+				// An unreadable sidecar is an absent one: the branch is still a
+				// conversation on disk, and dropping it let a caller read "the turn
+				// did not continue here" out of a read failure.
+				meta = BranchMeta{
+					ID:        BranchID(path),
+					CreatedAt: info.ModTime().UTC(),
+					UpdatedAt: info.ModTime().UTC(),
+				}
+			}
+			if meta.ID == "" {
+				meta.ID = BranchID(path)
+			}
+			out = append(out, BranchInfo{
+				BranchMeta: meta,
+				Path:       path,
+				ModTime:    info.ModTime(),
+				Preview:    preview,
+				Turns:      turns,
+			})
 		}
-		if meta.ID == "" {
-			meta.ID = BranchID(path)
-		}
-		out = append(out, BranchInfo{
-			BranchMeta: meta,
-			Path:       path,
-			ModTime:    info.ModTime(),
-			Preview:    preview,
-			Turns:      turns,
-		})
+	})
+	if err != nil {
+		return nil, err
 	}
 	sort.Slice(out, func(i, j int) bool {
 		if out[i].CreatedAt.Equal(out[j].CreatedAt) {

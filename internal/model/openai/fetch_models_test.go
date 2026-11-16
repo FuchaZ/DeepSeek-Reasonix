@@ -166,3 +166,35 @@ func TestFetchModelsResponseTooLarge(t *testing.T) {
 		t.Errorf("error should mention the size limit, got: %v", err)
 	}
 }
+
+// A relay that renames what it serves puts the name in display_name and keeps
+// the id on the wire — magpie's per-client naming is the live example. The
+// listing carries both, so the picker can show the name and still route by id.
+func TestFetchModelListingCarriesTheDisplayName(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = fmt.Fprint(w, `{"data":[
+			{"id":"group/glm-5.3-flash","display_name":"GLM 5.3 Flash"},
+			{"id":"plain","display_name":"  "},
+			{"id":"bare"}
+		]}`)
+	}))
+	defer srv.Close()
+
+	listed, err := FetchModelListing(context.Background(), srv.URL, "key", FetchModelsOptions{})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(listed) != 3 {
+		t.Fatalf("want 3 listed models, got %d: %+v", len(listed), listed)
+	}
+	if listed[0].ID != "bare" || listed[0].DisplayName != "" {
+		t.Errorf("bare row = %+v, want the id with no display name", listed[0])
+	}
+	if listed[1].ID != "group/glm-5.3-flash" || listed[1].DisplayName != "GLM 5.3 Flash" {
+		t.Errorf("renamed row = %+v, want the id and the listing's own name", listed[1])
+	}
+	if listed[2].ID != "plain" || listed[2].DisplayName != "" {
+		t.Errorf("blank-name row = %+v, want a trimmed empty display name", listed[2])
+	}
+}

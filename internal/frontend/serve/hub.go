@@ -389,6 +389,7 @@ func (h *Hub) openBound(ctx context.Context, req OpenRequest, inherited *agentco
 	if settings != nil {
 		built.Controller.SetPlanMode(settings.Mode == "plan")
 	}
+	built.Controller.SetDatedSessionPaths(isAutoWorkspace(root)) // before any EnsureSessionPath
 	srv := New(built.Controller, bc, h.opts.Serve)
 	if branchModelFallback {
 		srv.branchModelFallback = savedModel
@@ -692,6 +693,7 @@ func (h *Hub) publish(rt *Runtime) error {
 		if concrete {
 			rt.Server.mu.Lock()
 			rt.Server.projects = projects
+			rt.Server.hubThreads = func(path string) []DispatchThread { return h.dispatch.threadsFrom(path) }
 			projects.bind(ctrl)
 			rt.Server.mu.Unlock()
 		}

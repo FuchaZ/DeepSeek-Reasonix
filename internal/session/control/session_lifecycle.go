@@ -94,7 +94,7 @@ func (c *Controller) NewSession() error {
 	c.snapshotMu.Lock()
 	if c.sessionDir != "" {
 		c.mu.Lock()
-		c.sessionPath = sessionstore.NewSessionPath(c.sessionDir, c.label)
+		c.sessionPath = c.freshPath()
 		c.guardianPath = guardian.PathFor(c.sessionPath)
 		c.mu.Unlock()
 	}
@@ -187,7 +187,7 @@ func (c *Controller) ClearSession() error {
 	c.extensionSessionEvent(extension.PointSessionEnd, dispatch.PhaseEnd, oldPath)
 	if c.sessionDir != "" {
 		c.mu.Lock()
-		c.sessionPath = sessionstore.NewSessionPath(c.sessionDir, c.label)
+		c.sessionPath = c.freshPath()
 		c.guardianPath = guardian.PathFor(c.sessionPath)
 		c.mu.Unlock()
 	}
@@ -673,4 +673,23 @@ func (c *Controller) rotateSessionTemp() {
 		return
 	}
 	c.sessionTemp.Rotate()
+}
+
+// SetDatedSessionPaths turns on date-nested fresh transcripts (…/2026/11/14)
+// for this controller. Only the task area asks for it: a project's sessions
+// stay flat beside their siblings, where every tool that names a folder
+// expects them.
+func (c *Controller) SetDatedSessionPaths(on bool) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.datedSessions = on
+}
+
+// freshPath is the auto-save file a new conversation of this controller gets:
+// dated where the flag says so, flat everywhere else.
+func (c *Controller) freshPath() string {
+	if c.datedSessions {
+		return sessionstore.NewDatedSessionPath(c.sessionDir, c.label)
+	}
+	return sessionstore.NewSessionPath(c.sessionDir, c.label)
 }

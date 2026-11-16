@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"strings"
@@ -25,7 +26,47 @@ type dispatchBook struct {
 	// pending holds a pane opened in a project the user has not decided about yet;
 	// it shows its own trust card, and the next dispatch reuses it.
 	pending map[dispatchKey]string
+	// threads records, by the sender's session path, what it dispatched and
+	// where each task landed. The sidebar's hover card reads it for any
+	// session — a live pane or one the user closed long ago.
+	threads map[string][]DispatchThread
 	open    func(context.Context, OpenRequest, *agentcomposition.Binding) (*Runtime, error)
+}
+
+// DispatchThread is one entry in a sender's record of its dispatches: the role
+// the target was opened under and the session the task landed on.
+type DispatchThread struct {
+	Role        string `json:"role,omitempty"`
+	SessionPath string `json:"sessionPath,omitempty"`
+	Key         string `json:"key,omitempty"`
+}
+
+func (b *dispatchBook) noteThread(senderPath, role, targetPath, key string) {
+	if senderPath == "" || senderPath == targetPath {
+		return
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.threads == nil {
+		b.threads = map[string][]DispatchThread{}
+	}
+	for i := range b.threads[senderPath] {
+		t := &b.threads[senderPath][i]
+		if t.SessionPath == targetPath || (key != "" && t.Key == key) {
+			t.Role, t.SessionPath, t.Key = role, targetPath, key
+			return
+		}
+	}
+	b.threads[senderPath] = append(b.threads[senderPath], DispatchThread{Role: role, SessionPath: targetPath, Key: key})
+}
+
+func (b *dispatchBook) threadsFrom(senderPath string) []DispatchThread {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if len(b.threads[senderPath]) == 0 {
+		return nil
+	}
+	return append([]DispatchThread(nil), b.threads[senderPath]...)
 }
 
 type dispatchKey struct{ from, root, role string }
@@ -124,10 +165,15 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text, role
 	if key == "" {
 		return control.DispatchResult{}, fmt.Errorf("%w: the new session did not publish itself", control.ErrDispatchFailed)
 	}
-	sender.NoteDispatchedSession(key, secret)
+	sender.NoteDispatchedSession(key, secret, role)
 	receipt, err := sender.SendPeerMessage(key, text)
 	if err != nil {
 		return control.DispatchResult{}, err
+	}
+	// The record the sidebar's hover card reads: the sender's own path is the
+	// key, so the card answers for a session that has no pane open.
+	if tp := targetCtrl.SessionPath(); tp != "" {
+		h.dispatch.noteThread(sender.SessionPath(), role, tp, key)
 	}
 	return control.DispatchResult{Project: root, Key: key, ID: receipt.ID, Role: role}, nil
 }
@@ -181,8 +227,27 @@ func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *co
 	ctrl.AdoptSessionGrant(grant)
 	ctrl.MarkOpenedByDispatch(sender.PeerKey(), secret, sender.DispatchDepth()+1)
 	ctrl.SetFreshSessionPath(sessionstore.NewSessionPath(SessionDirFor(root), "dispatch"))
+	if role != "" {
+		h.nameDispatchPaneAfterRole(ctrl, root, role)
+	}
 	h.dispatch.set(from.ID, root, role, target.ID)
 	return target, nil
+}
+
+// nameDispatchPaneAfterRole writes the role as a dispatched session's title:
+// the role is the session's name to the person scanning the sidebar, and an
+// explicit title outranks the preview and any automatic fill. Naming is
+// decoration, so a failure is logged and the dispatch still delivers.
+func (h *Hub) nameDispatchPaneAfterRole(ctrl *control.Controller, root, role string) {
+	path := ctrl.SessionPath()
+	if err := sessionstore.RenameSession(path, role); err != nil {
+		slog.Warn("dispatch: could not name the session after its role", "err", err)
+		return
+	}
+	if err := h.titleCacheFor(SessionDirFor(root)).putExplicit(filepath.Base(path), role); err != nil {
+		slog.Warn("dispatch: could not cache the session's role title", "err", err)
+	}
+	h.treeChanged()
 }
 
 // projectError names the project a refusal is about; errors.Is still finds the

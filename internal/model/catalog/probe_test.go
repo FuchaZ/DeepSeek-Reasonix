@@ -170,7 +170,7 @@ func TestProbeReadsCapabilitiesFromTheSameRegistries(t *testing.T) {
 
 func TestProbeUsesDeepSeekOfficialVisionCatalog(t *testing.T) {
 	models := []string{config.DeepSeekFlashModel, "deepseek-v4-pro", "deepseek-v5-vision"}
-	got := describe("https://api.deepseek.com", shape{kind: "openai"}, models)
+	got := describe("https://api.deepseek.com", shape{kind: "openai"}, models, nil)
 	// Flash spells nothing about vision and pro does not refuse an image, so a
 	// name reading would take the wrong two of these three.
 	if !slices.Equal(got.Vision, []string{config.DeepSeekFlashModel}) {
@@ -232,7 +232,7 @@ func TestProbeAnswersFromThePresetCoveringTheAddress(t *testing.T) {
 			if len(entry.Models) == 0 || len(entry.VisionModels) == 0 {
 				continue
 			}
-			got := describe(entry.BaseURL, shape{kind: entry.Kind}, entry.Models)
+			got := describe(entry.BaseURL, shape{kind: entry.Kind}, entry.Models, nil)
 			for _, model := range entry.VisionModels {
 				if !slices.Contains(entry.Models, model) {
 					continue
@@ -255,7 +255,7 @@ func TestProbeAnswersFromThePresetCoveringTheAddress(t *testing.T) {
 // Settings — rather than a claim about a vendor nobody has checked.
 func TestProbeFallsBackToTheSpellingForUndeclaredAddresses(t *testing.T) {
 	models := []string{"some-vl-model", "plain-text-model"}
-	got := describe("https://relay.example.com/v1", shape{kind: "openai"}, models)
+	got := describe("https://relay.example.com/v1", shape{kind: "openai"}, models, nil)
 	if !slices.Contains(got.Vision, "some-vl-model") || slices.Contains(got.Vision, "plain-text-model") {
 		t.Fatalf("vision = %v, want the spelling's suggestion for an undeclared address", got.Vision)
 	}

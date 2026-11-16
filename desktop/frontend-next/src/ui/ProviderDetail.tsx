@@ -29,8 +29,10 @@ export function ProviderDetail({
   // the form remounts only once the list holds what the kernel has.
   const [revision, setRevision] = useState(0);
   const [saved, setSaved] = useState("");
+  const [refreshDone, setRefreshDone] = useState("");
   const entry = a.byKind[kind] ?? a.byKind[a.kinds[0]];
   const checking = busy === `check:${entry.name}`;
+  const refreshing = busy === `refresh:${entry.name}`;
   const inUse = a.kinds.some((k) => a.byKind[k].inUse);
 
   const check = async () => {
@@ -44,6 +46,29 @@ export function ProviderDetail({
     } catch (e) {
       // Read off the code the kernel sent, never the status: 403 is also what a
       // gateway in front of it answers, and that is a different thing to do next.
+      if (e instanceof HttpError && e.reason?.code === PROVIDER_EDIT_DISABLED) setRefused(reason(e));
+      else setUnanswered(reason(e));
+    } finally {
+      setBusy("");
+    }
+  };
+
+  // 刷新模型 re-reads the endpoint's list and writes it back: what the endpoint
+  // now serves joins the picked list, and its own display names land as model
+  // aliases — a relay's renamed models reach the menu without a re-add.
+  const refresh = async () => {
+    setBusy(`refresh:${entry.name}`);
+    setRefreshDone("");
+    setFound(null);
+    setUnanswered("");
+    setRefused("");
+    try {
+      await port.refreshModels(entry.name);
+      setRefreshDone(t("models.refresh_done"));
+      // The form holds what it loaded; the refresh changed the list under it.
+      setRevision((r) => r + 1);
+      onEdited();
+    } catch (e) {
       if (e instanceof HttpError && e.reason?.code === PROVIDER_EDIT_DISABLED) setRefused(reason(e));
       else setUnanswered(reason(e));
     } finally {
@@ -72,10 +97,21 @@ export function ProviderDetail({
         <button className="act" data-action="provider.probe" onClick={check} disabled={busy !== ""}>
           {t(checking ? "models.testing_2" : "common.test_it")}
         </button>
+        {entry.canListModels !== false && (
+          <button className="act" data-action="provider.refresh" onClick={refresh} disabled={busy !== ""}>
+            {t(refreshing ? "models.refreshing_models" : "models.refresh_models")}
+          </button>
+        )}
         <button className="act" data-danger data-action="provider.remove" data-target={entry.name} onClick={() => onRemove(entry.name)} disabled={busy !== ""}>
           {t("common.delete")}
         </button>
       </header>
+      {refreshDone && (
+        <div className="find" data-lvl="ok" role="status">
+          <span className="t">{refreshDone}</span>
+          <span className="why">{t("models.refresh_done_why")}</span>
+        </div>
+      )}
       {removeFailed && (
         <div className="find" data-lvl="warn" role="alert">
           <span className="t">{t("common.that_did_not_go_through")}</span>

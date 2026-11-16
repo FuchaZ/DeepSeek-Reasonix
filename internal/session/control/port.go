@@ -439,6 +439,10 @@ type PeerMail interface {
 	PeersEnabled() bool
 	Peers() []PeerView
 	PeerThreads() []PeerThread
+	// DispatchRoles names, by peer key, the role each of this session's
+	// dispatches was opened under — the sender's own record, which outlives
+	// the dispatched panes.
+	DispatchRoles() map[string]string
 	SendPeerMessage(to, text string) (PeerReceipt, error)
 	HeldPeerMessages() []PeerHeld
 	ResolvePeerMessage(id string, approve bool) error

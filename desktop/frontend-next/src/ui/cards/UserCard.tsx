@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { AgentPort, Checkpoint, RewindPlan, RewindResult, RewindScope } from "../../port/port";
 import type { Item } from "../../state/session";
+import { showMessageTimes, onMessageTimesChange } from "../../state/messagetimes";
 import { RewindControl } from "./RewindControl";
 import { SkillPinView } from "./SkillPinView";
 import { parseSkillPin } from "./skillpin";
@@ -48,6 +49,9 @@ export function UserCard({
   // A rewind needs a turn the kernel claimed, and a queued line has not
   // happened yet — there is nothing behind it to take back.
   const shortcut = useSendShortcut();
+  // The stamp rides the same hover-revealed row as the actions under it; the
+  // pref decides whether it exists at all.
+  const times = useSyncExternalStore(onMessageTimesChange, showMessageTimes, showMessageTimes);
   const ime = useIme();
   const editable = !!onResend && !!cp && !item.pending;
   const [draft, setDraft] = useState<string | null>(null);
@@ -168,7 +172,7 @@ export function UserCard({
           )}
         </div>
         <div className="user-acts">
-          {item.at && <time className="user-time" dateTime={new Date(item.at).toISOString()} title={new Date(item.at).toLocaleString()}>{clock(item.at)}</time>}
+          {item.at && times && <time className="user-time" dateTime={new Date(item.at).toISOString()} title={new Date(item.at).toLocaleString()}>{clock(item.at)}</time>}
           <CopyButton text={item.text} iconOnly showFeedback label={t("common.copy")} />
           {reopen && (
             <button type="button" className="reask-open" data-action="turn.edit" data-target={item.id}

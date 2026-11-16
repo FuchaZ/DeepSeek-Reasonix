@@ -180,6 +180,7 @@ export interface PeerThread {
   title: string;
   project: string;
   sessionPath?: string;
+  role?: string;
   state: PeerThreadState;
   since: string;
   messageId: string;

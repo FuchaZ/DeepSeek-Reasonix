@@ -24,10 +24,14 @@ type Probe struct {
 	Kinds      []string
 	AuthHeader bool     // anthropic-compatible gateway that wants Authorization: Bearer
 	Models     []string // chat models only; audio/embedding/rerank ids are dropped
-	Default    string   // suggested default — the first chat model
-	Efforts    []string // /effort levels Default exposes, "auto" first; empty = none
-	Effort     string   // level "auto" resolves to
-	Vision     []string // models that look like they accept image input
+	// Names is what the listing itself calls a model, where that differs from
+	// the id — display material only: routing and everything drawn from ids
+	// keeps reading Models.
+	Names   map[string]string // id → display name; absent when the listing names nothing
+	Default string            // suggested default — the first chat model
+	Efforts []string          // /effort levels Default exposes, "auto" first; empty = none
+	Effort  string            // level "auto" resolves to
+	Vision  []string          // models that look like they accept image input
 	// Ambiguous marks a listing that more than one protocol answered. A model
 	// list cannot separate an OpenAI gateway from an Anthropic one that also
 	// takes Bearer, so the guess is presented as a guess instead of a fact.
@@ -93,16 +97,18 @@ func ProbeEndpoint(ctx context.Context, opts ProbeOptions) (Probe, error) {
 
 func probeThrough(ctx context.Context, base, apiKey string, client *http.Client) (Probe, error) {
 	answered := make(map[shape][]string)
+	answeredNames := make(map[shape]map[string]string)
 	answeredAt := make(map[shape]string)
 	var declared []string
 	var worst *ProbeError
 	for _, s := range probeShapes {
-		chat, named, at, err := listChatModels(ctx, s, base, apiKey, client)
+		chat, named, names, at, err := listChatModels(ctx, s, base, apiKey, client)
 		if err != nil {
 			worst = keepWorseDiagnosis(worst, classifyProbe(err))
 			continue
 		}
 		answered[s] = chat
+		answeredNames[s] = names
 		answeredAt[s] = at
 		declared = mergeProtocolChoices(declared, named)
 	}
@@ -116,7 +122,7 @@ func probeThrough(ctx context.Context, base, apiKey string, client *http.Client)
 	if best.kind == "openai" {
 		base = ResolveChatBase(base, answeredAt[best])
 	}
-	p := describe(base, best, answered[best])
+	p := describe(base, best, answered[best], answeredNames[best])
 	p.Kinds = mergeProtocolChoices(p.Kinds, declared)
 	p.Ambiguous = len(answered) > 1
 	return p, nil
@@ -154,7 +160,7 @@ func allClaude(models []string) bool {
 	return len(models) > 0
 }
 
-func listChatModels(ctx context.Context, s shape, baseURL, apiKey string, client *http.Client) ([]string, []string, string, error) {
+func listChatModels(ctx context.Context, s shape, baseURL, apiKey string, client *http.Client) ([]string, []string, map[string]string, string, error) {
 	// The key is held for this call only — a probe runs before there is a
 	// provider to store it against, and nothing here writes to disk.
 	entry := (&config.ProviderEntry{
@@ -165,23 +171,36 @@ func listChatModels(ctx context.Context, s shape, baseURL, apiKey string, client
 	}).WithAPIKeyForProbe(apiKey)
 	listed, at, err := fetchModelListingAt(ctx, &entry, client)
 	if err != nil {
-		return nil, nil, "", err
+		return nil, nil, nil, "", err
 	}
 	models := make([]string, 0, len(listed))
+	names := make(map[string]string)
 	for _, m := range listed {
 		models = append(models, m.ID)
+		if m.DisplayName != "" && m.DisplayName != m.ID {
+			names[m.ID] = m.DisplayName
+		}
 	}
 	chat := chatModelsOf(models)
 	if len(chat) == 0 {
 		// The endpoint answered but offers nothing we can hold a conversation
 		// with — a rerank or embedding gateway.
-		return nil, nil, "", &ProbeError{
+		return nil, nil, nil, "", &ProbeError{
 			Reason: ProbeNoChatModels,
 			Params: map[string]any{"count": len(models)},
 			detail: fmt.Sprintf("%s lists %d models, none of them chat models", baseURL, len(models)),
 		}
 	}
-	return chat, ProtocolsDeclaredBy(listed), at, nil
+	var chatNames map[string]string
+	for _, id := range chat {
+		if display, ok := names[id]; ok {
+			if chatNames == nil {
+				chatNames = make(map[string]string)
+			}
+			chatNames[id] = display
+		}
+	}
+	return chat, ProtocolsDeclaredBy(listed), chatNames, at, nil
 }
 
 // describe fills in what can be told from the endpoint and its model ids.
@@ -189,13 +208,14 @@ func listChatModels(ctx context.Context, s shape, baseURL, apiKey string, client
 // panel shows is what the runtime will do — which is why the probed base URL
 // goes into the entry: reasoning contracts are resolved per endpoint, not per
 // kind.
-func describe(baseURL string, s shape, chat []string) Probe {
+func describe(baseURL string, s shape, chat []string, names map[string]string) Probe {
 	p := Probe{
 		Kind:       s.kind,
 		BaseURL:    baseURL,
 		Kinds:      config.ProtocolsDiscoveredAs(s.kind),
 		AuthHeader: s.authHeader,
 		Models:     chat,
+		Names:      names,
 		Default:    chat[0],
 		Vision:     inferVisionModelsForEndpoint(baseURL, s.kind, chat),
 	}

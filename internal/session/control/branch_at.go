@@ -103,7 +103,7 @@ func (c *Controller) branchClosedTurn(turn int, name string) (string, error) {
 func (c *Controller) createBranchPrefix(src []provider.Message, name string) (*sessionstore.Session, string, error) {
 	child := sessionstore.NewSession("")
 	child.Messages = append([]provider.Message(nil), src...)
-	path := sessionstore.NewSessionPath(c.sessionDir, c.label)
+	path := c.freshPath()
 	name = strings.TrimSpace(name)
 	preview, turns := sessionstore.SessionPreviewFromMessages(child.Messages)
 	meta := sessionstore.BranchMeta{

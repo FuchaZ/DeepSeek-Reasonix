@@ -134,6 +134,8 @@ export const CHAT: Messages = {
   "chat.detailed": { zh: "详尽", en: "Detailed" },
   "chat.differences_only": { zh: "仅看差异", en: "Differences only" },
   "chat.dispatch_2_64_sub_agent": { zh: "把 2–64 个子代理任务按依赖关系一起派出，返回摘要和取回完整结果的引用。", en: "Dispatch 2–64 sub-agent tasks as a dependency graph and return previews plus references for the full results." },
+  "chat.dispatch_thread_handling": { zh: "处理『{title}』的回信", en: "Handling the reply from \"{title}\"" },
+  "chat.dispatch_thread_unnamed": { zh: "已派发的会话", en: "Dispatched session" },
   "chat.done_in_t": { zh: "已完成 · {t}", en: "Done · {t}" },
   "chat.download_as_file": { zh: "下载为文件", en: "Download as file" },
   "chat.download_the_reply": { zh: "下载回复", en: "Download the reply" },

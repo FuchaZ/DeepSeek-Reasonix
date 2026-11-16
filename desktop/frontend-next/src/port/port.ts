@@ -430,6 +430,9 @@ export interface AgentPort extends RunningWorkPort, MemoryHoldPort, WorkspacePre
   // Re-probes what is already saved, so "is the key still good, and is this
   // still the protocol we recorded" is one button rather than a re-add.
   checkProvider(name: string, draft?: ProviderCheckDraft): Promise<ProviderCheck>;
+  // Re-reads a saved endpoint's model list and writes it back (list grows,
+  // the endpoint's display names land as aliases).
+  refreshModels(name: string): Promise<void>;
   providerHealth(name: string): Promise<ProviderHealth>;
   providerHealthSettings(): Promise<import("./provider").ProviderHealthSettings>;
   saveProviderHealthSettings(enabled: boolean): Promise<import("./provider").ProviderHealthSettings>;

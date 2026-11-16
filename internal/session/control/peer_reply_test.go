@@ -30,7 +30,7 @@ func (f *peerFixture) pairedWith(t *testing.T, opener bool) {
 	if opener {
 		f.c.MarkOpenedByDispatch(f.sender, pairSecret, 1)
 	} else {
-		f.c.NoteDispatchedSession(f.sender, pairSecret)
+		f.c.NoteDispatchedSession(f.sender, pairSecret, "")
 	}
 }
 

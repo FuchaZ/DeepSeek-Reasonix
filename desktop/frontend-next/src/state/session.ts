@@ -750,7 +750,12 @@ export function fromHistory(msgs: HistoryMessage[], options: { snapshot?: string
             continue;
           }
           if (!part.text && !reasoning) continue;
-          out.push({ t: "say", id: allocate(), text: part.text, reasoning, done: true, model: m.modelRef, thoughtMs: reasoning ? m.thoughtMs : undefined });
+          // The kernel stamps CreatedAt on user messages only, so the answer's
+          // time is derived: the turn opened at turnStart and the closing
+          // message records how long the run took. Cards before the closer,
+          // and turns the record never timed, show no stamp at all.
+          const closedAt = turnStart !== undefined && m.workDurationMs ? turnStart + m.workDurationMs : undefined;
+          out.push({ t: "say", id: allocate(), text: part.text, reasoning, done: true, model: m.modelRef, thoughtMs: reasoning ? m.thoughtMs : undefined, at: closedAt });
           reasoning = undefined;
         }
         out.push(...worked(m.workDurationMs, turnStart).map((item) => options.snapshot ? { ...item, id: allocate() } : item));

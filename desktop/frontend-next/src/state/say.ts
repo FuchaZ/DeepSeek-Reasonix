@@ -65,7 +65,7 @@ export function sealSay(items: Item[], all = false, cut?: ThoughtCut): Item[] {
     const ran = it.thoughtMs ?? (it.reasoning ? Date.now() - (thoughtSince.get(it.id) ?? Date.now()) : undefined);
     thoughtSince.delete(it.id);
     const midThought = cut && it.reasoning && it.thoughtMs === undefined && !it.text;
-    next[i] = { ...it, done: true, thoughtMs: ran, ...(midThought ? { cut } : null) };
+    next[i] = { ...it, done: true, thoughtMs: ran, at: Date.now(), ...(midThought ? { cut } : null) };
     if (!all) break;
   }
   return next ?? items;
@@ -89,7 +89,7 @@ export function foldMessage(items: Item[], ev: WireEvent): Item[] {
   const measured = ev.thoughtMs;
   if (at < 0) {
     if (!ev.text && !ev.reasoning) return items;
-    return [...items, { t: "say", id: nextId(), text: ev.text ?? "", reasoning: ev.reasoning, done: true, source: ev.source, thoughtMs: measured }];
+    return [...items, { t: "say", id: nextId(), text: ev.text ?? "", reasoning: ev.reasoning, done: true, source: ev.source, thoughtMs: measured, at: Date.now() }];
   }
   const open = items[at] as Extract<Item, { t: "say" }>;
   const next = items.slice();
@@ -99,6 +99,7 @@ export function foldMessage(items: Item[], ev: WireEvent): Item[] {
     ...open,
     done: true,
     thoughtMs: ran,
+    at: Date.now(),
     text: ev.text || open.text,
     reasoning: ev.reasoning || open.reasoning,
     source: open.source ?? ev.source,

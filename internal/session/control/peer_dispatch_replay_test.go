@@ -13,7 +13,7 @@ func pairedController(t *testing.T) (*Controller, []byte) {
 	t.Helper()
 	f := newPeerFixture(t)
 	secret := []byte("0123456789abcdef0123456789abcdef")
-	f.c.NoteDispatchedSession("s-peer", secret)
+	f.c.NoteDispatchedSession("s-peer", secret, "reviewer")
 	return f.c, secret
 }
 

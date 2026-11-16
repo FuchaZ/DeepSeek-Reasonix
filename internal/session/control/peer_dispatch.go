@@ -73,8 +73,12 @@ type dispatchPair struct {
 	// reply of its own.
 	opener bool
 	sent   uint64
-	seen   map[uint64]bool
-	floor  uint64
+	// role is the name the sender opened the partner under, empty for a pair
+	// that was not a dispatch. Kept here, on the sender, so the thread rows
+	// keep their name after the partner's pane has closed.
+	role  string
+	seen  map[uint64]bool
+	floor uint64
 }
 
 // accept records seq as taken, or refuses it when it was taken or has aged out.
@@ -138,13 +142,32 @@ func (c *Controller) DispatchDepth() int {
 	return d.depth
 }
 
-// NoteDispatchedSession records a session this one opened for a task and the
-// secret the host made for the pair.
-func (c *Controller) NoteDispatchedSession(child string, secret []byte) {
+// NoteDispatchedSession records a session this one opened for a task: the
+// secret the host made for the pair and the role the session was opened under.
+func (c *Controller) NoteDispatchedSession(child string, secret []byte, role string) {
 	d := c.dispatch.sessionState()
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	d.rememberPairLocked(child, secret, false)
+	if d.pairs[child] != nil {
+		d.pairs[child].role = role
+	}
+}
+
+// DispatchRoles names, by peer key, the role each of this session's dispatches
+// was opened under. The sender's own memory is the record: a partner whose
+// pane closed still reads its name, which a live-runtime walk cannot say.
+func (c *Controller) DispatchRoles() map[string]string {
+	d := c.dispatch.sessionState()
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	out := map[string]string{}
+	for key, pair := range d.pairs {
+		if !pair.opener && pair.role != "" {
+			out[key] = pair.role
+		}
+	}
+	return out
 }
 
 func (d *dispatchSession) rememberPairLocked(key string, secret []byte, opener bool) {

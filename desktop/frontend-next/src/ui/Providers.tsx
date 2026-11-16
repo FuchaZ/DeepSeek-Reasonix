@@ -29,6 +29,7 @@ export type Port = {
   saveProvider(draft: ProviderDraft): Promise<void>;
   removeProvider(name: string): Promise<ProviderRemoval>;
   checkProvider(name: string, draft?: ProviderCheckDraft): Promise<ProviderCheck>;
+  refreshModels(name: string): Promise<void>;
   checkProviderModel(request: ProviderModelCheckRequest): Promise<ProviderModelCheck>;
   editProvider(edit: ProviderEdit): Promise<void>;
   renameProvider(names: string[], displayName: string): Promise<void>;

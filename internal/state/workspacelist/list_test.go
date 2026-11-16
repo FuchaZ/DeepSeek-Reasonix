@@ -156,3 +156,63 @@ func TestUpdateWithoutADeadlineStillGivesUp(t *testing.T) {
 		t.Fatalf("contended update without a deadline = %v, want deadline exceeded", err)
 	}
 }
+
+// A removal is the user's last word about a folder: it round-trips through the
+// file, survives a duplicate, and a restore is the one thing that lifts it.
+func TestRemovalRoundTripsAndRestoreLiftsIt(t *testing.T) {
+	path := filepath.Join(testenv.TempDir(t), FileName)
+	if err := Update(context.Background(), path, false, func(l *List) error {
+		l.Paths = []string{"kept"}
+		l.Remove("gone")
+		l.Remove("gone")
+		l.Remove(" ")
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	list, err := Read(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list.Removed) != 1 || list.Removed[0] != "gone" {
+		t.Fatalf("removed = %+v, want [gone]", list.Removed)
+	}
+	if err := Update(context.Background(), path, false, func(l *List) error {
+		l.Restore("gone")
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if list, err = Read(path); err != nil || len(list.Removed) != 0 {
+		t.Fatalf("after a restore removed = %+v (%v), want none", list.Removed, err)
+	}
+}
+
+// The tombstones stay bounded: the oldest gives way, so a session of adding
+// and removing projects cannot grow the file without end.
+func TestRemovalsStayBounded(t *testing.T) {
+	var list List
+	for i := range maxRemoved + 16 {
+		list.Remove(fmt.Sprintf("r%d", i))
+	}
+	if len(list.Removed) != maxRemoved {
+		t.Fatalf("kept %d removals, want %d", len(list.Removed), maxRemoved)
+	}
+	if list.Removed[0] != "r16" || list.Removed[len(list.Removed)-1] != fmt.Sprintf("r%d", maxRemoved+15) {
+		t.Fatalf("the oldest removal did not give way: %+v", list.Removed)
+	}
+}
+
+// A file written with empty or duplicated removal entries reads clean, so a
+// hand-edited list cannot wedge the reads below.
+func TestReadCleansRemovalEntries(t *testing.T) {
+	path := filepath.Join(testenv.TempDir(t), FileName)
+	put(t, path, `{"paths":["a"],"removed":["x"," x ","",null]}`)
+	list, err := Read(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(list.Removed) != 1 || list.Removed[0] != "x" {
+		t.Fatalf("removed = %+v, want [x]", list.Removed)
+	}
+}

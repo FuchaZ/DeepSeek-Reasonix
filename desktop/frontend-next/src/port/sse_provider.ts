@@ -38,6 +38,11 @@ export class SseProvider extends SseBoundary {
   checkProvider(name: string, draft?: ProviderCheckDraft): Promise<ProviderCheck> {
     return this.post0<ProviderCheck>("/providers/check", { name, ...draft });
   }
+  // Re-reading a saved endpoint's model list and writing it back: the list
+  // grows, the endpoint's own display names land as aliases. 204 on success.
+  refreshModels(name: string): Promise<void> {
+    return this.post("/providers/refresh-models", { name });
+  }
   checkProviderModel(request: ProviderModelCheckRequest): Promise<ProviderModelCheck> {
     return this.post0<ProviderModelCheck>("/providers/check/model", request);
   }

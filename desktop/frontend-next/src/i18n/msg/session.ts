@@ -217,6 +217,8 @@ export const SESSION: Messages = {
   "session.work_in_a_separate_git": { zh: "在 Git worktree 中创建独立副本，修改不会影响当前分支", en: "Work in a separate Git worktree so changes do not land on the current branch" },
   "session.work_on_an_isolated_copy": { zh: "创建隔离副本", en: "Work on an isolated copy" },
   "session.work_time": { zh: "工作时长", en: "Work time" },
+  "session.hover_updated_at": { zh: "更新于", en: "Updated" },
+  "session.hover_open_session": { zh: "打开会话", en: "Open session" },
   "session.workspace_bound": { zh: "工作目录已绑定", en: "Workspace bound" },
   "session.workspace_path": { zh: "工作区路径", en: "Workspace path" },
   "session.workspace_ready": { zh: "工作目录已就绪", en: "Workspace ready" },

@@ -145,6 +145,19 @@ export function EditConn({
         return;
       }
       const readers = refreshed.vision ?? [];
+      // The endpoint's own display names pre-fill the aliases the person has
+      // not set; a name they typed always wins. Display only — the ids the
+      // requests carry are untouched.
+      const names = refreshed.names ?? {};
+      if (Object.keys(names).length > 0) {
+        setAliases((current) => {
+          const next = { ...current };
+          for (const [id, display] of Object.entries(names)) {
+            if (display !== id && !(next[id] ?? "").trim()) next[id] = display;
+          }
+          return next;
+        });
+      }
       setModels((current) => {
         setDiff(catalogDiff(current, found, true));
         setFacts((factsNow) => refreshedFacts(current, found, factsNow));

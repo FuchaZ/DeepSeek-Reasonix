@@ -214,6 +214,7 @@ export const SETTINGS: SettingEntry[] = [
   { section: "display", anchor: "fold-work", title: "settings.fold_the_work_in_between", scope: "machine", apply: "immediate", keywords: ["折叠", "中间过程", "工具调用", "思考", "最后一句", "收起", "摘要"] },
   { section: "display", anchor: "folding", title: "chat.transcript_folding", scope: "machine", apply: "immediate", keywords: ["展开", "收起", "思考", "执行过程", "步骤", "输出", "简报", "fold"] },
   { section: "display", anchor: "plan-progress", title: "plan.show_collapsed_plan_progress", scope: "machine", apply: "immediate", keywords: ["计划", "进度条", "待办", "收起", "todo", "plan", "progress", "collapsed"] },
+  { section: "display", anchor: "message-times", title: "settings.message_times", scope: "machine", apply: "immediate", keywords: ["消息时间", "时间戳", "落时间", "悬停", "message times", "timestamp"] },
   { section: "display", anchor: "changed-files", title: "settings.file_changes", scope: "machine", apply: "immediate", keywords: ["改动", "变更", "文件", "已更改", "药丸", "输入框"] },
   { section: "display", anchor: "present-files", title: "settings.ai_file_delivery_cards", scope: "machine", apply: "on-open", keywords: ["文件交付", "交付卡片", "文件预览", "present_files", "tools.present_files", "PDF", "CSV", "HTML", "file delivery", "preview"] },
   { section: "display", anchor: "office-preview", title: "common.office_document_preview", scope: "machine", apply: "immediate", keywords: ["office", "word", "excel", "docx", "xlsx", "工作台", "预览", "文档", "表格"] },

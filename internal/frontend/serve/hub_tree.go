@@ -561,8 +561,11 @@ func (h *Hub) exportSession(w http.ResponseWriter, r *http.Request) {
 		refuse(w, http.StatusBadRequest, codeSessionBadPath, "the session path could not be resolved", nil)
 		return
 	}
-	dir := h.knownSessionDir(filepath.Dir(path))
-	if dir == "" {
+	// The file's own directory is the opened root: task conversations live in
+	// dated directories under the sessions tree, which the boundary check
+	// proved owned. The validated local base name cannot leave it.
+	dir := filepath.Dir(path)
+	if !h.ownsSessionDir(dir) {
 		refuse(w, http.StatusForbidden, "session.outside_workspace", "path outside a known workspace", nil)
 		return
 	}
@@ -601,16 +604,34 @@ func (h *Hub) exportSession(w http.ResponseWriter, r *http.Request) {
 	}{Name: strings.TrimSuffix(filepath.Base(path), filepath.Ext(path)), Content: string(content)})
 }
 
-// ownsSessionDir reports whether dir is the session directory of a workspace
+// ownsSessionDir reports whether dir sits inside a workspace's sessions tree
 // this hub lists, which is the boundary a delete may not reach past.
 func (h *Hub) ownsSessionDir(dir string) bool {
 	return h.knownSessionDir(dir) != ""
 }
 
+// knownSessionDir reports which workspace's sessions tree dir belongs to: the
+// sessions folder itself, or — since task conversations file themselves by
+// date (…/sessions/2026/11/14/) — any directory inside that tree. The boundary
+// a delete may not reach past is the tree, so everything under it is owned.
 func (h *Hub) knownSessionDir(dir string) string {
+	if root := h.sessionTreeRoot(dir); root != "" {
+		return SessionDirFor(root)
+	}
+	return ""
+}
+
+// sessionTreeRoot names the workspace whose sessions tree holds path — the
+// sessions folder itself or anything under it, dated task folders included —
+// or "" when no listed workspace answers for it.
+func (h *Hub) sessionTreeRoot(path string) string {
 	for _, ref := range h.sessionRoots() {
-		if known, err := filepath.Abs(SessionDirFor(ref.dir)); err == nil && known == dir {
-			return known
+		known, err := filepath.Abs(SessionDirFor(ref.dir))
+		if err != nil {
+			continue
+		}
+		if rel, err := filepath.Rel(known, path); err == nil && filepath.IsLocal(rel) {
+			return ref.dir
 		}
 	}
 	return ""
@@ -640,6 +661,9 @@ func (h *Hub) roots() []rootRef {
 			return
 		}
 		seen[dir] = true
+		if workspaceRemoved(dir) {
+			return
+		}
 		out = append(out, rootRef{dir: dir, remembered: saved[dir]})
 	}
 	for _, dir := range paths {

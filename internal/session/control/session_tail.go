@@ -23,7 +23,7 @@ func (c *Controller) ForkSessionTail(sourcePath string) (string, int, error) {
 	if tail.Dropped > 0 {
 		noteOmittedHistory(child.Messages, tail.Dropped)
 	}
-	path := sessionstore.NewSessionPath(c.sessionDir, c.label)
+	path := c.freshPath()
 	preview, turns := sessionstore.SessionPreviewFromMessages(child.Messages)
 	meta := sessionstore.BranchMeta{
 		ParentID: sessionstore.BranchID(sourcePath), WorkspaceRoot: c.workspaceRoot,

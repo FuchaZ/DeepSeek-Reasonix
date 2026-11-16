@@ -14,6 +14,7 @@ import { StudioIcon } from "./StudioIcon";
 import { TreeEmpty, TreeReading } from "./TreeReading";
 import { ListingProgress } from "./ListingProgress";
 import { copyText } from "./CopyButton";
+import { SessionHoverLayer, useSessionRowHover } from "./sessionhover";
 import { sessionInfoText } from "./sessionInfo";
 import { saveSessionFile } from "./sessionExport";
 import { useTreeKeys } from "./tree";
@@ -77,6 +78,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
   const order = useSessionMove(hub, reload, onError, !!needle);
   const moveTo = useSessionMoveTo(hub, tree, reload, rowLabel, () => adder.add());
   const [sessionMenuAt, setSessionMenuAt] = useState({ x: 0, y: 0 });
+  const rowHover = useSessionRowHover(!needle && !selection);
   const sessionMenuBox = useRef<HTMLDivElement>(null);
   const sessionMenuPortal = useRef<HTMLDivElement>(null);
   const menuTrigger = useRef<HTMLElement | null>(null);
@@ -354,6 +356,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
   return (
     <>
       {moveTo.dialog}
+      <SessionHoverLayer hub={hub} card={rowHover} onOpen={onOpen} />
       <SessionBatch hub={hub} selection={selection} selected={selected} displayed={displayed} onSelect={setSelection}
         onExit={() => {
           // Back to the control that started the selection. When every project
@@ -562,6 +565,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                         data-just-done={session.runtimeId && justDone.has(session.runtimeId) ? "" : undefined}
                         data-busy={opening === session.path || mutations.pending.has(session.path) ? "" : undefined}
                         onClick={(ev) => { if (selection) toggleSelection(session.path); else if (ev.detail < 2 && mutations.pending.get(session.path) !== "archive") void pick(ws, session); }}
+                        onMouseEnter={(ev) => rowHover.enter(ws, session, ev.currentTarget)} onMouseLeave={rowHover.leave}
                         data-action-dblclick={selection ? undefined : "session.rename"}
                         onDoubleClick={(ev) => {
                           if (selection || mutations.pending.has(session.path) || (ev.target as HTMLElement).closest("input, button, [role='menu']")) return;

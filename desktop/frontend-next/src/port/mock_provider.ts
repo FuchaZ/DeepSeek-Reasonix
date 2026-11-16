@@ -147,6 +147,8 @@ export class MockProvider extends MockBoundary {
     if (plain) this.lastChecks.set(name, { at: Date.now(), ok: got.ok, ...(got.code ? { code: got.code } : {}) });
     return got;
   }
+  async refreshModels(_name: string): Promise<void> {
+  }
 
   protected async answerCheck(name: string): Promise<ProviderCheck> {
     if (name === "mimo") return { ok: false, code: "provider.probe.unauthorized", httpStatus: 401, detail: "Invalid Authentication" };

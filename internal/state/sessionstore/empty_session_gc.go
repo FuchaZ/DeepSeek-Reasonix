@@ -84,24 +84,22 @@ func ReclaimableEmptySessions(dir string, now time.Time, grace time.Duration) ([
 	if dir == "" {
 		return nil, nil
 	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
 	var out []string
-	for _, e := range entries {
-		name := e.Name()
-		if e.IsDir() || !store.IsSessionTranscriptName(name) || store.IsSubagentTranscriptName(name) {
-			continue
+	err := eachSessionDir(dir, func(sub string, entries []os.DirEntry) {
+		for _, e := range entries {
+			name := e.Name()
+			if e.IsDir() || !store.IsSessionTranscriptName(name) || store.IsSubagentTranscriptName(name) {
+				continue
+			}
+			path := filepath.Join(sub, name)
+			if SessionLeaseHeld(path) || !stillReclaimableEmpty(path, now, grace) {
+				continue
+			}
+			out = append(out, path)
 		}
-		path := filepath.Join(dir, name)
-		if SessionLeaseHeld(path) || !stillReclaimableEmpty(path, now, grace) {
-			continue
-		}
-		out = append(out, path)
+	})
+	if err != nil {
+		return nil, err
 	}
 	slices.Sort(out)
 	return out, nil

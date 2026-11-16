@@ -199,11 +199,21 @@ export interface HistorySearch {
   index: HistoryIndex;
 }
 
+/** One line of a session's dispatch record: the role the target was opened
+ *  under and the session the task landed on, as the hover card reads them. */
+export interface DispatchThread {
+  role?: string;
+  sessionPath?: string;
+  key?: string;
+}
+
 export interface HubPort extends SharePort {
   runtimes(): Promise<RuntimeView[]>;
   open(req: { root?: string; sessionPath?: string; agentComposition?: string }): Promise<RuntimeView>;
   close(id: string): Promise<void>;
   tree(window?: TreeWindow): Promise<TreeWorkspace[]>;
+  /** What this session dispatched: the hub's book, by the session's path. */
+  dispatchThreads(path: string): Promise<DispatchThread[]>;
   /** Conversations, in every workspace, that say these words. */
   searchHistory(query: string): Promise<HistorySearch>;
   onTreeChanged(listener: () => void): () => void;
@@ -383,6 +393,10 @@ export class SseHub implements HubPort {
   tree(window?: TreeWindow) {
     const query = treeQuery(window);
     return this.get<TreeWorkspace[]>("/tree" + query + (query ? "&" : "?") + "progressive=1");
+  }
+
+  dispatchThreads(path: string) {
+    return this.get<DispatchThread[]>("/dispatch-threads?path=" + encodeURIComponent(path));
   }
 
   searchHistory(query: string) {

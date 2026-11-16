@@ -28,6 +28,39 @@ const AdoptedSuffix = ".adopted"
 type List struct {
 	Paths  []string `json:"paths"`
 	Launch string   `json:"launch,omitempty"`
+	// Removed are the projects the user took off the sidebar, as opaque
+	// identity keys the caller owns. The folder stops being listed; its files
+	// stay, and asking for it again is what lifts the removal.
+	Removed []string `json:"removed,omitempty"`
+}
+
+// maxRemoved bounds the tombstones the list carries, so a long session of
+// adding and removing cannot grow the file without end; the oldest gives way.
+const maxRemoved = 64
+
+// Remove records that the folder named by the identity id was taken off the
+// sidebar. Empty ids and duplicates are ignored; the oldest entry gives way
+// once the list is full.
+func (l *List) Remove(id string) {
+	id = strings.TrimSpace(id)
+	if id == "" || slices.Contains(l.Removed, id) {
+		return
+	}
+	l.Removed = append(l.Removed, id)
+	if len(l.Removed) > maxRemoved {
+		l.Removed = l.Removed[len(l.Removed)-maxRemoved:]
+	}
+}
+
+// Restore clears a removal, so the folder may be listed again. Removing the
+// entry is what an explicit add-back means: the user asking for the folder
+// outranks a removal, however old.
+func (l *List) Restore(id string) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return
+	}
+	l.Removed = slices.DeleteFunc(l.Removed, func(removed string) bool { return removed == id })
 }
 
 // Read parses the list at path. A missing file or empty path is an empty list.
@@ -60,6 +93,14 @@ func Read(path string) (List, error) {
 		}
 	}
 	list.Paths = paths
+	removed := make([]string, 0, len(list.Removed))
+	for _, id := range list.Removed {
+		id = strings.TrimSpace(id)
+		if id != "" && !slices.Contains(removed, id) {
+			removed = append(removed, id)
+		}
+	}
+	list.Removed = removed
 	if !slices.Contains(paths, list.Launch) {
 		list.Launch = ""
 		if len(paths) > 0 {

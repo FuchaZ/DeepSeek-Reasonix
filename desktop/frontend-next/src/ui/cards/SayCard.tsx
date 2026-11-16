@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { useThinkingPreview, useStartsOpen, useFoldModes } from "../../state/foldpref";
 import { StudioIcon } from "../StudioIcon";
 import { t } from "../../i18n";
-import { count, decimals } from "../../i18n/format";
+import { clock, count, decimals } from "../../i18n/format";
+import { showMessageTimes, onMessageTimesChange } from "../../state/messagetimes";
 import { Sym } from "../Sym";
 import type { Item } from "../../state/session";
 import { thoughtStartedAt } from "../../state/say";
@@ -107,6 +108,9 @@ function download(text: string) {
 
 export function SayCard({ item, afterAnswer, settled = true, reply, quiet }: { item: Extract<Item, { t: "say" }>; afterAnswer?: ReactNode; settled?: boolean; reply?: ReplyActions; quiet?: boolean }) {
   const [branching, setBranching] = useState(false);
+  // The stamp the pref decides exists and the pointer decides is seen; a card
+  // with no settled time shows none rather than an invented one.
+  const times = useSyncExternalStore(onMessageTimesChange, showMessageTimes, showMessageTimes);
   const thinking = !item.done && item.thoughtMs === undefined;
   const start = useStartsOpen("thinking", thinking && !item.text);
   const thoughtMode = useFoldModes().thinking;
@@ -287,6 +291,9 @@ export function SayCard({ item, afterAnswer, settled = true, reply, quiet }: { i
                   </ReplyMenu>
                 </span>
               )}
+              {/* When the answer settled, shown the way the user row shows its
+                  own: the pointer over the card lifts it out of the row. */}
+              {times && item.at && <time className="say-time" dateTime={new Date(item.at).toISOString()} title={new Date(item.at).toLocaleString()}>{clock(item.at)}</time>}
             </div>
           )}
         </div>

@@ -15,7 +15,7 @@ func TestDispatchMigrationPreservesSigningAndReplayState(t *testing.T) {
 	t.Cleanup(old.Close)
 	t.Cleanup(next.Close)
 	old.MarkOpenedByDispatch("parent", pairSecret, 2)
-	old.NoteDispatchedSession("child", pairSecret)
+	old.NoteDispatchedSession("child", pairSecret, "")
 	in := peermail.Message{ID: "message", Seq: 7, Body: "task", From: peermail.Party{SessionID: "parent"}}
 	in.Proof = peermail.Proof(pairSecret, in)
 	if !old.dispatchPartner(in) {

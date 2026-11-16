@@ -11,45 +11,67 @@ import (
 	"reasonix/internal/state/store"
 )
 
-// ListSessionOrder returns every *.jsonl session under dir in the same
-// most-recently-active order used by ListSessions, from file metadata and
-// branch sidecars. A session whose files are unchanged since the last listing
-// is answered from the remembered index (listindex.go). A missing directory is
-// not an error.
-func ListSessionOrder(dir string) ([]SessionOrderInfo, error) {
+// eachSessionDir visits dir and every directory inside it with that folder's
+// own listing: the task area nests transcripts by date (…/2026/11/14), and a
+// top-level-only read would lose them. The error is the root folder's alone.
+func eachSessionDir(dir string, visit func(sub string, entries []os.DirEntry)) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, nil
+			return nil
 		}
-		return nil, err
+		return err
 	}
-	stamps := newStampSet(entries)
+	visit(dir, entries)
+	_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil || !d.IsDir() || path == dir {
+			return nil
+		}
+		sub, readErr := os.ReadDir(path)
+		if readErr != nil {
+			return nil
+		}
+		visit(path, sub)
+		return nil
+	})
+	return nil
+}
+
+// ListSessionOrder returns every *.jsonl session under dir in the same
+// most-recently-active order used by ListSessions, from file metadata and
+// branch sidecars; unchanged files answer from the remembered index.
+func ListSessionOrder(dir string) ([]SessionOrderInfo, error) {
 	index := loadListIndex(dir)
-	next := make(map[string]listIndexEntry, len(entries))
+	next := make(map[string]listIndexEntry)
 	var out []SessionOrderInfo
 	reused := 0
 	var misses []orderMiss
-	for _, e := range entries {
-		if e.IsDir() || !store.IsSessionTranscriptName(e.Name()) {
-			continue
-		}
-		full := filepath.Join(dir, e.Name())
-		print, ok := stamps.of(e, full)
-		if !ok {
-			continue
-		}
-		if was, hit := index.Entries[e.Name()]; hit && was.Print == print {
-			reused++
-			next[e.Name()] = was
-			if !was.Skip {
-				info := was.Info
-				info.Path = full
-				out = append(out, info)
+	err := eachSessionDir(dir, func(sub string, entries []os.DirEntry) {
+		stamps := newStampSet(entries)
+		for _, e := range entries {
+			if e.IsDir() || !store.IsSessionTranscriptName(e.Name()) {
+				continue
 			}
-			continue
+			full := filepath.Join(sub, e.Name())
+			print, ok := stamps.of(e, full)
+			if !ok {
+				continue
+			}
+			if was, hit := index.Entries[e.Name()]; hit && was.Print == print {
+				reused++
+				next[e.Name()] = was
+				if !was.Skip {
+					info := was.Info
+					info.Path = full
+					out = append(out, info)
+				}
+				continue
+			}
+			misses = append(misses, orderMiss{entry: e, full: full, print: print})
 		}
-		misses = append(misses, orderMiss{entry: e, full: full, print: print})
+	})
+	if err != nil {
+		return nil, err
 	}
 	readOrderMisses(misses)
 	for _, m := range misses {
