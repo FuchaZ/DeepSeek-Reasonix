@@ -6,7 +6,6 @@ export const APP: Messages = {
   "app.add_folder": { zh: "添加文件夹", en: "Add folder" },
   "app.anthropic_compatible": { zh: "Anthropic 兼容", en: "Anthropic-compatible" },
   "app.attaching_the_port_forward": { zh: "挂载端口转发", en: "Attaching the port forward" },
-  "app.author_and_maintainer": { zh: "作者与维护者", en: "Author and maintainer" },
   "app.auto_inferred_from_the_model": { zh: "自动 · 按模型和地址推断", en: "Auto · inferred from the model and address" },
   "app.becomes": { zh: "改成", en: "becomes" },
   "app.best_match": { zh: "最佳匹配", en: "Best match" },
