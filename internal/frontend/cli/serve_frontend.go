@@ -87,11 +87,20 @@ type serveFrontendOptions struct {
 // decision is held here and read by the Hub's Grant callback.
 type serveHostGrant struct {
 	addr string
+	// switchWorkspace carries --workspace-switch: the Web UI may repoint a
+	// session at another folder, the desktop window's own capability.
+	switchWorkspace bool
 }
 
 // apply is the Hub's Grant callback: what every pane takes on the way in.
 func (g *serveHostGrant) apply(srv *serve.Server) {
-	if g == nil || g.addr == "" {
+	if g == nil {
+		return
+	}
+	if g.switchWorkspace {
+		srv.AllowWorkspaceSwitch()
+	}
+	if g.addr == "" {
 		return
 	}
 	srv.AllowProviderEditForListener(g.addr)
@@ -270,30 +279,31 @@ func serveFrontendLoop(ctrl *control.Controller, srv serveHost, resources *serve
 // serveFlags are what the two serve verbs parse. A struct rather than a dozen
 // locals so runServeWithOptions reads as the sequence of decisions it makes.
 type serveFlags struct {
-	model            *string
-	profileFlag      *string
-	presetFlag       *string
-	agentComposition *string
-	maxSteps         *int
-	addr             *string
-	resume           *string
-	sessionID        *string
-	auth             *string
-	token            *string
-	password         *string
-	passwordFile     *string
-	hashPassword     *bool
-	allowOpenNetwork *bool
-	behindProxy      *bool
-	publicURL        *string
-	portFile         *string
-	tokenFile        *string
-	pidFile          *string
-	page             *string
-	dir              *string
-	broker           brokerFlags
-	openBrowser      *bool
-	noOpen           *bool
+	model                *string
+	profileFlag          *string
+	presetFlag           *string
+	agentComposition     *string
+	maxSteps             *int
+	addr                 *string
+	resume               *string
+	sessionID            *string
+	auth                 *string
+	token                *string
+	password             *string
+	passwordFile         *string
+	hashPassword         *bool
+	allowOpenNetwork     *bool
+	allowWorkspaceSwitch *bool
+	behindProxy          *bool
+	publicURL            *string
+	portFile             *string
+	tokenFile            *string
+	pidFile              *string
+	page                 *string
+	dir                  *string
+	broker               brokerFlags
+	openBrowser          *bool
+	noOpen               *bool
 }
 
 // registerServeFlags declares the serve/web flags. sessionID is only declared
@@ -322,6 +332,7 @@ func registerServeFlags(opts serveRunOptions) (*flag.FlagSet, *serveFlags) {
 	f.passwordFile = fs.String("password-file", "", "read the auth=password password from this file (overrides --password; keeps the secret out of argv)")
 	f.hashPassword = fs.Bool("hash-password", false, "print a bcrypt hash of --password or --password-file and exit")
 	f.allowOpenNetwork = fs.Bool("allow-open-network", false, "allow --auth none on an address other machines can reach (anyone on the network can then read sessions and history)")
+	f.allowWorkspaceSwitch = fs.Bool("workspace-switch", false, "let the Web UI move a session to another folder (POST /workspace)")
 	f.behindProxy = fs.Bool("behind-proxy", false, "trust X-Forwarded-For / X-Forwarded-Proto headers from a reverse proxy")
 	f.publicURL = fs.String("public-url", "", "the address a phone opens to reach this server, e.g. https://agent.example.com behind a TLS proxy; used for the share link and its QR code")
 	f.portFile = fs.String("port-file", "", "write the actual bound listen address (host:port) to this file after binding")
@@ -479,7 +490,7 @@ func runServeWithOptions(args []string, opts serveRunOptions) int {
 
 	// A hub, so this frontend drives several sessions at once. The grant closure
 	// reads the address once it is bound, so a pane opened later takes it too.
-	grant := &serveHostGrant{}
+	grant := &serveHostGrant{switchWorkspace: *f.allowWorkspaceSwitch}
 	hub := serve.NewHub(serve.HubOptions{
 		Serve: serveCfg, NativeSurfaces: true, DecorateSink: reporter.Wrap,
 		ProviderResolver: providerResolver, Page: pageOrWarn(*f.page),

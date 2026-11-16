@@ -2,12 +2,16 @@ package serve
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"reasonix/internal/base/testenv"
 	"reasonix/internal/contract/config"
+	"reasonix/internal/session/control"
 )
 
 // The auto workspace is where an unchosen launch opens, not a project anyone
@@ -49,5 +53,45 @@ func TestAutoWorkspaceConversationsAreKeptUnderTheStateRoot(t *testing.T) {
 	dir := SessionDirFor(config.AutoWorkspaceDir())
 	if rel, err := filepath.Rel(state, dir); err != nil || len(rel) == 0 || rel[0] == '.' {
 		t.Fatalf("session dir %q is not under the state root %q", dir, state)
+	}
+}
+
+// The pill's 不使用项目 answer names no path: the pane joins the app's own
+// folder, created on demand, and that folder never enters the remembered list.
+func TestWorkspaceSwitchToAutoUsesTheAppOwnFolder(t *testing.T) {
+	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
+	old := control.New(control.Options{})
+	replacement := control.New(control.Options{})
+	var gotDir string
+
+	s := New(old, NewBroadcaster(), config.ServeConfig{})
+	s.AllowWorkspaceSwitch()
+	s.buildWorkspaceController = func(_ context.Context, dir, _ string) (*control.Controller, error) {
+		gotDir = dir
+		return replacement, nil
+	}
+	srv := httptest.NewServer(operatorHandler(s))
+	defer srv.Close()
+	defer replacement.Close()
+
+	resp, err := http.Post(srv.URL+"/workspace", "application/json", strings.NewReader(`{"auto":true}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("POST /workspace {auto:true} = %d, want 200", resp.StatusCode)
+	}
+	want := config.AutoWorkspaceDir()
+	if gotDir != want {
+		t.Fatalf("built at %q, want the auto workspace %q", gotDir, want)
+	}
+	if info, err := os.Stat(want); err != nil || !info.IsDir() {
+		t.Fatalf("auto workspace was not created: %v", err)
+	}
+	for _, dir := range LaunchWorkspaces() {
+		if isAutoWorkspace(dir) {
+			t.Fatalf("auto workspace entered the remembered list: %v", LaunchWorkspaces())
+		}
 	}
 }

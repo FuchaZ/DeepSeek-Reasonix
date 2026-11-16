@@ -13,9 +13,10 @@ import (
 	"testing"
 
 	"reasonix/internal/base/testenv"
+	"reasonix/internal/contract/config"
 )
 
-func TestWorkspaceMoveKeepsNoPaneDefaultProject(t *testing.T) {
+func TestWorkspaceMoveKeepsTheOrderButNotTheNoPaneDefault(t *testing.T) {
 	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
 	a, b := testenv.TempDir(t), testenv.TempDir(t)
 	rememberWorkspace(a)
@@ -24,14 +25,21 @@ func TestWorkspaceMoveKeepsNoPaneDefaultProject(t *testing.T) {
 		t.Fatal(err)
 	}
 	h := NewHub(HubOptions{})
-	if got, err := h.resolveRoot(OpenRequest{}); got != b || err != nil {
-		t.Fatalf("no-pane default after reorder = %q (%v), want launch project %q", got, err, b)
+	// Reordering the remembered list no longer decides where a fresh session
+	// opens: the app's own folder does, whatever the order says is first.
+	if got, err := h.resolveRoot(OpenRequest{}); got != config.AutoWorkspaceDir() || err != nil {
+		t.Fatalf("no-pane default after reorder = %q (%v), want the auto workspace", got, err)
 	}
 	if err := os.Remove(b); err != nil {
 		t.Fatal(err)
 	}
-	if got, err := h.resolveRoot(OpenRequest{}); got != a || err != nil {
-		t.Fatalf("missing launch project fallback = %q (%v), want %q", got, err, a)
+	if got, err := h.resolveRoot(OpenRequest{}); got != config.AutoWorkspaceDir() || err != nil {
+		t.Fatalf("missing launch project fallback = %q (%v), want the auto workspace", got, err)
+	}
+	// The remembered list keeps the reorder; the folder removed from disk is
+	// only flagged missing in the tree, not pruned from the list here.
+	if paths := LaunchWorkspaces(); len(paths) != 2 {
+		t.Fatalf("remembered list = %v, want both folders kept", paths)
 	}
 }
 

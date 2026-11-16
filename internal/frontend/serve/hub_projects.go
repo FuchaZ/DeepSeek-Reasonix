@@ -138,7 +138,9 @@ func (h *Hub) listedSessionRoot(path, root string) string {
 }
 
 // resolveRoot decides which folder a new runtime opens against: the one asked
-// for, the one that owns the session being opened, or the first runtime's.
+// for, the one that owns the session being opened, or — for a conversation
+// with no project behind it — the app's own folder, which the tree lists as
+// the 任务 group.
 func (h *Hub) resolveRoot(req OpenRequest) (string, error) {
 	if root := h.listedSessionRoot(req.SessionPath, req.Root); root != "" {
 		return resolveWorkspaceDir(root)
@@ -151,22 +153,9 @@ func (h *Hub) resolveRoot(req OpenRequest) (string, error) {
 			return root, nil
 		}
 	}
-	h.mu.RLock()
-	first := ""
-	if len(h.order) > 0 {
-		if rt := h.runtimes[h.order[0]]; rt != nil {
-			first = rt.Server.Controller().WorkspaceRoot()
-		}
-	}
-	h.mu.RUnlock()
-	if first != "" {
-		return first, nil
-	}
-	for _, dir := range LaunchWorkspaces() {
-		if projectDirectoryExists(dir) {
-			return dir, nil
-		}
-	}
+	// A brand-new conversation names no project: it opens in the app's own
+	// folder — the tree's 任务 group keeps it — instead of joining whichever
+	// pane happens to be open. The composer's pill moves it into a project.
 	if dir := ensureAutoWorkspace(); dir != "" {
 		return dir, nil
 	}

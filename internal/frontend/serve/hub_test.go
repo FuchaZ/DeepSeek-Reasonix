@@ -196,10 +196,10 @@ func TestHubServesTheFirstRuntimeUnprefixed(t *testing.T) {
 }
 
 // Closing the last pane and then asking for a new session is an ordinary
-// sequence — deleting the only conversation does exactly that. With nothing
-// open there is no runtime to infer the folder from, and the request used to
-// come back "missing root".
-func TestHubOpensInARememberedWorkspaceWithNoPanesLeft(t *testing.T) {
+// sequence — deleting the only conversation does exactly that. A remembered
+// folder no longer catches the fresh conversation: the app's own folder does,
+// and the composer's pill moves it into a project.
+func TestHubOpensTheAutoWorkspaceEvenWithAWorkspaceRemembered(t *testing.T) {
 	home := testenv.TempDir(t)
 	t.Setenv("REASONIX_HOME", home)
 	root := testenv.TempDir(t)
@@ -210,8 +210,38 @@ func TestHubOpensInARememberedWorkspaceWithNoPanesLeft(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolveRoot with no panes: %v", err)
 	}
-	if got != root {
-		t.Fatalf("resolveRoot = %q, want the remembered folder %q", got, root)
+	if want := config.AutoWorkspaceDir(); got != want {
+		t.Fatalf("resolveRoot = %q, want the auto workspace %q", got, want)
+	}
+	// The remembered folder keeps its sidebar place; the auto folder never
+	// joins the remembered list.
+	found := false
+	for _, dir := range LaunchWorkspaces() {
+		if dir == root {
+			found = true
+		}
+		if isAutoWorkspace(dir) {
+			t.Fatalf("auto workspace entered the remembered list: %v", LaunchWorkspaces())
+		}
+	}
+	if !found {
+		t.Fatalf("the remembered folder left the list: %v", LaunchWorkspaces())
+	}
+}
+
+// A pane already open in a project does not catch the next new conversation:
+// 任务's plus names no project, and the app's own folder answers it.
+func TestHubOpensTheAutoWorkspaceWithAPaneOpenElsewhere(t *testing.T) {
+	t.Setenv("REASONIX_HOME", testenv.TempDir(t))
+	root := testenv.TempDir(t)
+	h := NewHub(HubOptions{})
+	hubRuntime(t, h, root)
+	got, err := h.resolveRoot(OpenRequest{})
+	if err != nil {
+		t.Fatalf("resolveRoot with a pane open: %v", err)
+	}
+	if want := config.AutoWorkspaceDir(); got != want {
+		t.Fatalf("resolveRoot = %q, want the auto workspace %q", got, want)
 	}
 }
 
