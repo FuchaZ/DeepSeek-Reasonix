@@ -35,9 +35,9 @@
 
 ## 版本
 
-本 fork 从上游的 **v2.61.0** 接手——上游在这一点声明停止维护。发布沿 `studio` 线往上走：2.62.0、2.63.0……
+本 fork 从上游的 **v2.61.0** 接手——上游在这一点声明停止维护。发布沿 `studio` 线往上走：2.62.0 到 **2.65.0**。
 
-版本发布在本仓库自己的[发布页](https://github.com/Oliver-Rui/DeepSeek-Reasonix-continued/releases)。上游最后一个版本仍是 v2.61.0。
+版本发布在本仓库自己的[发布页](https://github.com/FuchaZ/DeepSeek-Reasonix/releases)。上游最后一个版本仍是 v2.61.0。
 
 ## 安装
 
@@ -46,8 +46,8 @@
 从源码构建：
 
 ```sh
-git clone https://github.com/Oliver-Rui/DeepSeek-Reasonix-continued.git
-cd DeepSeek-Reasonix-continued
+git clone https://github.com/FuchaZ/DeepSeek-Reasonix.git
+cd DeepSeek-Reasonix
 git switch studio
 ```
 
