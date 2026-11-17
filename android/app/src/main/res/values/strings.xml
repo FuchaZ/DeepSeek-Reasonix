@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Every string the shell itself shows. The interface's own text belongs to
+     the page and lives in its i18n bundle; these are only the few lines that
+     exist before it, or when it cannot load. -->
+<resources>
+    <string name="app_name">Reasonix</string>
+
+    <string name="channel_kernel">内核运行中</string>
+    <string name="channel_kernel_desc">Reasonix 内核在后台运行时显示，可在系统设置中单独关闭。</string>
+
+    <string name="notify_running_title">Reasonix 正在运行</string>
+    <string name="notify_running_body">任务继续进行，切回应用即可查看。</string>
+    <string name="notify_failed_title">Reasonix 无法启动</string>
+
+    <string name="err_kernel_unreachable">连接内核失败。请返回桌面重新打开应用。</string>
+
+    <string name="download_default_name">reasonix-download</string>
+    <string name="download_saved">已保存：%1$s</string>
+    <string name="download_failed">保存失败：%1$s</string>
+    <string name="download_failed_status">保存失败：服务器返回 %1$d</string>
+
+    <string name="splash_connecting">正在启动内核…</string>
+    <string name="splash_retry">重试</string>
+
+    <string name="wsperm_title">需要「所有文件访问」权限</string>
+    <string name="wsperm_body">要直接读写手机公共文件夹，需要开启「所有文件访问」权限。点「去设置」授权后返回，会继续选择文件夹。使用应用默认工作区不需要此权限。</string>
+    <string name="wsperm_go">去设置</string>
+    <string name="wsperm_later">以后再说</string>
+    <string name="workspace_permission_denied">未开启文件访问权限，仍可使用应用默认工作区。</string>
+    <string name="workspace_unavailable">无法读写这个位置，请选择手机本地存储中的文件夹。</string>
+
+    <string name="share_title">分享文件</string>
+
+    <string name="attach_title">添加附件</string>
+    <string name="attach_camera">拍照</string>
+    <string name="attach_gallery">相册</string>
+    <string name="attach_file">文件</string>
+    <string name="attach_no_camera">没有相机权限，无法拍照。可在系统设置里允许后重试。</string>
+</resources>

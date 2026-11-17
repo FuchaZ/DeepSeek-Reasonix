@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The adaptive launcher icon: the desktop shell's own appicon, unchanged.
+
+     That icon is a finished plate — a gold R carrying the whale on a dark
+     rounded ground with a hairline gold edge — so the plate *is* the
+     foreground and the background stays transparent. Painting a ground colour
+     here as well would draw a second square behind a plate that already has
+     rounded corners, which is exactly the shape a launcher mask would then
+     clip twice.
+
+     minSdk is 26, the release adaptive icons arrived in, so this is the only
+     launcher asset the app needs: no device running it asks for the older
+     bitmap fallback (which is still rendered, for launchers that do). -->
+<adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+    <background android:drawable="@android:color/transparent" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+    <monochrome android:drawable="@mipmap/ic_launcher_foreground" />
+</adaptive-icon>

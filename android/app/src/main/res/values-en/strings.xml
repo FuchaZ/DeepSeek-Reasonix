@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Reasonix</string>
+
+    <string name="channel_kernel">Kernel running</string>
+    <string name="channel_kernel_desc">Shown while the Reasonix kernel runs in the background. Can be muted on its own in system settings.</string>
+
+    <string name="notify_running_title">Reasonix is running</string>
+    <string name="notify_running_body">A task is still going. Switch back to see it.</string>
+    <string name="notify_failed_title">Reasonix could not start</string>
+
+    <string name="err_kernel_unreachable">Could not reach the kernel. Reopen the app from your home screen.</string>
+
+    <string name="download_default_name">reasonix-download</string>
+    <string name="download_saved">Saved: %1$s</string>
+    <string name="download_failed">Save failed: %1$s</string>
+    <string name="download_failed_status">Save failed: the server answered %1$d</string>
+
+    <string name="splash_connecting">Starting the kernel…</string>
+    <string name="splash_retry">Retry</string>
+
+    <string name="share_title">Share file</string>
+
+    <string name="attach_title">Add an attachment</string>
+    <string name="attach_camera">Take a photo</string>
+    <string name="attach_gallery">Photo library</string>
+    <string name="attach_file">Files</string>
+    <string name="attach_no_camera">No camera permission, so a photo cannot be taken. Allow it in system settings and try again.</string>
+</resources>

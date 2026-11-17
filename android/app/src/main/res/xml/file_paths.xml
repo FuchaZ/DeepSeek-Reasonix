@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The one directory a camera app may write into on this app's behalf.
+
+     A photo taken from the composer is written by an app this one does not
+     control, so it has to be handed a `content://` URI rather than a path, and
+     only a provider this app declares can mint one. The cache directory is the
+     right shelf: the file is copied into the workspace the moment the shutter
+     returns, and anything left behind is a photo nobody chose. -->
+<paths>
+    <cache-path name="captures" path="captures/" />
+</paths>
