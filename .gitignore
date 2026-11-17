@@ -72,6 +72,9 @@ desktop/**/.reasonix/
 # CodeGraph per-project index (rebuilt locally; never committed)
 .codegraph/
 
+# A session's own scratch: task snapshots, clipboard pastes, throwaway probes.
+/.deepzora/
+
 # Editor / OS
 .DS_Store
 Thumbs.db
