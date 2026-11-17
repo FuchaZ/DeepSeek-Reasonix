@@ -67,3 +67,17 @@ it("keeps upload, replacement, adjustment and removal on the same appearance sta
   expect(save.mock.lastCall?.[0].wallpaper).toBeUndefined();
   expect(screen.getByRole("button", { name: t("look.choose_an_image_or_video") })).toBeTruthy();
 });
+
+it("keeps the extra installed themes shut until the summary is pressed", async () => {
+  const { container } = draw();
+  const more = await waitFor(() => {
+    const el = container.querySelector("details.theme-more");
+    expect(el).not.toBeNull();
+    return el as HTMLDetailsElement;
+  });
+  expect(more.open).toBe(false);
+
+  fireEvent.click(more.querySelector("summary")!);
+  expect(more.open).toBe(true);
+  expect(more.contains(screen.getByText("Tide"))).toBe(true);
+});

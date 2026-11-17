@@ -58,23 +58,21 @@ try {
     await page.mouse.move(900, 500);
     const after = await paint(add);
     check(`${scheme}: closing the dialog restores the resting background`, after.fill === rest.fill);
-    // The recent page is retired; 最近 now orders the same list the filter
-    // scopes narrow, as a row inside the filter menu rather than a header entry.
+    // The recent page is retired; 最近 is the clock toggle beside the filter,
+    // switching the list between the months' reading and the kernel's order.
     check(`${scheme}: the retired recent header entry is gone`,
       await page.locator('.projects-header [data-action="session.recent"]').count() === 0);
+    const clock = page.locator('.projects-header [data-action="session.sort"]');
+    check(`${scheme}: the clock beside the filter is the 最近 toggle`, await clock.isVisible());
+    await clock.click();
+    check(`${scheme}: the clock turns the dated reading on`, await clock.getAttribute("aria-pressed") === "true");
+    await clock.click();
+    check(`${scheme}: and turns it back off for the list below`, await clock.getAttribute("aria-pressed") === "false");
     await filter.click();
     const filterMenu = page.locator('.session-filter-menu');
     await filterMenu.waitFor();
-    const recentRow = filterMenu.locator('[data-action="session.filter"][data-value="recent"]');
-    check(`${scheme}: the filter menu offers 最近 beside the scopes it reorders`, await recentRow.isVisible());
-    // One row cycles newest → oldest → off, ending where it started so the
-    // long-list section below reads the resting order.
-    for (const arrow of ["↑", "↓", "⇅"]) {
-      await recentRow.click();
-      const shown = (await recentRow.locator(".rt").textContent())?.trim();
-      check(`${scheme}: picking 最近 cycles the order to ${arrow} and keeps the menu open`,
-        shown === arrow && await filterMenu.isVisible(), shown);
-    }
+    check(`${scheme}: the filter menu no longer carries a recent row`,
+      await filterMenu.locator('[data-value="recent"]').count() === 0);
     await page.keyboard.press("Escape");
     await filterMenu.waitFor({ state: "hidden" });
     check(`${scheme}: closing the filter returns focus to its own header entry`,

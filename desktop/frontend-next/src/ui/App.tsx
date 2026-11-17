@@ -3,6 +3,7 @@ import { useBranchSession } from "./useBranchSession";
 import { CompositionNewContext } from "./CompositionNewContext";
 import { keepSame } from "./stable";
 import { usePaneCallbacks } from "./usePaneCallbacks";
+import { usePickerProjects } from "./useNewSessionPicker";
 import { watchTreeWake } from "./treewake";
 import { usePinnedSessions } from "./usePinnedSessions";
 import { useWindowNotices } from "./useWindowNotices";
@@ -452,6 +453,9 @@ export function App({ hub }: { hub: HubPort }) {
       })),
     [runtimes, titleFor, runs, viewed.tree, viewed.remote],
   );
+  // What the panes' project pill reads, held by value: the inputs move with
+  // every read, and a fresh array per read would redraw every transcript.
+  const projects = usePickerProjects(tree, remotes, remoteTrees, runtimes);
   // The folder only earns tab space when the panes actually span more than one.
   const manyRoots = useMemo(() => new Set(runtimes.map((rt) => rt.root)).size > 1, [runtimes]);
   const activeRuntime = runtimes.find((rt) => rt.id === active);
@@ -693,10 +697,7 @@ export function App({ hub }: { hub: HubPort }) {
                   failure={rt.id === active ? errorBar : undefined}
                   connect={first.connect}
                   onOpenProject={openProject}
-                  projectTree={tree}
-                  remotes={remotes}
-                  remoteTrees={remoteTrees}
-                  runtimes={runtimes}
+                  projects={projects}
                   adder={adder}
                   onSettings={openSettings}
                   onFeedback={FEEDBACK_RETIRED ? undefined : openFeedback}

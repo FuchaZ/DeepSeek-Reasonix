@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import type { ProviderEntry, ProviderModelCheck, ProviderModelCheckRequest } from "../port/port";
@@ -42,7 +42,10 @@ function gate() {
 
 function draw(g: ReturnType<typeof gate>, e = entry(), extra: Partial<Port> = {}) {
   const port = { checkProviderModel: g.checkProviderModel, editProvider: vi.fn(), ...extra } as unknown as Port;
-  return render(<EditConn entry={e} port={port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  const view = render(<EditConn entry={e} port={port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  // The list folds shut by default; these cases read the rows behind it.
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
+  return view;
 }
 const all = () => screen.getByRole("button", { name: /^测试已启用模型/ }) as HTMLButtonElement;
 const summary = () => document.querySelector(".msummary")?.textContent;

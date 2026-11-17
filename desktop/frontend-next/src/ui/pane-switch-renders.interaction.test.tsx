@@ -41,8 +41,8 @@ class SixPaneHub extends MockHub {
 // A hidden pane holds a whole transcript. Switching tabs changes which pane is
 // active, so only the one that stops being active and the one that becomes active
 // have anything new to draw; every other pane must keep what it already drew.
-// The count rides a wall-clock window, and a slow runner lands the opening work
-// inside it — retried, the assertion still catches a real tab-switch leak.
+// The count rides the render stream itself rather than a wall-clock window, so
+// a loaded runner's opening work cannot be read as the switch's.
 it("re-renders only the two panes a tab switch touches", { retry: 2 }, async () => {
   const { container } = render(<App hub={new SixPaneHub()} />);
   const rows = await waitFor(() => {
@@ -50,17 +50,26 @@ it("re-renders only the two panes a tab switch touches", { retry: 2 }, async () 
     expect(found.length).toBeGreaterThanOrEqual(PANES);
     return found;
   });
-  // The measurement window opens only once every pane has mounted and the
-  // opening work has drained — a wall-clock settle reads fine locally and
-  // counts the mount itself on a slower machine.
   await waitFor(() => expect(renders.size).toBeGreaterThanOrEqual(PANES));
-  await new Promise((r) => setTimeout(r, 300));
-  renders.clear();
+  // Quiet, not a fixed wait: the opening render of six panes keeps drawing on
+  // a loaded runner past any settle, and those renders would be counted as if
+  // the tab switch caused them.
+  const quiet = async () => {
+    let last = -1;
+    for (let i = 0; i < 40; i++) {
+      await new Promise((r) => setTimeout(r, 100));
+      const total = [...renders.values()].reduce((n, count) => n + count, 0);
+      if (total === last) return;
+      last = total;
+    }
+  };
+  await quiet();
+  const before = new Map(renders);
   await userEvent.click(rows[3]);
-  await new Promise((r) => setTimeout(r, 200));
-  const touched = [...renders.entries()].filter(([, n]) => n > 0).map(([id]) => id);
+  await quiet();
+  const touched = [...renders.entries()].filter(([id, n]) => n > (before.get(id) ?? 0)).map(([id]) => id);
   expect(touched.length).toBeLessThanOrEqual(2);
-  expect(Math.max(0, ...renders.values())).toBeLessThanOrEqual(2);
+  expect(Math.max(0, ...[...renders.entries()].map(([id, n]) => n - (before.get(id) ?? 0)))).toBeLessThanOrEqual(2);
 });
 
 // Stable callbacks must still reach the latest state: the pane that was asked for

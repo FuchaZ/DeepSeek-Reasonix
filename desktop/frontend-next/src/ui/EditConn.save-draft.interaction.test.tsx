@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { StrictMode, useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { EditConn } from "./EditConn";
@@ -40,7 +40,10 @@ function draw(strict: boolean, port: SsePort) {
   const onRevert = vi.fn();
   const onSaved = vi.fn();
   const host = <Host port={port} onDone={onDone} onRevert={onRevert} onSaved={onSaved} />;
-  return { ...render(strict ? <StrictMode>{host}</StrictMode> : host), onDone, onRevert, onSaved };
+  const view = { ...render(strict ? <StrictMode>{host}</StrictMode> : host), onDone, onRevert, onSaved };
+  // The list folds shut by default; these cases read the fields behind it.
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
+  return view;
 }
 
 function snapshot(container: HTMLElement) {

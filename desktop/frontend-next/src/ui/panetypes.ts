@@ -1,9 +1,9 @@
 import type { ReactNode } from "react";
 import type { AgentPort, ContextBreakdown, McpEntry, SessionStatus, WorkspaceInfo } from "../port/port";
-import type { HubPort, RuntimeView, TreeWorkspace } from "../port/hub";
-import type { RemoteHost } from "../port/remote";
+import type { HubPort, RuntimeView } from "../port/hub";
 import type { Adder } from "./addws";import type { ConnectOffer } from "./ConnectNote";
 import type { PaneView } from "../state/paneview";
+import type { PickerProject } from "./useNewSessionPicker";
 
 // PaneReport is what the window's own chrome needs from whichever pane has
 // focus: everything else about a session stays inside the pane that owns it.
@@ -92,11 +92,8 @@ export interface PaneProps {
   onOpenProject: () => void;
   // The composer's project pill reads the window's remembered folders through
   // the pane: it is the pane's place, not the composer's. Interaction tests
-  // omit them — a pane with no folders just shows the pill's escape row.
-  projectTree?: TreeWorkspace[];
-  remotes?: RemoteHost[] | null;
-  remoteTrees?: Record<string, TreeWorkspace[] | null>;
-  runtimes?: RuntimeView[];
+  // omit it — a pane with no folders just shows the pill's escape row.
+  projects?: PickerProject[];
   adder?: Adder;
   connect?: ConnectOffer;
   // A prop, not a document read: this pane is memoised past an attribute flip.

@@ -199,7 +199,7 @@ export function Appearance({ port, theme, onTheme, contrast, onContrast, weight,
             {featured.map(cell)}
           </div>
           {illustrated.length > 0 && (
-            <details className="theme-more" open>
+            <details className="theme-more">
               <summary>
                 <span>
                   <b>{t("look.more_installed_themes")}</b>

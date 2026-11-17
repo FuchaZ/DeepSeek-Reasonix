@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { SsePort } from "../port/sse";
@@ -20,7 +20,10 @@ const entry: ProviderEntry = {
 };
 
 function draw(port: Partial<Port>) {
-  return render(<EditConn entry={entry} port={port as Port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  const view = render(<EditConn entry={entry} port={port as Port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  // The list folds shut by default; these cases read the rows behind it.
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
+  return view;
 }
 const list = () => document.querySelector(".mlist") as HTMLElement;
 const verify = (m: string) => userEvent.click(screen.getByRole("button", { name: `验证模型 ${m}` }));

@@ -51,6 +51,11 @@
 .prefs-card .ml-head:hover { background: var(--overlay); }
 .prefs-card .ml-head .studio-icon { width: 13px; height: 13px; margin-left: auto; flex: none; color: var(--faint); transition: transform var(--m-line); }
 .prefs-card .ml-group[data-shut] .ml-head .studio-icon { transform: rotate(-90deg); }
+.mlhead .mtoggle { display: inline-flex; align-items: center; gap: 5px; padding: 0; border: 0; background: transparent; cursor: pointer; font: inherit; color: inherit; text-align: left; }
+.mlhead .mtoggle .studio-icon { width: 13px; height: 13px; flex: none; color: var(--faint); transition: transform var(--m-line); }
+.mlhead .mtoggle:hover .studio-icon { color: var(--text) }
+.mlhead .mtoggle:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px; border-radius: var(--r-sm); }
+.mlist[data-shut] .mtoggle .studio-icon { transform: rotate(-90deg) }
 .prefs-card .addp .ml-group { container: model-fields / inline-size; font-size: var(--fs-meta); }
 .prefs-card .addp .ml-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .prefs-card .addp .ml-row .me-name { grid-column: 1 / -1; }

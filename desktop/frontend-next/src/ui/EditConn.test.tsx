@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { HttpError, type ProviderEntry } from "../port/port";
@@ -67,6 +67,7 @@ it("keeps an exact unlisted model id and verifies it independently of the catalo
   };
 
   render(<EditConn entry={entry} port={port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
   await userEvent.type(screen.getByRole("searchbox", { name: "搜索或添加模型" }), `${hidden}{enter}`);
 
   const row = screen.getAllByText(hidden).map((el) => el.closest(".mline")).find(Boolean) as HTMLElement;
@@ -105,6 +106,7 @@ it("shows the HTTP status and the endpoint's own words when a model check is ref
   };
 
   render(<EditConn entry={entry} port={port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
   const row = screen.getAllByText("clef:27b").map((el) => el.closest(".mline")).find(Boolean) as HTMLElement;
   await userEvent.click(within(row).getByRole("button", { name: "验证模型 clef:27b" }));
 
@@ -312,6 +314,7 @@ const decisionEntry: ProviderEntry = {
 it("offers no model listing read for a protocol that declares none, header or inline", async () => {
   const port = { checkProvider: vi.fn(), probeProvider: vi.fn() } as unknown as Port;
   render(<EditConn entry={decisionEntry} port={port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
 
   expect(screen.queryByRole("button", { name: "从服务商读取可用模型" })).toBeNull();
   expect(screen.queryByRole("button", { name: "没找到？从服务商读取可用模型" })).toBeNull();
@@ -323,6 +326,7 @@ it("still checks, adds and saves a model on a source with no listing", async () 
   const checkProviderModel = vi.fn(async () => ({ model: "system-two", status: "available" as const }));
   const port = { editProvider, checkProviderModel } as unknown as Port;
   render(<EditConn entry={decisionEntry} port={port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
 
   await userEvent.type(screen.getByRole("searchbox", { name: "搜索或添加模型" }), "system-two{enter}");
   const row = screen.getAllByText("system-two").map((el) => el.closest(".mline")).find(Boolean) as HTMLElement;

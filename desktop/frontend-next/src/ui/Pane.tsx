@@ -26,7 +26,6 @@ import { useBackgroundDeltas } from "./deltas";
 import { PaneShown } from "./shown";
 import { Composer } from "./Composer";
 import { ProjectChoiceContext } from "./projectchoice";
-import { pickerProjects } from "./useNewSessionPicker";
 import { WorkspacePill } from "./WorkspacePill";
 import { draftKey } from "./drafts";
 import { Queue, waiting } from "./Queue";
@@ -107,7 +106,7 @@ const totalsOf = (st: SessionStatus) => ({
   incompleteReason: st.sessionCostQuote?.incompleteReason,
 });
 
-function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFocus, onReport, onSessionChanged, onTurnDone, pulse, findPulse, findTogglePulse = 0, filesPulse = 0, terminalPulse = 0, viewRequest, sessionRef, onSettings, onFeedback, onOpenSession, onOpenPeerSession, onOpenProject, projectTree = [], remotes = null, remoteTrees = {}, runtimes = [], adder, connect, theme, dockW, dockMax, onDockW, manualBrowser = false, onManualBrowser, alert, failure }: PaneProps) {
+function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFocus, onReport, onSessionChanged, onTurnDone, pulse, findPulse, findTogglePulse = 0, filesPulse = 0, terminalPulse = 0, viewRequest, sessionRef, onSettings, onFeedback, onOpenSession, onOpenPeerSession, onOpenProject, projects = [], adder, connect, theme, dockW, dockMax, onDockW, manualBrowser = false, onManualBrowser, alert, failure }: PaneProps) {
   const [s, dispatch] = useReducer(reduce, initialState);
   const [traj, trajDispatch] = useReducer(reduceTraj, initialTraj);
   const [sessionRead, setSessionRead] = useState<SessionRead>({ kind: "pending" });
@@ -520,10 +519,9 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   const choiceSurface = useMemo(() => ({
     port, host: rt.host, root: status?.workspaceRoot ?? rt.root,
     hasContent: !!status?.sessionPath, canSwitch: workspace?.canSwitch ?? true, running,
-    projects: pickerProjects(projectTree, remotes, remoteTrees, runtimes)
-      .filter((p) => p.host === rt.host),
+    projects: projects.filter((p) => p.host === rt.host),
     adder, onChanged: refreshStatus, onSwitched: () => { reloadSession(); }, onError: notify,
-  }), [port, rt.host, status?.workspaceRoot, status?.sessionPath, workspace?.canSwitch, running, projectTree, remotes, remoteTrees, runtimes, adder, refreshStatus, reloadSession, notify]);
+  }), [port, rt.host, status?.workspaceRoot, status?.sessionPath, workspace?.canSwitch, running, projects, adder, refreshStatus, reloadSession, notify]);
 
   return (
     <section

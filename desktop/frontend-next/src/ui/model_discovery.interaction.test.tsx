@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { useState } from "react";
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import type { ProviderEntry } from "../port/port";
@@ -20,7 +20,9 @@ function Host({ port }: { port: Partial<Port> }) {
   return <EditConn entry={entry} port={port as Port} busy={busy} setBusy={setBusy} onDone={() => {}} onRevert={() => {}} />;
 }
 function draw(port: Partial<Port>) {
-  return render(<Host port={port} />);
+  const view = render(<Host port={port} />);
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
+  return view;
 }
 const header = () => screen.getByRole("button", { name: "从服务商读取可用模型" });
 const inline = () => screen.getByRole("button", { name: "没找到？从服务商读取可用模型" });

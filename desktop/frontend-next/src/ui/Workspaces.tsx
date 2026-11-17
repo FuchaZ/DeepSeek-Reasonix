@@ -50,7 +50,6 @@ import { useSessionMutation, type SessionMutation } from "./useSessionMutation";
 
 const parentOf = (root: string) => root.replace(/[/\\]+$/, "").split(/[/\\]/).slice(-2, -1)[0] ?? "";
 
-
 // A conversation a pane holds before its first turn is written has only a file
 // name; calling it that would show a timestamp where every other row shows words.
 const rowLabel = (session: TreeSession) =>
@@ -220,7 +219,6 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
       setBusy("");
     }
   };
-
 
   // Dragging reorders the whole remembered list, so a search that hides rows turns it off.
   const drag = useWorkspaceDrag(needle ? [] : tree.filter((w) => w.remembered).map((w) => w.root), async (root, before) => {
@@ -463,6 +461,8 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
   // reads as no hover at all.
   const [rowHover, setRowHover] = useState<{ ws: TreeWorkspace; session: TreeSession; rect: DOMRect } | null>(null);
   const hoverTimer = useRef(0);
+  // Left armed past the unmount, the waiting hover would set state on a column that is gone.
+  useEffect(() => () => window.clearTimeout(hoverTimer.current), []);
   const hoverable = !needle && !selection && !sessDrag && !groupDrag;
   const hoverIn = (ws: TreeWorkspace, session: TreeSession, ev: ReactMouseEvent<HTMLElement>) => {
     if (!hoverable) return;

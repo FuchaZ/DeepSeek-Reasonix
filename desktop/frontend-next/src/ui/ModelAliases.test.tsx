@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import type { ModelEntry, ProviderEntry } from "../port/port";
@@ -47,6 +47,7 @@ it("edits aliases alongside model settings, preserves them across fetch, and ret
     checkProvider: vi.fn(async () => ({ ok: true, models: ["vendor/long-v1", "second"] })),
   } as unknown as Port;
   render(<EditConn entry={entry} port={port} busy="" setBusy={() => {}} onDone={onDone} onRevert={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
   const alias = screen.getByRole("textbox", { name: "vendor/long-v1 的显示别名" });
   expect((alias as HTMLInputElement).value).toBe("Old");
   await userEvent.clear(alias);
@@ -80,6 +81,7 @@ it.each(["enter", "button"])("allows adding an exact wire ID that matches anothe
   };
   const port = { editProvider, protocols: vi.fn(async () => []) } as unknown as Port;
   render(<EditConn entry={entry} port={port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
   const search = screen.getByRole("searchbox", { name: "搜索或添加模型" });
   await userEvent.type(search, "beta");
   expect(screen.getAllByText("vendor/long-v1").length).toBeGreaterThan(0);
@@ -101,6 +103,7 @@ it("keeps an unchecked alias when its model is selected again", async () => {
   };
   const port = { editProvider, protocols: vi.fn(async () => []) } as unknown as Port;
   render(<EditConn entry={entry} port={port} busy="" setBusy={() => {}} onDone={() => {}} onRevert={() => {}} />);
+  fireEvent.click(screen.getByRole("button", { name: "模型" }));
   const alias = screen.getByRole("textbox", { name: "raw-model 的显示别名" }) as HTMLInputElement;
   expect(alias.value).toBe("");
   await userEvent.type(alias, "Short");

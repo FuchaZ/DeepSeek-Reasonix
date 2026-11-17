@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { t } from "../i18n";
 import type { Protocol, ProviderCheck, ProviderEntry } from "../port/port";
 import { checkedFact, clearModelCheckFacts, ModelChoice, type ModelFact } from "./ModelChoice";
+import { StudioIcon } from "./StudioIcon";
 import type { Port } from "./Providers";
 import { savedNotApplied, reason, say } from "../i18n/kernel";
 import { checkFailure } from "./provider_check";
@@ -57,6 +58,7 @@ export function EditConn({
   const [err, setErr] = useState<{ text: string; kind: "save" | "unapplied" } | null>(null);
   const [refreshFail, setRefreshFail] = useState("");
   const [more, setMore] = useState(declare);
+  const [modelsOpen, setModelsOpen] = useState(false);
   const [win, setWin] = useState(entry.contextWindow ? String(entry.contextWindow) : "");
   const [maxOut, setMaxOut] = useState(entry.maxOutputTokens ? String(entry.maxOutputTokens) : "");
   const [idleText, setIdleText] = useState(entry.idleTimeoutSeconds ? String(entry.idleTimeoutSeconds) : "");
@@ -124,7 +126,10 @@ export function EditConn({
   // A blank key field means "keep the stored one", so the kernel is asked
   // through the saved source with the form's address, key and protocol laid
   // over it: what is being edited is what gets tested.
+  // The list folds shut by default, and these two header actions are the only
+  // ones reachable while it is shut — their answer lands inside, so they open it.
   const refetch = async () => {
+    setModelsOpen(true);
     setBusy(`refresh:${entry.name}`);
     setErr(null);
     setRefreshFail("");
@@ -376,9 +381,14 @@ export function EditConn({
         {picked.length > 0 && <div className="fields"><BillingModeField value={billing} onChange={setBilling} /></div>}
       </div>
 
-      <div className="mlist">
+      {/* The rows are read once and take the page's height, so the list folds
+          shut behind its heading; the two actions stay one press away. */}
+      <div className="mlist" data-shut={!modelsOpen || undefined}>
         <div className="mlhead">
-          <span className="ttl">{t("common.models")}</span>
+          <button type="button" className="mtoggle" aria-expanded={modelsOpen} onClick={() => setModelsOpen((v) => !v)}>
+            <StudioIcon name="down" />
+            <span className="ttl">{t("common.models")}</span>
+          </button>
           <span className="count">{t("models.on_of_all_enabled", { on: picked.length, all: models.length })}</span>
           {listable && (
             <button className="mrefresh" data-action="provider.probe" onClick={refetch} disabled={busy !== "" || testing}
@@ -386,11 +396,13 @@ export function EditConn({
               {t(refreshing ? "common.reading_from_provider" : "models.read_available_models_from_provider")}
             </button>
           )}
-          <button className="mrefresh" data-action="provider.model-check-all" onClick={testAll}
+          <button className="mrefresh" data-action="provider.model-check-all"
+            onClick={() => { setModelsOpen(true); void testAll(); }}
             disabled={busy !== "" || testing || picked.length === 0} aria-busy={batch === "running" || undefined}>
             {t("models.test_enabled_models_n", { n: picked.length })}
           </button>
         </div>
+        {modelsOpen && (<>
         <p className="mguide">
           {t("models.the_catalog_is_for_discovery")}
         </p>
@@ -428,6 +440,7 @@ export function EditConn({
           fetchDisabled={busy !== "" || testing}
           fetchFail={refreshFail}
         />
+        </>)}
       </div>
 
       {/* Folded, and worth folding: no probe can answer these, and most
