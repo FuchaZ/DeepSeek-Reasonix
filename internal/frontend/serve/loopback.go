@@ -2,6 +2,7 @@ package serve
 
 import (
 	"crypto/subtle"
+	"fmt"
 	"net"
 	"net/http"
 	"net/netip"
@@ -36,6 +37,25 @@ type LoopbackGateOptions struct {
 // wildcard address or to a name a resolver gets to answer for.
 func ListenLoopback() (net.Listener, error) {
 	return net.Listen("tcp4", "127.0.0.1:0")
+}
+
+// ListenLoopbackOn opens that listener on a chosen loopback address, because
+// localStorage is partitioned by origin: a port that changes every launch makes
+// the reader's theme, language and preferences unreachable. An empty addr keeps
+// the ephemeral port, and anything that is not an IP literal on the loopback
+// interface is refused — the same rule the gate applies to an origin.
+func ListenLoopbackOn(addr string) (net.Listener, error) {
+	if strings.TrimSpace(addr) == "" {
+		return ListenLoopback()
+	}
+	ap, err := netip.ParseAddrPort(addr)
+	if err != nil {
+		return nil, fmt.Errorf("listen address %q is not an ip:port literal: %w", addr, err)
+	}
+	if !ap.Addr().IsLoopback() {
+		return nil, fmt.Errorf("listen address %q is not on the loopback interface", addr)
+	}
+	return net.Listen("tcp", ap.String())
 }
 
 // LoopbackOrigin is the origin a ListenLoopback listener answers for.

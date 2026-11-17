@@ -29,6 +29,7 @@ import (
 	"reasonix/internal/assembly/boot"
 	"reasonix/internal/base/i18n"
 	"reasonix/internal/base/netclient"
+	"reasonix/internal/base/netdns"
 	"reasonix/internal/contract/config"
 	"reasonix/internal/contract/event"
 	"reasonix/internal/contract/provider"
@@ -113,6 +114,10 @@ func studioUpdateHost(shell shellIdentity, owner *shellOwner) appupdate.Capabili
 
 func main() {
 	provider.SetClientVersion(version)
+	// Before anything opens a socket. A CGO-free build on Android has no cgo
+	// resolver and no /etc/resolv.conf to read, so a phone's shell has to hand
+	// the servers in; absent, this does nothing.
+	netdns.Install(netdns.Parse(os.Getenv(netdns.EnvVar)))
 	// Ahead of this host's own flags: a macOS install re-executes this binary
 	// to swap the bundle, and that child's argv is the update's. Parsed as this
 	// host's, it exits on an undefined flag and the parent reads EOF.
@@ -129,6 +134,7 @@ func main() {
 		os.Exit(schedulerun.Exec(os.Args[3:]))
 	}
 	page := flag.String("page", "", "directory holding the built Studio page")
+	listenAddr := flag.String("listen", "", "loopback ip:port to bind (default: an ephemeral port on 127.0.0.1)")
 	identity := flag.Bool("instance-id", false, "print the Studio instance this data home belongs to, and exit")
 	// The shell around this process knows which build it is; this process does
 	// not. os.Executable() here names the host binary, not the application.
@@ -168,7 +174,7 @@ func main() {
 	shell := shellIdentity{version: *studioVersion, exe: *studioApp, pid: *studioAppPID, logsDir: logsDirOf(*crashDir)}
 	releaseFatalLog, exitedFatalLog := crashreport.InstallFatalLog(*crashDir, defaultVersion(shell.version))
 	logs := &lastLine{w: os.Stderr}
-	code := run(parentLease(os.Stdin), os.Stdout, logs, *page, shell, driver)
+	code := run(parentLease(os.Stdin), os.Stdout, logs, *page, *listenAddr, shell, driver)
 	if code == 0 {
 		releaseFatalLog()
 	} else {
@@ -225,7 +231,7 @@ func defaultVersion(stated string) string {
 // the handshake first and then one line per act a handover asks of the shell,
 // because that pipe is the only channel pointing that way; every log goes to
 // logs, which is why no line there can be mistaken for one of these.
-func run(lease io.Reader, handshakeTo, logs io.Writer, page string, shell shellIdentity, driver *computer.Driver) int {
+func run(lease io.Reader, handshakeTo, logs io.Writer, page, listenAddr string, shell shellIdentity, driver *computer.Driver) int {
 	if driver != nil {
 		defer driver.Close()
 	}
@@ -261,7 +267,7 @@ func run(lease io.Reader, handshakeTo, logs io.Writer, page string, shell shellI
 	defer hub.Shutdown()
 	startScheduleTicker(ctx, lease != nil, hub, logs)
 
-	bound, err := bind(hub.Handler())
+	bound, err := bindOn(hub.Handler(), listenAddr)
 	phases.mark(startupBind)
 	if err != nil {
 		fmt.Fprintln(logs, "reasonix-studio-host:", err)
@@ -297,9 +303,22 @@ type bound struct {
 // because nothing can name the origin until the kernel owns a port, and the
 // credential is minted here rather than read, so no configuration reaches it.
 func bind(next http.Handler) (*bound, error) {
-	ln, err := serve.ListenLoopback()
+	return bindOn(next, "")
+}
+
+// bindOn is bind on a chosen loopback address, so a shell whose page keeps state
+// in the browser's storage can keep one origin across restarts. A port that
+// cannot be taken falls back to an ephemeral one rather than failing the launch,
+// and the handshake carries whichever address was actually bound.
+func bindOn(next http.Handler, addr string) (*bound, error) {
+	ln, err := serve.ListenLoopbackOn(addr)
 	if err != nil {
-		return nil, err
+		if addr == "" {
+			return nil, err
+		}
+		if ln, err = serve.ListenLoopback(); err != nil {
+			return nil, err
+		}
 	}
 	token, err := launchCredential()
 	if err != nil {

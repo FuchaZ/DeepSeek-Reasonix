@@ -418,7 +418,7 @@ func TestRunServesUntilTheParentLetsGo(t *testing.T) {
 	go func() { _, _ = io.Copy(io.Discard, logs) }()
 
 	done := make(chan int, 1)
-	go func() { done <- run(lease, announced, logged, page, shellIdentity{version: "2.10.0"}, nil) }()
+	go func() { done <- run(lease, announced, logged, page, "", shellIdentity{version: "2.10.0"}, nil) }()
 
 	line, err := bufio.NewReader(stdout).ReadString('\n')
 	if err != nil {

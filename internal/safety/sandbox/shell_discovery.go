@@ -169,6 +169,16 @@ func (h shellHost) bashCandidates() []string {
 			add(p)
 		}
 	}
+	// Android ships no bash and an app's PATH does not reach /system/bin, so
+	// without this the resolver finds nothing and hands the session the bare
+	// name "bash", which cannot start.
+	if h.goos == "android" {
+		for _, p := range []string{"/system/bin/sh", "/system/bin/bash", "/vendor/bin/sh"} {
+			if h.exists(p) {
+				add(p)
+			}
+		}
+	}
 	return out
 }
 

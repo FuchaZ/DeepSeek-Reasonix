@@ -393,7 +393,7 @@ class BrowserHost implements HostPort {
   inShell() {
     return false;
   }
-  describe() {
+  describe(): Promise<HostInfo> {
     return Promise.resolve({ shell: "browser" as const, platform: "", titleBar: false });
   }
   minimiseWindow() {}
@@ -408,7 +408,7 @@ class BrowserHost implements HostPort {
   captureWindow() {
     return Promise.resolve(null);
   }
-  syncTheme() {}
+  syncTheme(_mode: string, _scheme: "light" | "dark") {}
   showTextContextMenu() {
     return Promise.resolve(null);
   }
@@ -433,14 +433,14 @@ class BrowserHost implements HostPort {
   pathsForFiles() {
     return [];
   }
-  saveText() {
-    return Promise.resolve(null);
+  saveText(_name: string, _content: string) {
+    return Promise.resolve<string | null>(null);
   }
-  saveBytes() {
-    return Promise.resolve(null);
+  saveBytes(_name: string, _bytes: Uint8Array) {
+    return Promise.resolve<string | null>(null);
   }
-  pickFolder() {
-    return Promise.resolve(null);
+  pickFolder(_startIn: string) {
+    return Promise.resolve<string | null>(null);
   }
   revealsFiles() {
     return false;
@@ -496,7 +496,76 @@ class BrowserHost implements HostPort {
   cancelBrowserPick() {}
 }
 
+// The phone shell injects its interface after the page loads — a WebView has no
+// equivalent of Electron's preload — so the one thing it can offer synchronously
+// is the Android bridge object, which exists before any script runs. That is
+// what tells this page it is on a phone; everything else waits for
+// `reasonix-host-ready`.
+interface AndroidBridge {
+  openExternal(url: string): void;
+}
+
+function androidBridge(): AndroidBridge | null {
+  const native = (window as unknown as { ReasonixNative?: AndroidBridge }).ReasonixNative;
+  return native ?? null;
+}
+
+function androidApi(): Promise<ElectronBridge> {
+  const ready = bridge();
+  if (ready) return Promise.resolve(ready);
+  return new Promise((resolve, reject) => {
+    const loaded = () => {
+      const api = bridge();
+      if (!api) return;
+      clearTimeout(timeout);
+      window.removeEventListener("reasonix-host-ready", loaded);
+      resolve(api);
+    };
+    const timeout = setTimeout(() => {
+      window.removeEventListener("reasonix-host-ready", loaded);
+      reject(new Error("the phone interface is not ready; please try again"));
+    }, 10000);
+    window.addEventListener("reasonix-host-ready", loaded);
+  });
+}
+
+/** The phone: a WebView drawing the same page the desktop shell serves, with the
+ *  kernel running beside it on this device. It is a shell rather than a tab —
+ *  the page is not reachable in a browser and has no browser chrome — so what a
+ *  shell answers about itself stays true, and only the verbs that need a window,
+ *  a file manager or a browser view fall back to the tab's answers. */
+class AndroidHost extends BrowserHost {
+  override inShell() {
+    return true;
+  }
+  override describe() {
+    return Promise.resolve({ shell: "electron" as const, platform: "android", titleBar: false });
+  }
+  override openExternal(url: string) {
+    androidBridge()?.openExternal(url);
+  }
+  override syncTheme(mode: string, scheme: "light" | "dark") {
+    void androidApi().then((api) => api.syncTheme?.(mode, scheme)).catch(() => {});
+  }
+  override pickFolder(startIn: string) {
+    return androidApi().then((api) => api.pickFolder(startIn)).catch(() => null);
+  }
+  override saveText(name: string, content: string) {
+    return androidApi().then((api) => api.saveText(name, content)).catch(() => null);
+  }
+  override saveBytes(name: string, bytes: Uint8Array) {
+    return androidApi().then((api) => api.saveBytes(name, bytes)).catch(() => null);
+  }
+  override pathsForFiles() {
+    return [];
+  }
+  override setUnreadBadge() {
+    return Promise.resolve();
+  }
+}
+
 function pick(): HostPort {
+  if (androidBridge()) return new AndroidHost();
   const api = bridge();
   if (api) return new ElectronHost(api);
   return new BrowserHost();

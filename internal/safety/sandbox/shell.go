@@ -157,15 +157,7 @@ func (h shellHost) auto(warn io.Writer) Shell {
 // bashFallback explains why bash was not usable: no candidate exists, or the
 // ones that exist did not run a command (and whether that was a timeout).
 func (h shellHost) bashFallback() FallbackReason {
-	var tried []string
-	if p, ok := h.lookShell("bash"); ok && !h.isWSL(p) {
-		tried = append(tried, p)
-	}
-	for _, p := range h.winBash {
-		if h.exists(p) && !h.isWSL(p) {
-			tried = append(tried, p)
-		}
-	}
+	tried := h.bashCandidates()
 	if len(tried) == 0 {
 		return FallbackNotFound
 	}
