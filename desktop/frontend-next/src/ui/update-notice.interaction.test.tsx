@@ -63,7 +63,9 @@ it("offers a newer release in the sidebar footer and opens the version page from
   await waitFor(() => expect(document.querySelector(".app")!.hasAttribute("data-prefs")).toBe(true));
   const tabs = await screen.findAllByRole("tab");
   expect(tabs.find((el) => el.getAttribute("aria-selected") === "true")?.getAttribute("data-value")).toBe("account");
-  expect(await screen.findByText(/2\.58\.0/, { selector: ".prefs-sheet *" })).toBeTruthy();
+  // The sheet names the release in more than one row, so the arrival is read
+  // as "at least one" rather than as a single element.
+  expect((await screen.findAllByText(/2\.58\.0/, { selector: ".prefs-sheet *" })).length).toBeGreaterThan(0);
   stop();
 });
 
