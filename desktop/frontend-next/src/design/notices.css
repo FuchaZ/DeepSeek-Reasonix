@@ -54,3 +54,10 @@
 .prefs-sheet.gone .gone-acts .btn.ghost { height: 24px; padding: 0 10px; align-self: center; border-color: transparent; border-radius: var(--r-pill); background: transparent; color: var(--muted); font-size: var(--fs-meta); }
 .prefs-sheet.gone .gone-acts .btn[data-primary] { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
 .prefs-sheet.gone .studio-icon { width: 16px; height: 16px; }
+.window-broken { position: fixed; inset: 0; display: grid; place-content: center; justify-items: center; gap: 6px; padding: 24px; text-align: center; background: var(--page); color: var(--text); }
+.window-broken .gone-icon { display: inline-grid; place-items: center; width: 40px; height: 40px; border-radius: 50%; background: color-mix(in srgb, var(--warn) 14%, transparent); color: var(--warn-ink); }
+.window-broken h1 { margin: 10px 0 0; font: var(--w-semi) var(--fs-lead)/1.4 var(--ui); }
+.window-broken .gone-t { max-width: 340px; margin: 4px 0 0; color: var(--muted); font: var(--w-reg) var(--fs-ui)/1.6 var(--ui); }
+.window-broken .gone-acts { display: flex; justify-content: center; gap: 8px; margin-top: 14px; }
+.window-broken .gone-acts .btn { display: inline-flex; align-items: center; gap: 5px; height: 32px; padding: 0 14px; border: 1px solid var(--accent); border-radius: var(--r-sm); background: var(--accent); color: var(--accent-fg); font: var(--w-reg) var(--fs-ui)/1 var(--ui); cursor: pointer; }
+.window-broken .studio-icon { width: 16px; height: 16px; }

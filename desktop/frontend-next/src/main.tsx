@@ -6,6 +6,8 @@ import { track as trackWidth } from "./ui/viewport";
 import "./styles/legacy.css";
 import "./design/design.css";
 import { App } from "./ui/App";
+import { Boundary } from "./ui/Boundary";
+import { WindowBroken } from "./ui/WindowBroken";
 import { SseHub } from "./port/hub";
 import { HttpError } from "./port/http_error";
 import type { HubPort } from "./port/hub";
@@ -161,7 +163,9 @@ pick().then(
     try { localStorage.removeItem("rx-flow-w"); } catch { /* storage is a convenience */ }
     root.render(
       <StrictMode>
-        <RemoteAwareApp hub={hub} remote={new URLSearchParams(location.search).get("device")?.trim() || null} />
+        <Boundary fallback={<WindowBroken />}>
+          <RemoteAwareApp hub={hub} remote={new URLSearchParams(location.search).get("device")?.trim() || null} />
+        </Boundary>
       </StrictMode>,
     );
     intro.progress(2);

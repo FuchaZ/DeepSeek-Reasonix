@@ -19,6 +19,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"reasonix/internal/ext/modhost"
+	"runtime"
 	"strings"
 	"sync"
 	"syscall"
@@ -387,6 +388,18 @@ func resolveKernelLanguage(cfg *config.Config) string {
 	return i18n.DetectLanguage(cfg.Language)
 }
 
+// hostPlatform is the platform the capabilities below are decided for. A
+// variable so the phone's branch — which drops the share door a phone has no
+// use for — can be exercised on a machine that is not a phone.
+var hostPlatform = func() string { return runtime.GOOS }
+
+// opensShareDoor reports whether this host can hand a pairing code to a second
+// screen. A phone is the paired device itself and has no second screen, so its
+// /share routes stay unregistered and the page draws no entry for them.
+func opensShareDoor(platform string) bool {
+	return platform != "android"
+}
+
 // assemble builds the hub this host serves: one pane on the workspace it was
 // launched in, carrying the capabilities a local window may exercise.
 func assemble(ctx context.Context, logs, handshakeTo io.Writer, shell shellIdentity, page fs.FS, phases *startupPhases, driver *computer.Driver) (*serve.Hub, error) {
@@ -437,14 +450,23 @@ func assemble(ctx context.Context, logs, handshakeTo io.Writer, shell shellIdent
 	browserHost := serve.NewBrowserHost()
 	boot.SetBrowserHost(browserHost.Dial)
 	hubCfg := hostServeConfig(cfg.Serve)
-	// Shut until the person at the window opens it; the context ending stops it
-	// with the rest of the kernel, keeping the phones this machine already adopted.
-	share := serve.NewDeviceShare(page)
-	share.RestorePort(cfg.SharePort())
-	go func() {
-		<-ctx.Done()
-		share.Shutdown()
-	}()
+	// The door a window opens for a phone, and the reason a phone has none: it
+	// *is* the paired device, with no second screen to hand a code to. Nil is
+	// what leaves every /share route unregistered, and the page reads that 404
+	// as "this shell has no such verb" rather than drawing an entry whose card
+	// would open onto nothing.
+	var share *serve.DeviceShare
+	if opensShareDoor(hostPlatform()) {
+		// Shut until the person at the window opens it; the context ending stops
+		// it with the rest of the kernel, keeping the phones this machine already
+		// adopted.
+		share = serve.NewDeviceShare(page)
+		share.RestorePort(cfg.SharePort())
+		go func() {
+			<-ctx.Done()
+			share.Shutdown()
+		}()
+	}
 	owner := &shellOwner{to: handshakeTo}
 	// A toast the user clicks is answered here, in the process that sent it, and
 	// the shell is the one that can bring its window forward.
@@ -472,14 +494,16 @@ func assemble(ctx context.Context, logs, handshakeTo io.Writer, shell shellIdent
 		Share:          share,
 		LogsDir:        shell.logsDir,
 	})
-	share.Attach(hub.Handler())
-	// A share the person had open reopens where it was: the phone that paired
-	// against that address keeps its cookie. An address that is gone falls back
-	// to one this machine now offers, at the cost of one fresh scan.
-	state := share.RestoreState()
-	if state.Open {
-		if _, err := share.Reopen(state.Address); err != nil {
-			fmt.Fprintln(logs, "reasonix-studio-host: could not reopen phone access:", err)
+	if share != nil {
+		share.Attach(hub.Handler())
+		// A share the person had open reopens where it was, so the phone that
+		// paired against that address keeps its cookie; one whose address is
+		// gone falls back to another this machine offers.
+		state := share.RestoreState()
+		if state.Open {
+			if _, err := share.Reopen(state.Address); err != nil {
+				fmt.Fprintln(logs, "reasonix-studio-host: could not reopen phone access:", err)
+			}
 		}
 	}
 	srv := serve.New(built.Controller, bc, hubCfg)

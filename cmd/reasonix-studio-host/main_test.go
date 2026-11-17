@@ -187,6 +187,20 @@ func ask(t *testing.T, b *bound, method, path string, mut func(*http.Request)) (
 	return resp.StatusCode, string(body[:n])
 }
 
+// A phone is the paired device itself, so it has no second screen to hand a
+// code to. Leaving the share out keeps /share unregistered, and the page reads
+// that 404 as a verb this shell does not have.
+func TestAPhoneHasNoShareDoor(t *testing.T) {
+	if opensShareDoor("android") {
+		t.Error("opensShareDoor(android) = true, want the phone to have no door")
+	}
+	for _, platform := range []string{"darwin", "linux", "windows"} {
+		if !opensShareDoor(platform) {
+			t.Errorf("opensShareDoor(%q) = false, want a window to keep its door", platform)
+		}
+	}
+}
+
 // The socket is never reachable from anywhere but this machine, and the address
 // is what the origin and every later check are derived from.
 func TestHostBindsOnlyToLoopback(t *testing.T) {

@@ -2,6 +2,7 @@ import { watchTree } from "./tree_events";
 import { HttpError, type AgentPort } from "./port";
 import type { RemoteAsk, RemoteHost, RemoteHostEdit, RemoteListing, RemoteProbe, WSLDistros } from "./remote";
 import type { CloudShareOffer, DeviceSelf, PhoneAction, PhoneList, ShareOffer, SharePort, ShareStatus } from "./share";
+import { readableShareStatus } from "./share";
 import { SsePort } from "./sse";
 import { host } from "./host";
 
@@ -687,15 +688,15 @@ export class SseHub implements HubPort {
     const res = await fetch("/share", { credentials: "same-origin" });
     if (res.status === 404) return null;
     if (!res.ok) await SseHub.fail("/share", res);
-    return (await res.json()) as ShareStatus;
+    return readableShareStatus((await res.json()) as ShareStatus);
   }
 
   openShare(ip: string) {
-    return this.post<ShareStatus>("/share/open", { ip });
+    return this.post<ShareStatus>("/share/open", { ip }).then(readableShareStatus);
   }
 
   closeShare() {
-    return this.post<ShareStatus>("/share/close", {});
+    return this.post<ShareStatus>("/share/close", {}).then(readableShareStatus);
   }
 
   async shareRemember() {
@@ -709,7 +710,7 @@ export class SseHub implements HubPort {
   }
 
   setSharePort(port: number) {
-    return this.post<ShareStatus>("/share/port", { port });
+    return this.post<ShareStatus>("/share/port", { port }).then(readableShareStatus);
   }
 
   offerShare() {
@@ -721,7 +722,7 @@ export class SseHub implements HubPort {
   }
 
   revokeDevice(id: string) {
-    return this.post<ShareStatus>("/share/revoke", { id });
+    return this.post<ShareStatus>("/share/revoke", { id }).then(readableShareStatus);
   }
 
   async sharePhones() {

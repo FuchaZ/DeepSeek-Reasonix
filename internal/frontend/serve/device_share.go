@@ -385,7 +385,12 @@ func (s *DeviceShare) Status() ShareStatus {
 	cloudStatus := s.cloudStatus
 	port := s.port
 	s.mu.Unlock()
-	st := ShareStatus{Port: port, Addresses: s.addresses(), Devices: s.registry.Devices(), CloudDevices: s.cloud.views()}
+	st := ShareStatus{
+		Port:         port,
+		Addresses:    lists(s.addresses()),
+		Devices:      lists(s.registry.Devices()),
+		CloudDevices: lists(s.cloud.views()),
+	}
 	if cloudStatus != nil {
 		st.CloudRemote = cloudStatus()
 	}
@@ -396,6 +401,16 @@ func (s *DeviceShare) Status() ShareStatus {
 		st.OfferExpires = &exp
 	}
 	return st
+}
+
+// lists keeps a status list a list. A nil slice marshals to JSON null, and the
+// panel indexes all three directly: reading .length off null throws during
+// render, which unmounts the window it was drawing.
+func lists[T any](in []T) []T {
+	if in == nil {
+		return []T{}
+	}
+	return in
 }
 
 // machineName is what a device is told it is driving: this computer's name,
@@ -417,12 +432,15 @@ func OffInternet(ip netip.Addr) bool {
 
 // PrivateAddresses is every private IPv4 address on an up interface, the ones
 // a phone is likeliest to reach first: the first entry is the default.
+//
+// Never nil: this is read straight into ShareStatus, and a nil slice is the
+// JSON null a panel then indexes as an array.
 func PrivateAddresses() []ShareAddress {
+	out := []ShareAddress{}
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return nil
+		return out
 	}
-	out := []ShareAddress{}
 	for _, iface := range ifaces {
 		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
 			continue

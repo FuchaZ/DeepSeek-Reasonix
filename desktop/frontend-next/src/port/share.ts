@@ -57,6 +57,16 @@ export interface ShareStatus {
   offerExpires?: string;
 }
 
+/** A status as the panel may index it.
+ *
+ *  Go's nil slice marshals to JSON null, so a kernel that could not enumerate
+ *  addresses answers with an absent list rather than an empty one. Reading
+ *  `.length` off that is a render-time throw, which unmounts the whole window
+ *  and leaves no control to get back — the panel needs lists, not null. */
+export function readableShareStatus(st: ShareStatus): ShareStatus {
+  return { ...st, addresses: st.addresses ?? [], devices: st.devices ?? [], cloudDevices: st.cloudDevices ?? [] };
+}
+
 export interface ShareOffer {
   url: string;
   // An SVG document, drawn dark on light whatever the theme so it scans.

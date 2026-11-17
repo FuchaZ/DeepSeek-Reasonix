@@ -66,6 +66,30 @@ func TestShareRefusesAnAddressItDoesNotList(t *testing.T) {
 	}
 }
 
+// A status whose lists are absent would marshal to null, and the panel that
+// reads it indexes every one: the null is a render-time throw which unmounts
+// the window. Answering with empty lists is what keeps a share that can
+// enumerate nothing (a phone, a machine behind a restrictive sandbox) drawable.
+func TestAStatusNeverCarriesANullList(t *testing.T) {
+	share := NewDeviceShare(nil)
+	share.addresses = func() []ShareAddress { return nil }
+	share.Attach(http.NotFoundHandler())
+
+	raw, err := json.Marshal(share.Status())
+	if err != nil {
+		t.Fatalf("marshal: %v", err)
+	}
+	for _, field := range []string{"addresses", "devices", "cloudDevices"} {
+		var body map[string]json.RawMessage
+		if err := json.Unmarshal(raw, &body); err != nil {
+			t.Fatalf("unmarshal: %v", err)
+		}
+		if got := string(body[field]); got != "[]" {
+			t.Errorf("%s = %s, want an empty list", field, got)
+		}
+	}
+}
+
 // shareRig is a window's hub with the share open on loopback, which stands in
 // for the private address a real share binds.
 type shareRig struct {
