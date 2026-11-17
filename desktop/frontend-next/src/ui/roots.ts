@@ -101,6 +101,9 @@ export const RUNTIME_EVENT = new Set([
   "resize", "visibilitychange", "online", "offline", "load", "error", "beforeunload", "pagehide", "pageshow",
   "unload", "message", "storage", "focus", "blur", "transitionend", "animationend", "popstate",
   "hashchange", "languagechange", "themechange", "fullscreenchange", "abort", "close", "open",
+  // The Android shell's own bootstrap signal: the host tells the page the
+  // bridge exists. It carries no action and waits for no one.
+  "reasonix-host-ready",
 ]);
 /** A DOM node, so an event on it is something a person can aim at. Anything
  *  else that emits events — a media query list, a socket — is not. */
