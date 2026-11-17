@@ -1,9 +1,15 @@
 // @vitest-environment jsdom
-import { expect, it } from "vitest";
+import { afterEach, expect, it, vi } from "vitest";
 import { monthBuckets } from "./timeBuckets";
 import "./testkit";
 
+afterEach(() => vi.useRealTimers());
+
 it("cuts a newest-first list into day sections, one mark per section", () => {
+  // Buckets are calendar days: the offsets below must not straddle a
+  // midnight, so the clock is pinned to local noon instead of racing the
+  // hour the suite happens to run at.
+  vi.useFakeTimers({ now: new Date(2026, 5, 15, 12, 0, 0) });
   const now = Date.now();
   // 呼叫方的口径：缺失的活动戳按"现在"计。
   const items = [
@@ -18,6 +24,7 @@ it("cuts a newest-first list into day sections, one mark per section", () => {
 });
 
 it("yesterday sits between today and the week tail", () => {
+  vi.useFakeTimers({ now: new Date(2026, 5, 15, 12, 0, 0) });
   const now = Date.now();
   const { marks } = monthBuckets([
     { key: "a", at: now },
