@@ -41,14 +41,13 @@ for (const scheme of ["light", "dark"]) {
     // sidebar row clicked while it is open would navigate nothing.
     const section = (value) => page.evaluate((v) => document.querySelector(`.prefs-nav [role="tab"][data-action="settings.section"][data-value="${v}"]`)?.click(), value);
     await page.waitForSelector('.prefs-nav [role="tab"][data-action="settings.section"][data-value="tools"]');
+    // Session messages answer a question of their own now: their own page.
     await section("session");
-    await page.waitForSelector('[data-action="settings.page-index"][data-target="peers"]');
-    check(`${tag}: session messages have a settings entry of their own`, (await page.locator('[data-action="settings.page-index"][data-target="peers"]').count()) === 1);
+    check(`${tag}: session messages left the agent page`, (await page.locator('[data-action="settings.page-index"][data-target="peers"]').count()) === 0);
     await section("tools");
     await page.waitForSelector('.prefs-main[data-sec="tools"]');
     check(`${tag}: and no longer sit at the foot of tools and permissions`, (await page.locator('.prefs-main[data-sec="tools"] [role="switch"][aria-label="启用会话间消息"]').count()) === 0);
-    await section("session");
-    await page.locator('[data-action="settings.page-index"][data-target="peers"]').click();
+    await section("peers");
     await page.waitForSelector('[role="switch"][aria-label="启用会话间消息"]', { timeout: 8000 });
     const s = await page.evaluate(() => {
       const sw = (n) => document.querySelector(`[role="switch"][aria-label="${n}"]`);

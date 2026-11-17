@@ -25,11 +25,13 @@ try {
   }
   await page.locator(".prefs-nav button", { hasText: /^操作与性能/ }).first().click();
   await page.waitForTimeout(400);
+  // The keys card folds shut at rest; opening it is how its editor is reached.
+  await page.locator('[data-action="settings.keys-fold"]').click();
   const keys = await page.locator('#set-keys').elementHandle();
-  await page.locator('[data-action="settings.page-index"][data-target="naventries"]').click();
+  await page.locator('[data-action="settings.page-index"][data-target="page-sleep"]').click();
   await page.waitForTimeout(600);
   assert.ok(await keys.evaluate((node) => node.isConnected), "locating a region preserves sibling editors");
-  const placement = await page.locator('#set-naventries').evaluate((node) => {
+  const placement = await page.locator('#set-page-sleep').evaluate((node) => {
     const panel = node.closest('.prefs-main');
     const index = panel.querySelector('.page-index').getBoundingClientRect();
     return { top: node.getBoundingClientRect().top, index: index.bottom, bottom: panel.getBoundingClientRect().bottom };

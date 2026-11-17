@@ -19,6 +19,10 @@ try {
     await page.locator('.prefs-nav [data-value="model"]').click();
     await page.getByText("myrelay", { exact: true }).first().click();
     const form = page.locator(".addp[data-edit]");
+    // Both per-model blocks fold shut at rest; opening them is how their rows
+    // are reached.
+    await form.locator('[data-action="provider.model-fold"][data-value="limits"]').click();
+    await form.locator('[data-action="provider.model-fold"][data-value="prices"]').click();
     await form.locator('.token-limits input').first().fill("1600000");
     await form.locator('[data-value="model-window"]').last().fill("1000000");
     await form.locator('[data-value="model-max-output"]').last().fill("1000000");
