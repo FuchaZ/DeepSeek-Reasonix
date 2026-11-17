@@ -26,3 +26,4 @@
 @import "./suggest.css" layer(design);
 @import "./controls.css" layer(design);
 @import "./motion.css" layer(design);
+@import "./safe.css" layer(design);

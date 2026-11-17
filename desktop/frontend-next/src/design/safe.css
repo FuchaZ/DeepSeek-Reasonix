@@ -1,0 +1,67 @@
+:root {
+  --rx-safe-top: 0px;
+  --rx-safe-right: 0px;
+  --rx-safe-bottom: 0px;
+  --rx-safe-left: 0px;
+}
+
+.chrome {
+  height: calc(var(--chrome-h) + var(--rx-safe-top));
+  padding-top: var(--rx-safe-top);
+}
+
+.chrome .r-fold {
+  max-height: calc(100dvh - var(--rx-safe-top) - var(--chrome-h) - 16px);
+}
+
+.compose {
+  margin-bottom: calc(35px + var(--rx-safe-bottom));
+}
+
+.stophint {
+  top: calc(var(--rx-safe-top) + var(--chrome-h) + 52px);
+}
+
+[data-fold~="phone"] .chrome {
+  padding-top: calc(6px + var(--rx-safe-top));
+}
+
+[data-fold~="phone"] .studio-menu {
+  top: calc(var(--rx-safe-top) + (var(--chrome-h) - 28px) / 2);
+}
+
+[data-fold~="phone"] .prefs {
+  padding: var(--rx-safe-top) var(--rx-safe-right) var(--rx-safe-bottom) var(--rx-safe-left);
+}
+
+[data-fold~="phone"] .composer-menu.studio-model-menu.menu-sheet {
+  padding-bottom: calc(18px + var(--rx-safe-bottom));
+}
+
+[data-fold~="scene"] .phonecard {
+  top: calc(var(--rx-safe-top) + var(--chrome-h) + 6px);
+  left: calc(12px + var(--rx-safe-left));
+  right: calc(12px + var(--rx-safe-right));
+}
+
+.palette-veil {
+  padding-top: calc(12vh + var(--rx-safe-top));
+  padding-bottom: var(--rx-safe-bottom);
+}
+
+.window-broken {
+  padding: calc(24px + var(--rx-safe-top)) calc(24px + var(--rx-safe-right))
+           calc(24px + var(--rx-safe-bottom)) calc(24px + var(--rx-safe-left));
+}
+
+.onb-brandbar {
+  height: calc(64px + var(--rx-safe-top));
+  padding-top: var(--rx-safe-top);
+  padding-left: calc(26px + var(--rx-safe-left));
+  padding-right: calc(26px + var(--rx-safe-right));
+}
+
+.oobe {
+  padding-block: calc(26px + var(--rx-safe-top)) calc(26px + var(--rx-safe-bottom));
+  padding-inline: calc(var(--rx-safe-left)) calc(var(--rx-safe-right));
+}

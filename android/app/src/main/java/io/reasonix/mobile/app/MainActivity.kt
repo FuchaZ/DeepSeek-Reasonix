@@ -25,6 +25,7 @@ import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.Insets
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -77,6 +78,9 @@ class MainActivity : AppCompatActivity() {
      * it current, so a main-frame navigation is what changes the answer.
      */
     private var mainFrameOrigin: String? = null
+
+    /** The window's safe area in pixels, as left, top, right, bottom. */
+    private var safeArea = intArrayOf(0, 0, 0, 0)
 
     private data class PendingDownload(val url: String, val userAgent: String, val mime: String, val name: String)
 
@@ -132,6 +136,10 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         WindowCompat.setDecorFitsSystemWindows(window, false)
+        // The devtools channel is how a debug build is inspected from a desk:
+        // `scripts/verify-keyboard.mjs` drives the very same WebView through it.
+        // A release keeps it off — the page holds a session credential.
+        if (BuildConfig.DEBUG) WebView.setWebContentsDebuggingEnabled(true)
 
         rootLayout = FrameLayout(this)
         web = WebView(this)
@@ -330,13 +338,45 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun installInsetsListener() {
-        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { view, insets ->
-            val safe = insets.getInsets(
-                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime(),
-            )
-            view.setPadding(safe.left, safe.top, safe.right, safe.bottom)
-            WindowInsetsCompat.CONSUMED
+        ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { _, insets ->
+            val types = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            val keyboard = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
+            // The bars stay the page's to avoid, so it can paint under them. The
+            // keyboard is the window's: edge to edge stops `adjustResize` from
+            // shrinking the window, so the room it needs is taken here.
+            safeArea = intArrayOf(bars.left, bars.top, bars.right, if (keyboard > 0) 0 else bars.bottom)
+            rootLayout.setPadding(bars.left, 0, bars.right, keyboard)
+            splash.setPadding(bars.left, bars.top, bars.right, maxOf(keyboard, bars.bottom))
+            publishSafeArea()
+            // Zeroing rather than CONSUMED: the page has taken these areas, and
+            // consuming would block the WebView's own later updates.
+            WindowInsetsCompat.Builder(insets).setInsets(types, Insets.NONE).build()
         }
+    }
+
+    /** Hand the window's safe area to the page, in CSS pixels.
+     *
+     *  A WebView only forwards `env(safe-area-inset-*)` when it overlaps the
+     *  bars itself, and older builds forward nothing at all. Publishing the
+     *  numbers this window measured is what makes the page's own padding right
+     *  on every WebView the APK can meet. */
+    private fun publishSafeArea() {
+        if (!::web.isInitialized) return
+        val density = resources.displayMetrics.density
+        val dp = safeArea.map { (it / density).toInt() }
+        web.evaluateJavascript(
+            """
+(function() {
+  var s = document.documentElement.style;
+  s.setProperty('--rx-safe-top', '${dp[1]}px');
+  s.setProperty('--rx-safe-right', '${dp[2]}px');
+  s.setProperty('--rx-safe-bottom', '${dp[3]}px');
+  s.setProperty('--rx-safe-left', '${dp[0]}px');
+})();
+            """.trimIndent(),
+            null,
+        )
     }
 
     private fun syncWindowTheme(scheme: String) {
@@ -393,6 +433,9 @@ class MainActivity : AppCompatActivity() {
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
                 injectHostBridge()
+                // The insets listener may have run before any document existed,
+                // so the numbers it measured are published again here.
+                publishSafeArea()
                 if (!booted) {
                     booted = true
                     splash.animate().alpha(0f).setDuration(220).withEndAction {
@@ -723,6 +766,9 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         web.onResume()
+        // The window keeps its view across a rotation, a fold and a split, so
+        // the bars can have moved without the listener ever running.
+        ViewCompat.requestApplyInsets(rootLayout)
     }
 
     override fun onDestroy() {
