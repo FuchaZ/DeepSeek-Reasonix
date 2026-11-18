@@ -31,24 +31,39 @@ type DispatchThreadStatus struct {
 	Since         time.Time               `json:"since"`
 }
 
+// openPeersTrail is the package's one door to the spool, so a test can hold a
+// board read to a single pass over the trail.
+var openPeersTrail = peermail.Open
+
 // dispatchThreadsStatus builds the enriched record for one sender path. It folds
 // the sender's audit trail with the same helper the controller uses, joins each
 // target's title and project from the tree, and fills anything the trail does
 // not know from the book. Deriving the sender's key from its path makes the
 // record survive a hub restart.
 func (h *Hub) dispatchThreadsStatus(senderPath string) []DispatchThreadStatus {
+	return h.dispatchStatuses(senderPath, h.peerAudit(), h.dispatchJoins(nil))
+}
+
+// peerAudit reads the trail both sides write, once per request.
+func (h *Hub) peerAudit() []peermail.AuditRecord {
+	dir, err := openPeersTrail(h.peersDir())
+	if err != nil {
+		return nil
+	}
+	return dir.AuditSince(time.Now().Add(-control.PeerThreadWindow))
+}
+
+// dispatchStatuses folds one sender's record from a trail already read and a
+// tree join already built, so a caller answering for several senders pays for
+// each of those once instead of once per sender.
+func (h *Hub) dispatchStatuses(senderPath string, audit []peermail.AuditRecord, join map[string]dispatchTargetJoin) []DispatchThreadStatus {
 	senderPath = strings.TrimSpace(senderPath)
 	if senderPath == "" {
 		return []DispatchThreadStatus{}
 	}
 	self := control.PeerKeyForPath(senderPath)
-	var audit []peermail.AuditRecord
-	if dir, err := peermail.Open(h.peersDir()); err == nil {
-		audit = dir.AuditSince(time.Now().Add(-control.PeerThreadWindow))
-	}
 	threads := control.PeerThreadsFrom(self, audit)
 	book := h.dispatch.threadsFrom(senderPath)
-	join := h.dispatchTargetJoins()
 
 	out := make([]DispatchThreadStatus, 0, len(threads)+len(book))
 	seen := map[string]bool{}
@@ -62,7 +77,7 @@ func (h *Hub) dispatchThreadsStatus(senderPath string) []DispatchThreadStatus {
 				row.SessionPath = j.sessionPath
 			}
 			if row.TargetTitle == "" {
-				row.TargetTitle = j.title
+				row.TargetTitle = j.title()
 			}
 			if row.TargetProject == "" {
 				row.TargetProject = j.project
@@ -95,7 +110,7 @@ func (h *Hub) dispatchThreadsStatus(senderPath string) []DispatchThreadStatus {
 			State: control.PeerWaiting, Since: time.Now(),
 		}
 		if j, ok := join[key]; ok {
-			row.TargetTitle, row.TargetProject = j.title, j.project
+			row.TargetTitle, row.TargetProject = j.title(), j.project
 			if row.SessionPath == "" {
 				row.SessionPath = j.sessionPath
 			}
@@ -117,7 +132,11 @@ func bookByKey(book []DispatchThread, key string) (DispatchThread, bool) {
 }
 
 type dispatchTargetJoin struct {
-	title, project, sessionPath string
+	// title is read on demand: a walk resolves every session on the machine,
+	// while one board names only the sessions a dispatch touched.
+	title                func() string
+	project, sessionPath string
+	archived             bool
 }
 
 // dispatchTargetJoins maps peer key to the title and project the tree knows for
@@ -134,9 +153,10 @@ func (h *Hub) dispatchTargetJoins() map[string]dispatchTargetJoin {
 			}
 			name := strings.TrimSuffix(sessionstore.BranchID(row.Path), ".jsonl")
 			out[key] = dispatchTargetJoin{
-				title:       rowTitle(titles, row, name)(),
+				title:       rowTitle(titles, row, name),
 				project:     projectOfRow(row, ref.dir),
 				sessionPath: row.Path,
+				archived:    row.Archived,
 			}
 		}
 	}

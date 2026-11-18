@@ -84,6 +84,8 @@ type Hub struct {
 	muxes   *eventMuxes
 	// dispatch remembers the panes a task was handed to; see dispatch.go.
 	dispatch dispatchBook
+	// boardJoin is the last tree join a board read walked; see dispatch_board.go.
+	boardJoin boardJoinMemo
 }
 
 // approvalStance is the Ask/Auto/YOLO posture the frontend is in, held by the

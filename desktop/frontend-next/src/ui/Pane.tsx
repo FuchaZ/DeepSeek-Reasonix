@@ -696,7 +696,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
           onOpenJob={jobsLive.open}
           usage={status?.sessionUsage} quote={status?.sessionCostQuote} tariff={status?.tariff} onTariffFlip={refreshStatus}
           authoredTurns={status?.authoredTurns}
-          peers={<DispatchThreadsBar port={port} hub={hub} onOpen={onOpenPeerSession} />}
+          peers={<DispatchThreadsBar hub={hub} onOpen={onOpenPeerSession} />}
         />
         {reloadFailure && <ReloadNotice failure={reloadFailure} onReload={onReloadSession} />}
         {/* Below the box, under a ceiling of their own. Both arrive unbidden and

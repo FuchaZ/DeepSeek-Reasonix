@@ -9,6 +9,7 @@ import (
 )
 
 func (h *Hub) treeChanged() {
+	h.boardJoin.invalidate()
 	h.changes.Emit(event.Event{Kind: event.Notice, Code: event.NoticeCodeSessionTreeChanged})
 }
 
