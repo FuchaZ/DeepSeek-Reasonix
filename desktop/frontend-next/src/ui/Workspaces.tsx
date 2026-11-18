@@ -464,7 +464,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
   const hoverTimer = useRef(0);
   // Left armed past the unmount, the waiting hover would set state on a column that is gone.
   useEffect(() => () => window.clearTimeout(hoverTimer.current), []);
-  const hoverable = !needle && !selection && !sessDrag && !groupDrag;
+  const hoverable = !needle && !selection && !sessDrag && !groupDrag && !sessionMenu;
   const hoverIn = (ws: TreeWorkspace, session: TreeSession, ev: ReactMouseEvent<HTMLElement>) => {
     if (!hoverable) return;
     window.clearTimeout(hoverTimer.current);
@@ -475,6 +475,13 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
     window.clearTimeout(hoverTimer.current);
     hoverTimer.current = window.setTimeout(() => setRowHover(null), 350);
   };
+  // An open row menu is the row's own surface: the card would cover it exactly
+  // where the pointer arrived, so opening either one dismisses the other.
+  useEffect(() => {
+    if (!sessionMenu) return;
+    window.clearTimeout(hoverTimer.current);
+    setRowHover(null);
+  }, [sessionMenu]);
   /** The side of the target the carried run lands on. With two runs the only
    *  outcome is a swap, so this is decided by the standing order: a run
    *  carried up from below lands over its target, one carried down from

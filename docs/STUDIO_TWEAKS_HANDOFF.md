@@ -2,7 +2,7 @@
 owner: @Oliver-Rui
 backup: @esengine
 status: active
-reviewed: 2026-11-16
+reviewed: 2026-11-18
 ---
 
 # Reasonix Studio Tweaks — handoff
@@ -314,3 +314,37 @@ dispatch records), `2ad7fb3` (the dispatch chip and `peers.cross_project`),
 - The Windows build was made here at 2.65.0. `node packaging/build-host.js` cannot
   fetch the CUA driver on this machine, so the kernel comes from the same `go build`
   the script runs, and `reasonix-studio-host.exe` is reused from `bin/`.
+
+## 8. The hover card yields to the row menu
+
+A session row opens its detail card after 450 ms of hover; a right click opens the
+row's action menu at the pointer. Both are fixed-position portals, and the card
+(`z-index: 88`) painted above the menu (`70`), so the menu's top rows could land
+under the card and stop taking clicks.
+
+- `Workspaces.tsx` treats the two as one surface: opening any row menu cancels the
+  waiting hover timer and clears the card, and rows arm no hover while a menu is
+  open. Closing the menu restores the card on the next hover.
+- Every way of opening the menu lands on that one state: right click, the row's
+  `⋯` button, and the keyboard (`ContextMenu` / `Shift+F10`).
+- New interaction test `session-hover-menu.interaction.test.tsx` (2 tests): a
+  settled card gives way to the menu; other rows stay cardless while it is open;
+  Escape closes the menu and the card returns.
+
+Checks run:
+
+- `tsc --noEmit` clean.
+- Both new tests fail without the `Workspaces.tsx` change and pass with it.
+- `session-hover-card`, `session-quick-actions`, `workspace-context-menu`,
+  `session-move` and `session-batch` — 49 tests green.
+- The same interaction was verified in the dev server (MockPort, `:5273`) by
+  hovering a row, right-clicking it, and hovering again after Escape.
+
+Android needs no separate frontend change:
+
+- `android/scripts/sync-page.sh` rebuilds this same frontend and copies `dist/`
+  into `assets/page/`; `android/scripts/build.sh release` runs it before Gradle.
+- `./gradlew assembleRelease` alone reuses whatever is already in `assets/page/`,
+  so a page change reaches the APK only through the sync.
+- The gesture is a mouse one; the phone opens the menu with the row's `⋯` button,
+  which now clears a lingering card through the same rule.
