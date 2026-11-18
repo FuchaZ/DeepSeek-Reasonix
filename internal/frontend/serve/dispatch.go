@@ -218,7 +218,7 @@ func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *co
 	target := h.runtimeByID(h.dispatch.getPending(from.ID, root, role))
 	if target == nil {
 		var err error
-		if target, err = open(ctx, OpenRequest{Root: root, Model: grant.Model}, binding); err != nil {
+		if target, err = open(ctx, OpenRequest{Root: root, Model: grant.Model, RoleText: role}, binding); err != nil {
 			return nil, fmt.Errorf("%w: %w", control.ErrDispatchFailed, err)
 		}
 	}
@@ -242,6 +242,9 @@ func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *co
 	ctrl.MarkOpenedByDispatch(sender.PeerKey(), secret, sender.DispatchDepth()+1)
 	ctrl.SetFreshSessionPath(sessionstore.NewSessionPath(SessionDirFor(root), "dispatch"))
 	if role != "" {
+		if err := sessionstore.SetBranchRoleText(ctrl.SessionPath(), role); err != nil {
+			slog.Warn("dispatch: could not persist the session's role", "err", err)
+		}
 		h.nameDispatchPaneAfterRole(ctrl, root, role)
 	}
 	h.dispatch.set(from.ID, root, role, target.ID)

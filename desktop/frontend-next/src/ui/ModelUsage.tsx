@@ -4,6 +4,10 @@ import type { ModelEntry, RoleAssignments, RoleOverride } from "../port/port";
 import { activeKind, contextLabel, groupVendors, type Vendor } from "./Models";
 import { orderAccounts, useProviderOrder } from "../state/providerorder";
 
+// The value the default row's follow option carries. A model ref never looks
+// like this, so one select can hold both answers.
+export const FOLLOW_LAST_PICK = "__follow-last";
+
 type RoleKey = keyof RoleAssignments["roles"];
 type Answers = "chat" | "decision" | "search" | "vision";
 
@@ -42,6 +46,9 @@ interface Props {
   // Which protocol each account is showing, as chosen on the services page.
   protocol: Record<string, string>;
   onMain: (ref: string) => void;
+  // Whether the default is the model last picked in the composer rather than
+  // the one this row names.
+  followsLastChoice?: boolean;
   effort?: string;
   onEffort?: (effort: string) => void;
   onRole: (role: string, ref: string, effort?: string) => void;
@@ -52,7 +59,7 @@ interface Props {
 
 // One row per job: what it is for, which model does it, and which service that
 // model is reached through.
-export function ModelUsage({ models, roles, main, busy, protocol, effort = "auto", onEffort, onMain, onRole, overrides, onClearOverride }: Props) {
+export function ModelUsage({ models, roles, main, busy, protocol, effort = "auto", followsLastChoice = false, onEffort, onMain, onRole, overrides, onClearOverride }: Props) {
   const order = useProviderOrder();
   const vendors = useMemo(() => orderAccounts(groupVendors(models), order), [models, order]);
   const serviceOf = (ref?: string) => vendors.find((v) => Object.values(v.byKind).some((list) => list.some((m) => m.ref === ref)))?.label ?? "";
@@ -82,7 +89,9 @@ export function ModelUsage({ models, roles, main, busy, protocol, effort = "auto
           <span className="usage-job" role="rowheader"><b>{t("common.default_model")}</b><small>{t("usage.this_conversation_and_most_tasks")}</small></span>
           <span role="cell">
             <Choices vendors={vendors} protocol={protocol} main={main} value={shown ?? ""} answers="chat"
-              label={t("common.default_model")} disabled={busy !== ""} onPick={onMain} />
+              label={t("common.default_model")} disabled={busy !== ""}
+              follow={{ on: !!followsLastChoice, label: t("usage.follow_the_last_pick") }}
+              onPick={onMain} />
           </span>
           <span className="usage-effort" role="cell"><span className="usage-effort-label">{t("usage.effort")}</span><Efforts model={current} value={effort} label={t("usage.default_model_reasoning_effort")}
             action="reasoning.effort" disabled={busy !== "" || !onEffort} onPick={(level) => onEffort?.(level)} /></span>
@@ -199,10 +208,12 @@ function Efforts({ model, value, label, action, fixedOff = false, disabled, onPi
 }
 
 function Choices({
-  vendors, protocol, main, value, answers, label, role = false, disabled, empty, onPick,
+  vendors, protocol, main, value, answers, label, role = false, disabled, empty, follow, onPick,
 }: {
   vendors: Vendor[]; protocol: Record<string, string>; main?: string; value: string; answers: Answers;
   label: string; role?: boolean; disabled: boolean; empty?: string; onPick: (ref: string) => void;
+  // Offered above the models: "follow whatever the composer last picked".
+  follow?: { on: boolean; label: string };
 }) {
   // Each service offers the models of the protocol it is on, and a model already
   // chosen stays listed even when its service is showing the other protocol.
@@ -215,8 +226,10 @@ function Choices({
     })
     .filter((g) => g.rows.length > 0);
   return (
-    <select className="usage-pick" aria-label={label} data-action={role ? "roles.model" : "model.select"} value={value} disabled={disabled}
+    <select className="usage-pick" aria-label={label} data-action={role ? "roles.model" : "model.select"}
+      value={follow?.on ? FOLLOW_LAST_PICK : value} disabled={disabled}
       onChange={(e) => onPick(e.target.value)}>
+      {follow && <option value={FOLLOW_LAST_PICK}>{follow.label}</option>}
       {empty !== undefined && <option value="">{empty}</option>}
       {answers === "search" && value && !groups.some((g) => g.rows.some((m) => m.ref === value)) && <option value={value}>{t("usage.model_unavailable", { model: value })}</option>}
       {answers === "vision" && value && !groups.some((g) => g.rows.some((m) => m.ref === value)) && <option value={value}>{t("usage.model_not_declared_to_read", { model: value })}</option>}

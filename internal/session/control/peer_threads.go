@@ -104,3 +104,14 @@ func peerThreadsFrom(self string, trail []peermail.AuditRecord) []PeerThread {
 	slices.SortFunc(out, func(a, b PeerThread) int { return b.Since.Compare(a.Since) })
 	return out
 }
+
+// PeerThreadWindow bounds how far back a caller outside this package reads the
+// audit trail when it folds one sender's dispatches.
+const PeerThreadWindow = peerThreadWindow
+
+// PeerThreadsFrom folds an audit trail into one thread per session self wrote
+// to. The hub serves the same states the controller's own PeerThreads does,
+// from the sender path alone, so a record survives a hub restart.
+func PeerThreadsFrom(self string, trail []peermail.AuditRecord) []PeerThread {
+	return peerThreadsFrom(self, trail)
+}

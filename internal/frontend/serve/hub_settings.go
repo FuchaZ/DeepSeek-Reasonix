@@ -32,6 +32,7 @@ func (s *Server) registerMachineSettingsRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("POST /network", s.saveNetwork)
 	mux.HandleFunc("POST /network/diagnose", s.diagnoseNetwork)
 	mux.HandleFunc("POST /default-model", s.setDefaultModel)
+	mux.HandleFunc("POST /default-model-policy", s.setDefaultModelPolicy)
 }
 
 func (h *Hub) localWorkspaceSettings(w http.ResponseWriter, r *http.Request) {

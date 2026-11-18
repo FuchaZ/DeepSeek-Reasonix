@@ -67,6 +67,24 @@ func (c *Config) DesktopDefaultToolApprovalMode() string {
 	return NormalizeToolApprovalMode(c.Desktop.DefaultToolApprovalMode)
 }
 
+// DefaultModelFollowsLastChoice reports whether a composer model switch also
+// moves default_model, so the next new conversation opens on the last pick.
+// Absent means it does not: the model Settings names stays the default, and a
+// switch inside one conversation is that conversation's alone.
+func (c *Config) DefaultModelFollowsLastChoice() bool {
+	if c == nil || c.Desktop.DefaultModelFollowsLastChoice == nil {
+		return false
+	}
+	return *c.Desktop.DefaultModelFollowsLastChoice
+}
+
+// SetDefaultModelFollowsLastChoice decides whether a composer model switch also
+// moves default_model. true follows the last pick; false pins the default to
+// whatever Settings names.
+func (c *Config) SetDefaultModelFollowsLastChoice(follows bool) {
+	c.Desktop.DefaultModelFollowsLastChoice = &follows
+}
+
 // UnrecognizedDesktopToolApprovalMode is the file's default_tool_approval_mode
 // when it names no posture this build knows, so it loads as ask; else "".
 func (c *Config) UnrecognizedDesktopToolApprovalMode() string {
@@ -114,22 +132,25 @@ type DesktopConfig struct {
 	// Tray is auto|off. It is not a second close_behavior: with no status
 	// icon there is no way back to a hidden window, so off also means the
 	// close button quits whatever close_behavior says.
-	Tray                    string           `toml:"tray"`
-	DisplayMode             string           `toml:"display_mode"`               // standard|compact (legacy "minimal" maps to compact); transcript display mode
-	StatusBarStyle          string           `toml:"status_bar_style"`           // icon|text; desktop status bar metric labels
-	StatusBarItems          []string         `toml:"status_bar_items"`           // ordered visible desktop status bar items
-	DefaultToolApprovalMode string           `toml:"default_tool_approval_mode"` // ask|auto|yolo; empty follows the sandbox claim and folder trust
-	CheckUpdates            *bool            `toml:"check_updates"`              // startup update checks; nil keeps the default enabled
-	UpdateChannel           string           `toml:"update_channel"`             // legacy: read for compatibility, never written back
-	Telemetry               *bool            `toml:"telemetry"`                  // anonymous daily ping, scrubbed native crash diagnostics, per-package market install counts (anonymous, no content); nil = enabled
-	Metrics                 *bool            `toml:"metrics"`                    // aggregate desktop metrics (anonymous signal/bucket counts, lifecycle health) and per-package market install counts (anonymous, no content); nil = enabled
-	ProviderAccess          []string         `toml:"provider_access"`            // desktop-only list of provider entries shown in Settings > Model > Access
-	ExpandThinking          bool             `toml:"expand_thinking"`            // deprecated compatibility alias: true maps to auto
-	ReasoningDisplayMode    string           `toml:"reasoning_display_mode"`
-	ConversationWidth       string           `toml:"conversation_width"` // standard|full|full-all|custom; custom uses appearance.width_percent; empty = standard
-	PinnedVersion           string           `toml:"pinned_version"`     // release pinned by a rollback; empty follows the channel
-	UpdateMode              string           `toml:"update_mode"`        // manual (default) | notify | download; user file only
-	Appearance              AppearanceConfig `toml:"appearance"`
+	Tray                    string   `toml:"tray"`
+	DisplayMode             string   `toml:"display_mode"`               // standard|compact (legacy "minimal" maps to compact); transcript display mode
+	StatusBarStyle          string   `toml:"status_bar_style"`           // icon|text; desktop status bar metric labels
+	StatusBarItems          []string `toml:"status_bar_items"`           // ordered visible desktop status bar items
+	DefaultToolApprovalMode string   `toml:"default_tool_approval_mode"` // ask|auto|yolo; empty follows the sandbox claim and folder trust
+	// DefaultModelFollowsLastChoice makes a composer model switch also move
+	// default_model. Nil pins the default to what Settings names.
+	DefaultModelFollowsLastChoice *bool            `toml:"default_model_follows_last_choice"`
+	CheckUpdates                  *bool            `toml:"check_updates"`   // startup update checks; nil keeps the default enabled
+	UpdateChannel                 string           `toml:"update_channel"`  // legacy: read for compatibility, never written back
+	Telemetry                     *bool            `toml:"telemetry"`       // anonymous daily ping, scrubbed native crash diagnostics, per-package market install counts (anonymous, no content); nil = enabled
+	Metrics                       *bool            `toml:"metrics"`         // aggregate desktop metrics (anonymous signal/bucket counts, lifecycle health) and per-package market install counts (anonymous, no content); nil = enabled
+	ProviderAccess                []string         `toml:"provider_access"` // desktop-only list of provider entries shown in Settings > Model > Access
+	ExpandThinking                bool             `toml:"expand_thinking"` // deprecated compatibility alias: true maps to auto
+	ReasoningDisplayMode          string           `toml:"reasoning_display_mode"`
+	ConversationWidth             string           `toml:"conversation_width"` // standard|full|full-all|custom; custom uses appearance.width_percent; empty = standard
+	PinnedVersion                 string           `toml:"pinned_version"`     // release pinned by a rollback; empty follows the channel
+	UpdateMode                    string           `toml:"update_mode"`        // manual (default) | notify | download; user file only
+	Appearance                    AppearanceConfig `toml:"appearance"`
 }
 
 // The interface scale's one declared range: the save clamp, the range the page

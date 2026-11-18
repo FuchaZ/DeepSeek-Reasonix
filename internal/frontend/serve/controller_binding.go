@@ -6,14 +6,18 @@ import (
 	"reasonix/internal/session/control"
 )
 
+// projectBindings is what a pane's controller is handed by the hub that owns
+// it: the project verbs, and the host-side ability to name sessions.
 type projectBindings struct {
 	dispatch control.ProjectDispatcher
 	open     control.ProjectOpener
+	rename   control.SessionRename
 }
 
 func (p projectBindings) bind(c *control.Controller) {
 	c.SetProjectDispatcher(p.dispatch)
 	c.SetProjectOpener(p.open)
+	c.SetSessionRenamer(p.rename)
 }
 
 func (s *Server) publishController(previous control.SessionAPI, next *control.Controller) error {

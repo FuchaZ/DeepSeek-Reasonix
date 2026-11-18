@@ -20,7 +20,15 @@ type sessionRecordReader struct {
 }
 
 func newSessionRecordReader(r io.Reader, path string, maxBytes int64) *sessionRecordReader {
-	return &sessionRecordReader{reader: bufio.NewReader(r), path: path, maxBytes: maxBytes}
+	return newSessionRecordReaderAt(r, path, maxBytes, 0)
+}
+
+// newSessionRecordReaderAt resumes at an absolute byte offset, so a replay that
+// skipped superseded records still reports offsets the file can be truncated at.
+// maxBytes is an absolute bound too: a jump does not hand the log a second
+// budget.
+func newSessionRecordReaderAt(r io.Reader, path string, maxBytes, base int64) *sessionRecordReader {
+	return &sessionRecordReader{reader: bufio.NewReader(r), path: path, maxBytes: maxBytes, offset: base}
 }
 
 func (r *sessionRecordReader) readByte() (byte, error) {

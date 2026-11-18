@@ -52,7 +52,7 @@ export const NO_REPORT: PaneReport = {
 export interface PaneProps {
   port: AgentPort;
   // Kernel-wide calls the window owns; the file panel uses them to open the project elsewhere.
-  hub?: Pick<HubPort, "openWith" | "openWithTargets">;
+  hub?: Pick<HubPort, "openWith" | "openWithTargets"> & Pick<HubPort, "dispatchBoard">;
   rt: RuntimeView;
   title: string;
   active: boolean;

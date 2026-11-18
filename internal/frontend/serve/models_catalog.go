@@ -22,7 +22,10 @@ func (s *Server) resolverModels(w http.ResponseWriter, scope modelScope) {
 			out = append(out, entry)
 		}
 	}
-	writeJSON(w, map[string]any{"current": current, "label": ctrl.Label(), "default": provider.DefaultRef(catalog), "models": out})
+	// A brokered pane reads this machine's policy the same way it reads its
+	// catalogue: the answer says which model a new conversation opens on.
+	writeJSON(w, map[string]any{"current": current, "label": ctrl.Label(), "default": provider.DefaultRef(catalog), "models": out,
+		"defaultFollowsLastChoice": config.LoadForEdit(config.UserConfigPath()).DefaultModelFollowsLastChoice()})
 }
 
 // modelScope is which job a model list is for. Empty is every job, which only

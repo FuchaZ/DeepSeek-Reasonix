@@ -104,7 +104,7 @@ export class MockPort extends MockWorkspace implements AgentPort {
 
   // The one model the catalogue marks as default, so a pick in the settings row
   // has something to read back after the list is reloaded.
-  private defaultRef = "";
+  private defaultRef = ""; private defaultFollows = false;
 
   private mem: MemoryEntry[] = MEMORIES.map((m) => ({ ...m }));
 
@@ -788,6 +788,7 @@ export class MockPort extends MockWorkspace implements AgentPort {
   async setDefaultModel(ref: string) {
     this.defaultRef = ref;
   }
+  async defaultModelPolicy(followsLastChoice?: boolean) { return (this.defaultFollows = followsLastChoice ?? this.defaultFollows); }
   async setEffort(effort: string) {
     this.state.effort = effort;
   }

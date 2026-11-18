@@ -86,6 +86,10 @@ type peerMail struct {
 	rejected  map[string]bool
 	sent      []time.Time
 	stop      chan struct{}
+	// rename is the host's ability to name sessions, which only a frontend
+	// that owns panes can supply; nil fails rename_session closed. See
+	// peer_rename.go.
+	rename renameState
 }
 
 // sessionPeerKey is the address a session is filed under: a digest of its

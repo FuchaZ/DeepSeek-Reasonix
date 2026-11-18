@@ -14,9 +14,16 @@ type SessionGrant struct {
 	Plan     bool
 }
 
-// DispatchGrant reads the grant this session would pass on.
+// DispatchGrant reads the grant this session passes on. A dispatched session
+// works unattended: the lead cannot answer a card in a pane it is not looking
+// at, so "ask" is handed on as "auto" — same deny rules, no extra permissions,
+// but no card per tool. Any other posture passes through unchanged.
 func (c *Controller) DispatchGrant() SessionGrant {
-	return SessionGrant{Model: c.ModelRef(), Preset: c.AgentPreset(), Approval: c.ToolApprovalMode(), Plan: c.PlanMode()}
+	mode := c.ToolApprovalMode()
+	if mode == ToolApprovalAsk {
+		mode = ToolApprovalAuto
+	}
+	return SessionGrant{Model: c.ModelRef(), Preset: c.AgentPreset(), Approval: mode, Plan: c.PlanMode()}
 }
 
 // AdoptSessionGrant sets this session's posture to the grant's. A field the grant

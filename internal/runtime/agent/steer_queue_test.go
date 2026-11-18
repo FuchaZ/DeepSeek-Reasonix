@@ -34,7 +34,7 @@ func TestSteerQueueGivesBackOnlyWhatItStillHolds(t *testing.T) {
 func TestSteerQueueLeavesHostNoticesAlone(t *testing.T) {
 	var q steerInbox
 	q.open()
-	q.admit(steerEntry{host: true, load: func() (string, error) { return "context is tight", nil }})
+	q.admit(steerEntry{host: true, load: func() (string, []string, error) { return "context is tight", nil, nil }})
 	if q.remove("") {
 		t.Fatal("a host notice was removed by an empty id")
 	}

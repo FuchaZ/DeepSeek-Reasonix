@@ -5,6 +5,7 @@ import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { MockPort } from "../port/mock";
 import type { PeerThread, PeerThreadState } from "../port/boundary";
+import type { DispatchBoardRow } from "../port/hub";
 import { DispatchThreadsBar } from "./DispatchThreadsBar";
 
 afterEach(cleanup);
@@ -99,5 +100,48 @@ describe("the dispatch status bar", () => {
     const { container } = draw(port);
     await waitFor(() => expect(port.peers).toHaveBeenCalled());
     expect(container.children).toHaveLength(0);
+  });
+});
+
+describe("the collaboration board behind the chip", () => {
+  const row = (over: Partial<DispatchBoardRow> = {}): DispatchBoardRow => ({
+    dispatcher: { key: "s-lead", sessionPath: "/sessions/lead.jsonl", title: "领头会话", project: "/w/alpha" },
+    assignee: { key: "s-member", sessionPath: "/sessions/member.jsonl", title: "组员A", project: "/w/beta" },
+    role: "研究员",
+    state: "waiting",
+    since: "2026-11-18T10:00:00Z",
+    crossProject: true,
+    ...over,
+  });
+
+  function drawWithBoard(rows: DispatchBoardRow[], onOpen = vi.fn()) {
+    const port = portWith([thread("replied")]);
+    const hub = { dispatchBoard: vi.fn().mockResolvedValue(rows) };
+    const view = render(<DispatchThreadsBar port={port} hub={hub} onOpen={onOpen} />);
+    return { onOpen, hub, container: view.container };
+  }
+
+  it("names both ends and says where the task stands", async () => {
+    const { hub } = drawWithBoard([row()]);
+    expect(await screen.findByText("组员A")).toBeTruthy();
+    expect(screen.getByText("领头会话")).toBeTruthy();
+    expect(screen.getByText("研究员")).toBeTruthy();
+    expect(screen.getByText("等待接收")).toBeTruthy();
+    expect(hub.dispatchBoard).toHaveBeenCalled();
+    // The board is the authority once it answers, so the sender's own record
+    // is not drawn beside it: one dispatch, one row.
+    expect(screen.queryByText(/处理『/)).toBeNull();
+  });
+
+  it("splits the cross-project rows from the ones in this project", async () => {
+    drawWithBoard([row(), row({ crossProject: false, role: "本组", assignee: { key: "s-b", sessionPath: "/sessions/b.jsonl", title: "组员B" } })]);
+    expect(await screen.findByText("跨项目")).toBeTruthy();
+    expect(screen.getByText("本项目")).toBeTruthy();
+  });
+
+  it("opens either end's session from its name", async () => {
+    const { onOpen } = drawWithBoard([row()]);
+    await userEvent.click(await screen.findByText("组员A"));
+    expect(onOpen).toHaveBeenCalledExactlyOnceWith("/sessions/member.jsonl");
   });
 });

@@ -45,11 +45,34 @@ func (s *Server) model(w http.ResponseWriter, r *http.Request) {
 		missingField(w, "ref")
 		return
 	}
-	if err := s.switchModelRequested(r.Context(), strings.TrimSpace(body.Ref)); err != nil {
+	ref := strings.TrimSpace(body.Ref)
+	if err := s.switchModelRequested(r.Context(), ref); err != nil {
 		writeErr(w, http.StatusInternalServerError, err)
 		return
 	}
+	s.followModelChoice(ref)
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// followModelChoice records a composer switch as the model new conversations
+// open on, when the default is set to follow the last choice. The write is best
+// effort: the conversation already switched, so a config that will not write is
+// worth a log line rather than a refusal that reads as the switch failing.
+func (s *Server) followModelChoice(ref string) {
+	// A brokered pane's default belongs to the machine its models come from.
+	if s.resolver != nil {
+		return
+	}
+	path := config.UserConfigPath()
+	if path == "" {
+		return
+	}
+	if !config.LoadForEdit(path).DefaultModelFollowsLastChoice() {
+		return
+	}
+	if err := persistDefaultModel(ref, s.ctl().ProviderCatalog()); err != nil {
+		slog.Warn("serve: recording the picked model as the default", "ref", ref, "err", err)
+	}
 }
 
 // setDefaultModel records the model new sessions start on in this machine's user
@@ -102,6 +125,44 @@ func persistDefaultModel(ref string, catalog []provider.Descriptor) error {
 }
 
 var errNoUserConfig = errors.New("no user configuration path")
+
+// writeModels answers the picker's catalogue with the policy that governs which
+// model a new conversation opens on, so one read tells a client both.
+func writeModels(w http.ResponseWriter, cfg *config.Config, current, label string, out []modelEntry) {
+	writeJSON(w, map[string]any{"current": current, "label": label, "default": cfg.DefaultModel, "models": out,
+		"defaultFollowsLastChoice": cfg.DefaultModelFollowsLastChoice()})
+}
+
+// setDefaultModelPolicy records whether a composer switch moves default_model.
+// It is the same file and the same lock as the default itself, so the two
+// cannot disagree about which model the next conversation opens on.
+func (s *Server) setDefaultModelPolicy(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		FollowsLastChoice *bool `json:"followsLastChoice"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil || body.FollowsLastChoice == nil {
+		missingField(w, "followsLastChoice")
+		return
+	}
+	if s.resolver != nil {
+		refuse(w, http.StatusConflict, "settings.default_model_brokered", "this pane's default model belongs to the machine its models come from", nil)
+		return
+	}
+	path := config.UserConfigPath()
+	if path == "" {
+		writeErr(w, http.StatusInternalServerError, errNoUserConfig)
+		return
+	}
+	unlock := config.LockUserConfigEdits()
+	defer unlock()
+	edit := config.LoadForEdit(path)
+	edit.SetDefaultModelFollowsLastChoice(*body.FollowsLastChoice)
+	if err := edit.SaveTo(path); err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
 
 // autoApproveTools toggles YOLO/full-access tool auto-approval.
 func (s *Server) autoApproveTools(w http.ResponseWriter, r *http.Request) {

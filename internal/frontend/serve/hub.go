@@ -8,12 +8,10 @@ import (
 	"io/fs"
 	"log/slog"
 	"net/http"
-	"os"
 	"reasonix/internal/state/sessionstore"
 	"strings"
 	"sync"
 
-	"reasonix/internal/assembly/boot"
 	"reasonix/internal/model/billing"
 	"reasonix/internal/platform/computer"
 	"reasonix/internal/platform/wsl"
@@ -25,6 +23,7 @@ import (
 	"reasonix/internal/contract/event"
 	"reasonix/internal/contract/provider"
 	"reasonix/internal/contract/surface"
+	"reasonix/internal/contract/tool"
 	"reasonix/internal/platform/notify"
 	"reasonix/internal/platform/update"
 	"reasonix/internal/session/control"
@@ -321,6 +320,27 @@ func (h *Hub) Open(ctx context.Context, req OpenRequest) (*Runtime, error) {
 	return h.openBound(ctx, req, nil)
 }
 
+// sessionBuildPosture resolves the model, preset and dispatch role of a session
+// being opened. A saved session's own record wins; a reopen with no saved model
+// reads the one recorded beside the transcript, because assembling the default
+// first and switching afterwards builds a runtime only to throw it away. The
+// request's role wins over the sidecar's so a fresh dispatch can name its pane.
+func sessionBuildPosture(req OpenRequest, settings *sessionstore.BranchMeta, root string) sessionBuildPostureResult {
+	out := sessionBuildPostureResult{model: strings.TrimSpace(req.Model), role: strings.TrimSpace(req.RoleText)}
+	if settings != nil {
+		out.model, out.preset = strings.TrimSpace(settings.Model), settings.AgentPreset
+		if out.role == "" {
+			out.role = strings.TrimSpace(settings.RoleText)
+		}
+	}
+	if out.model == "" {
+		out.model = modelForReopenedSession(root, req.SessionPath)
+	}
+	return out
+}
+
+type sessionBuildPostureResult struct{ preset, model, role string }
+
 func (h *Hub) openBound(ctx context.Context, req OpenRequest, inherited *agentcomposition.Binding) (*Runtime, error) {
 	defer backgroundwork.Shared.Foreground()()
 	if rt := h.findSession(req.SessionPath); rt != nil {
@@ -336,52 +356,28 @@ func (h *Hub) openBound(ctx context.Context, req OpenRequest, inherited *agentco
 		return nil, err
 	}
 	binding := inherited
+	// The transcript is read once here to learn its composition. The same load
+	// is handed to the binding step below, so opening a session does not read a
+	// long log twice around an assembly that already takes seconds.
+	var opened *loadedSession
 	if req.SessionPath != "" {
-		if binding, err = loadOpenComposition(root, req.SessionPath); err != nil {
+		if opened, err = loadOpenComposition(root, req.SessionPath); err != nil {
 			return nil, err
 		}
+		binding = opened.bindingOf()
 	}
-	preset := ""
+	posture := sessionBuildPosture(req, settings, root)
+	req.Model = posture.model
 	savedModel := ""
 	if settings != nil {
 		savedModel = strings.TrimSpace(settings.Model)
-		req.Model, preset = savedModel, settings.AgentPreset
 	}
 	bc := NewBroadcaster()
 	paneSink := h.decorateSink(bc)
-	build := func(model string, fallback bool) (*boot.BuildResult, error) {
-		opts := boot.Options{
-			AgentComposition:         req.AgentComposition,
-			Composition:              binding,
-			ComputerDriver:           h.opts.ComputerDriver,
-			Model:                    strings.TrimSpace(model),
-			AgentPreset:              preset,
-			WorkspaceRoot:            root,
-			SessionDir:               SessionDirFor(root),
-			Sink:                     paneSink,
-			NativeSurfaces:           h.opts.NativeSurfaces,
-			Stderr:                   os.Stderr,
-			DiagnosticSink:           h.skillNotices.once(paneSink),
-			StatsSource:              h.surface(),
-			FeedbackSurface:          feedbackSurface(h.surface()),
-			AccountsURL:              accountsBaseURL(),
-			BalanceStore:             h.wallets,
-			OpenOnFallbackModel:      fallback,
-			ProviderResolver:         h.opts.ProviderResolver,
-			CleanupPendingReconciler: BackgroundCleanupReconciler,
-			NewConversation:          strings.TrimSpace(req.SessionPath) == "",
-		}
-		if inherited != nil {
-			return boot.BuildRuntime(ctx, opts)
-		}
-		return buildCompositionOrHistory(ctx, opts)
-	}
-	built, err := build(req.Model, settings == nil)
-	branchModelFallback := false
-	if err != nil && settings != nil && errors.Is(err, provider.ErrUnknownModel) {
-		built, err = build("", true)
-		branchModelFallback = err == nil
-	}
+	built, branchModelFallback, err := h.buildPane(ctx, paneBuild{
+		req: req, inherited: inherited, binding: binding,
+		posture: posture, root: root, paneSink: paneSink, settings: settings,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("open %s: %w", root, err)
 	}
@@ -417,7 +413,7 @@ func (h *Hub) openBound(ctx context.Context, req OpenRequest, inherited *agentco
 		return nil, err
 	}
 	if path := strings.TrimSpace(req.SessionPath); path != "" {
-		if status, err := srv.resumeInto(path); err != nil {
+		if status, err := srv.resumeIntoLoaded(path, opened); err != nil {
 			built.Controller.Close()
 			leases.Release()
 			return nil, keepRefusalStatus(status, err)
@@ -543,6 +539,8 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("GET /runtimes", h.listRuntimes)
 	mux.HandleFunc("POST /runtimes", h.openRuntime)
 	mux.HandleFunc("POST /runtimes/{id}/close", h.closeRuntime)
+	mux.HandleFunc("GET /dispatch-threads", h.dispatchThreadsHTTP)
+	mux.HandleFunc("GET /dispatch-board", h.dispatchBoardHTTP)
 	h.registerTreeRoutes(mux)
 	h.registerMuxRoutes(mux)
 	h.registerStudioVersionRoutes(mux)
@@ -677,6 +675,11 @@ func (h *Hub) publish(rt *Runtime) error {
 		rt.Server.mu.Lock()
 		ctrl, concrete := rt.Server.ctrl.(*control.Controller)
 		projects := projectBindings{dispatch: h.dispatcherFor(rt), open: openProjects}
+		// Naming a session is the hub's call: it owns the panes and the
+		// dispatch record the boundary is drawn from.
+		projects.rename = func(to, title string) (tool.RenamedSession, error) {
+			return h.renameSessionFor(rt, to, title)
+		}
 		if concrete {
 			rt.Server.currency = &h.currency
 		}

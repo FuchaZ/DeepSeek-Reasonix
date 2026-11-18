@@ -141,42 +141,37 @@ func (c *Controller) steerInboxItem(id string, holdIfPaused bool) (sessioninbox.
 	// Capture only the store pointer + item id. Load body from disk at consume.
 	storeRef := st
 	itemID := id
-	loader := func() (string, error) {
+	loader := func() (string, []string, error) {
 		_, env, err := storeRef.ReadItem(itemID)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
 		text := strings.TrimSpace(env.SubmitText)
 		if text == "" {
 			text = strings.TrimSpace(env.DisplayText)
 		}
 		if text == "" {
-			return "", fmt.Errorf("inbox item %s has empty body", itemID)
+			return "", nil, fmt.Errorf("inbox item %s has empty body", itemID)
 		}
 		materialized, images, block, materializeErr := applyInboxReferences(env)
 		if materializeErr != nil {
-			return "", materializeErr
+			return "", nil, materializeErr
 		}
 		if block != "" {
-			return "", fmt.Errorf("frozen reference unavailable: %s", block)
+			return "", nil, fmt.Errorf("frozen reference unavailable: %s", block)
 		}
-		if len(images) > 0 {
-			return "", fmt.Errorf("image guidance requires a follow-up turn")
-		}
-		return firstNonEmptyStr(materialized, text), nil
+		return firstNonEmptyStr(materialized, text), images, nil
 	}
 	// Persist the admission boundary before exposing the loader to the agent.
 	// Holding c.mu for the short in-memory enqueue serializes active tracking
 	// with finishGuardedTurn, so TurnDone cannot overtake an accepted steer.
 	c.inbox.trackAdmission(id)
 	defer c.inbox.untrackAdmission(id)
-	if len(env.FrozenImages) == 0 {
-		if err := st.SetState(id, sessioninbox.StateSteerAccepted, ""); err != nil {
-			return sessioninbox.InboxReceipt{}, err
-		}
+	if err := st.SetState(id, sessioninbox.StateSteerAccepted, ""); err != nil {
+		return sessioninbox.InboxReceipt{}, err
 	}
 	c.mu.Lock()
-	accepted := !c.gate.closed && !c.gate.rotating && c.gate.running && c.executor != nil && len(env.FrozenImages) == 0 && c.steerItemAs(meta.Origin, id, loader, env.Via, env.DisplayText)
+	accepted := !c.gate.closed && !c.gate.rotating && c.gate.running && c.executor != nil && c.steerItemAs(meta.Origin, id, loader, env.Via, env.DisplayText)
 	if accepted {
 		c.inbox.mu.Lock()
 		c.inbox.trackActive(id)
@@ -193,11 +188,9 @@ func (c *Controller) steerInboxItem(id string, holdIfPaused bool) (sessioninbox.
 		}, nil
 	}
 	// Rejected: keep as follow-up.
-	if len(env.FrozenImages) == 0 {
-		if err := st.SetState(id, sessioninbox.StateQueued, ""); err != nil {
-			_ = st.ForcePause(true, 1)
-			return sessioninbox.InboxReceipt{}, err
-		}
+	if err := st.SetState(id, sessioninbox.StateQueued, ""); err != nil {
+		_ = st.ForcePause(true, 1)
+		return sessioninbox.InboxReceipt{}, err
 	}
 	if err := st.ConvertIntent(id, sessioninbox.IntentFollowup); err != nil {
 		return sessioninbox.InboxReceipt{}, err
@@ -214,7 +207,7 @@ func (c *Controller) steerInboxItem(id string, holdIfPaused bool) (sessioninbox.
 
 // steerItemAs queues the item under the attribution the manifest recorded, so a
 // host-authored item is never delivered as something the user said. Holds c.mu.
-func (c *Controller) steerItemAs(origin sessioninbox.PromptOrigin, id string, loader func() (string, error), via *provider.Via, display string) bool {
+func (c *Controller) steerItemAs(origin sessioninbox.PromptOrigin, id string, loader func() (string, []string, error), via *provider.Via, display string) bool {
 	if origin.IsHost() {
 		return c.executor.SteerHostItem(id, loader)
 	}

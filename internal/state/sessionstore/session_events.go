@@ -243,6 +243,14 @@ func replaySessionEventLogWithLimits(path string, limits sessionReplayLimits) (s
 }
 
 func replaySessionEventRecords(path string, limits sessionReplayLimits) (sessionEventReplay, error) {
+	return replaySessionEventRecordsFrom(path, limits, -1)
+}
+
+// replaySessionEventRecordsFrom replays the log from an absolute byte offset.
+// A negative offset asks for the newest snapshot record: everything before it
+// was replaced wholesale, so reading it would only decode state already
+// superseded — on a long session rewritten many times that is most of the file.
+func replaySessionEventRecordsFrom(path string, limits sessionReplayLimits, from int64) (sessionEventReplay, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return sessionEventReplay{}, err
@@ -256,7 +264,11 @@ func replaySessionEventRecords(path string, limits sessionReplayLimits) (session
 	if info.Size() > limits.maxBytes {
 		return replay, sessionReplayLimitError(path, "encoded_bytes", info.Size(), limits.maxBytes)
 	}
-	reader := newSessionRecordReader(limits.reader(f), path, limits.maxBytes)
+	start, err := seekReplayStart(f, info.Size(), from)
+	if err != nil {
+		return replay, err
+	}
+	reader := newSessionRecordReaderAt(limits.reader(f), path, limits.maxBytes, start)
 	for {
 		if err := limits.err(); err != nil {
 			return replay, err

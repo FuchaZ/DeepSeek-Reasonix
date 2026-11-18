@@ -15,10 +15,15 @@ import (
 type steerEntry struct {
 	display string
 	itemID  string
-	load    func() (string, error)
+	// load returns the guidance text and the data URLs of any images riding
+	// with it. Images were frozen when the inbox item was enqueued, so the
+	// consumer reads them straight off the envelope.
+	load func() (string, []string, error)
 	// text is a fallback when load is nil (legacy Steer(string) path).
 	text string
-	host bool
+	// images carries the legacy Steer(string) path's images (always nil today).
+	images []string
+	host   bool
 	// via is the paired device the guidance was sent from; nil is the window.
 	via *provider.Via
 }
@@ -141,7 +146,7 @@ func (s *steerInbox) close() []steerEntry {
 // SteerHostItem is SteerItem for a durable item the runtime authored. The
 // attribution travels with the entry rather than with the call site, so every
 // path that renders or persists it later says the same thing about who spoke.
-func (a *Agent) SteerHostItem(itemID string, load func() (string, error)) bool {
+func (a *Agent) SteerHostItem(itemID string, load func() (string, []string, error)) bool {
 	return a.queueSteer(steerEntry{itemID: itemID, load: load, host: true})
 }
 
@@ -182,28 +187,28 @@ func (a *Agent) recordUnappliedSteer(text string, host bool, itemID ...string) {
 // another way, typically as a new turn. The active check keeps a steer landing
 // between the exit flush and running=false from sitting unconsumed and unsaved.
 func (a *Agent) Steer(text string) bool {
-	return a.SteerItem("", func() (string, error) { return text, nil })
+	return a.SteerItem("", func() (string, []string, error) { return text, nil, nil })
 }
 
 // SteerHostNotice queues runtime-authored guidance on the same path as Steer,
 // attributed to the host instead of the user.
 func (a *Agent) SteerHostNotice(text string) bool {
-	return a.queueSteer(steerEntry{load: func() (string, error) { return text, nil }, host: true})
+	return a.queueSteer(steerEntry{load: func() (string, []string, error) { return text, nil, nil }, host: true})
 }
 
 // SteerItem queues durable-inbox guidance identified by itemID. load is called
 // only when the entry is consumed so the agent does not retain every body.
-func (a *Agent) SteerItem(itemID string, load func() (string, error)) bool {
+func (a *Agent) SteerItem(itemID string, load func() (string, []string, error)) bool {
 	return a.SteerItemFrom(itemID, load, nil)
 }
 
 // SteerItemFrom is SteerItem for guidance sent from a paired device, which the
 // delivered message and its announcement name.
-func (a *Agent) SteerItemFrom(itemID string, load func() (string, error), via *provider.Via) bool {
+func (a *Agent) SteerItemFrom(itemID string, load func() (string, []string, error), via *provider.Via) bool {
 	return a.queueSteer(steerEntry{itemID: itemID, load: load, via: via})
 }
 
-func (a *Agent) SteerDisplayedItemFrom(itemID string, load func() (string, error), display string, via *provider.Via) bool {
+func (a *Agent) SteerDisplayedItemFrom(itemID string, load func() (string, []string, error), display string, via *provider.Via) bool {
 	return a.queueSteer(steerEntry{itemID: itemID, load: load, display: display, via: via})
 }
 
@@ -222,10 +227,11 @@ func (a *Agent) consumeSteer() (text string, e steerEntry, ok bool) {
 		return "", steerEntry{}, false
 	}
 	if e.load != nil {
-		t, err := e.load()
+		t, images, err := e.load()
 		if err != nil {
 			return "", e, false
 		}
+		e.images = images
 		return t, e, true
 	}
 	return e.text, e, true
@@ -248,7 +254,7 @@ func (a *Agent) flushSteerQueue() {
 	for _, e := range a.steer.close() {
 		text := e.text
 		if e.load != nil {
-			if t, err := e.load(); err == nil {
+			if t, _, err := e.load(); err == nil {
 				text = t
 			}
 		}
@@ -276,7 +282,7 @@ func (a *Agent) steerQueueLen() int {
 }
 
 func (a *Agent) landSteer(text string, entry steerEntry) {
-	a.sess.conversation.Add(provider.Message{Role: provider.RoleUser, Content: a.withTurnPreferences(sessionstore.MidTurnSteerMessage(text, entry.host)), RawContent: entry.display, Via: entry.via})
+	a.sess.conversation.Add(provider.Message{Role: provider.RoleUser, Content: a.withTurnPreferences(sessionstore.MidTurnSteerMessage(text, entry.host)), RawContent: entry.display, Images: entry.images, Via: entry.via})
 	display := entry.display
 	if display == "" {
 		display = text

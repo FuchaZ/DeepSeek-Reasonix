@@ -127,6 +127,7 @@ export const USAGE: Messages = {
   "usage.the_size_of_the_request": { zh: "发给模型服务商的请求内容大小（不含连接本身的开销，也不含下载）。每次请求都会带上完整的对话，所以它取决于上下文有多长、请求有多少次，缓存命中只省费用、不省流量。", en: "The size of the request bodies sent to model providers (without the connection's own overhead, and without downloads). Every request carries the whole conversation, so it depends on how long the context is and how many requests are made; cache hits save cost, not bandwidth." },
   "usage.the_source_must_be_an": { zh: "来源必须是 http 或 https 链接，不能带用户名密码。", en: "The source must be an http or https link without a username or password." },
   "usage.these_models_prices_are_not": { zh: "这些模型的价格不在官方价目表里，无法换算成所选币种，费用只能按原币种显示：{models}。到「服务商」编辑该模型，点「恢复官方价」即可。", en: "These models' prices are not in the vendor's price list, so they cannot be converted to the chosen currency and cost shows in the original one: {models}. Edit the model under Providers and choose Restore official price." },
+  "usage.follow_the_last_pick": { zh: "随上次选择", en: "Follow the last pick" },
   "usage.this_conversation_and_most_tasks": { zh: "当前对话和大多数任务", en: "This conversation and most tasks" },
   "usage.this_price_is_not_in": { zh: "这个价格不在官方价目表里，选了人民币或美元显示时无法换算。", en: "This price is not in the vendor's price list, so it cannot be converted when a display currency is chosen." },
   "usage.this_turn": { zh: "本回合", en: "this turn " },

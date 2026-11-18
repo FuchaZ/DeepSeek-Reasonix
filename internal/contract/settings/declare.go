@@ -40,6 +40,8 @@ var table = []Entry{
 	{ID: "desktop.status_bar_style", Class: Preference, Effect: OnOpen},
 	{ID: "desktop.status_bar_items", Class: Preference, Effect: OnOpen},
 	{ID: "desktop.default_tool_approval_mode", Class: Guarded, Effect: OnOpen},
+	// Read again when the next conversation opens, which is when it takes effect.
+	{ID: "desktop.default_model_follows_last_choice", Class: Preference, Effect: OnOpen},
 	{ID: "desktop.check_updates", Class: Guarded, Effect: OnOpen},
 	{ID: "desktop.provider_health_checks", Class: Guarded, Effect: Immediate},
 	{ID: "desktop.update_channel", Class: Guarded, Effect: OnOpen},

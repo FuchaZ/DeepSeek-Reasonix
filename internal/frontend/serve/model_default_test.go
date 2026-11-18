@@ -2,6 +2,7 @@ package serve
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -57,10 +58,17 @@ func postModel(t *testing.T, base, body string) {
 	}
 }
 
-// A switch inside a session is that session's choice; it must not move the
-// default every other session and the next launch start from.
-func TestModelSwitchLeavesDefaultModelAlone(t *testing.T) {
+// A default pinned to one model is the person's answer: a switch inside a
+// session must not move the model every other session and the next launch
+// start from.
+func TestPinnedDefaultModelSurvivesASessionSwitch(t *testing.T) {
 	srv, path := twoModelServer(t)
+	if err := config.EditConfigFile(path, func(cfg *config.Config) error {
+		cfg.SetDefaultModelFollowsLastChoice(false)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
 	before, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
@@ -73,7 +81,96 @@ func TestModelSwitchLeavesDefaultModelAlone(t *testing.T) {
 		t.Fatal(err)
 	}
 	if string(before) != string(after) {
-		t.Fatalf("a session switch rewrote the user config:\n%s", after)
+		t.Fatalf("a pinned default was rewritten by a session switch:\n%s", after)
+	}
+}
+
+// With the default set to follow the last choice, the model picked in the
+// composer is what the next new conversation opens on.
+func TestFollowingDefaultTracksTheComposerSwitch(t *testing.T) {
+	srv, path := twoModelServer(t)
+	if err := config.EditConfigFile(path, func(cfg *config.Config) error {
+		cfg.SetDefaultModelFollowsLastChoice(true)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	postModel(t, srv.URL, `{"ref":"alternate/other-chat"}`)
+
+	if got := config.LoadForEdit(path).DefaultModel; got != "alternate/other-chat" {
+		t.Fatalf("default_model = %q, want the model the composer just switched to", got)
+	}
+}
+
+// A pane resolving through a broker reads no default_model of this machine, so
+// its switch must not write one here even when following is on.
+func TestFollowingDefaultOnABrokeredPaneWritesNothing(t *testing.T) {
+	srv, path, server, _ := twoModelServerAt(t)
+	if err := config.EditConfigFile(path, func(cfg *config.Config) error {
+		cfg.SetDefaultModelFollowsLastChoice(true)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	server.resolver = homeResolver()
+	before, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	postModel(t, srv.URL, `{"ref":"home/chat-a"}`)
+
+	after, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(before) != string(after) {
+		t.Fatalf("a brokered pane wrote this machine's default:\n%s", after)
+	}
+}
+
+// The policy itself is a config write the settings surface can make.
+func TestDefaultModelPolicyIsWritable(t *testing.T) {
+	srv, path := twoModelServer(t)
+
+	resp, err := http.Post(srv.URL+"/default-model-policy", "application/json", strings.NewReader(`{"followsLastChoice":true}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusNoContent {
+		t.Fatalf("POST /default-model-policy = %d", resp.StatusCode)
+	}
+	if !config.LoadForEdit(path).DefaultModelFollowsLastChoice() {
+		t.Fatal("the policy did not reach the config file")
+	}
+}
+
+// The picker reads the policy in the same answer as the catalogue, so a client
+// needs one round trip to know both.
+func TestModelsAnswersTheDefaultPolicy(t *testing.T) {
+	srv, path := twoModelServer(t)
+	if err := config.EditConfigFile(path, func(cfg *config.Config) error {
+		cfg.SetDefaultModelFollowsLastChoice(true)
+		return nil
+	}); err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.Get(srv.URL + "/models?answers=all")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	var got struct {
+		DefaultFollowsLastChoice bool `json:"defaultFollowsLastChoice"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&got); err != nil {
+		t.Fatal(err)
+	}
+	if !got.DefaultFollowsLastChoice {
+		t.Fatal("/models did not report the policy that governs the default")
 	}
 }
 

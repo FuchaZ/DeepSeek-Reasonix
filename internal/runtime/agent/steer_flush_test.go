@@ -188,7 +188,7 @@ func TestSteerCarriesWhoSentIt(t *testing.T) {
 	sink := event.FuncSink(func(e event.Event) {
 		switch e.Kind {
 		case event.TurnStarted:
-			a.SteerItemFrom("it-1", func() (string, error) { return "use the other file", nil }, via)
+			a.SteerItemFrom("it-1", func() (string, []string, error) { return "use the other file", nil, nil }, via)
 			a.SteerHostNotice("host guidance")
 		case event.Steer:
 			steers = append(steers, e)

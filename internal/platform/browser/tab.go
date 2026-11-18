@@ -186,25 +186,41 @@ func (t *tab) location() (url, title string) {
 	return t.url, t.title
 }
 
+// refreshTitle reads the title from the page itself and reports whether it
+// changed, so a caller already about to notify can fold the two into one. A
+// page sets its title while the document is parsed and may set it again later,
+// so the cached value is only as good as the last read.
+func (t *tab) refreshTitle() bool {
+	t.mu.Lock()
+	before := t.navigated
+	t.mu.Unlock()
+	ctx, cancel := context.WithTimeout(context.Background(), closeTimeout)
+	defer cancel()
+	var r struct {
+		Result struct {
+			Value string `json:"value"`
+		} `json:"result"`
+	}
+	if t.call(ctx, "Runtime.evaluate", map[string]any{"expression": "document.title", "returnByValue": true}, &r) != nil {
+		return false
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	// The read names the document it ran against, and a navigation between the
+	// ask and the answer makes that document the last one: writing its title
+	// here would put the page we left over the page we are on.
+	if t.navigated != before {
+		return false
+	}
+	retitled := t.title != r.Result.Value
+	t.title = r.Result.Value
+	return retitled
+}
+
 // info reads the title fresh when asked to, since pages set it after load.
 func (t *tab) info(refreshTitle bool) TabInfo {
-	if refreshTitle {
-		ctx, cancel := context.WithTimeout(context.Background(), closeTimeout)
-		var r struct {
-			Result struct {
-				Value string `json:"value"`
-			} `json:"result"`
-		}
-		if t.call(ctx, "Runtime.evaluate", map[string]any{"expression": "document.title", "returnByValue": true}, &r) == nil {
-			t.mu.Lock()
-			retitled := t.title != r.Result.Value
-			t.title = r.Result.Value
-			t.mu.Unlock()
-			if retitled {
-				t.s.tabsChanged()
-			}
-		}
-		cancel()
+	if refreshTitle && t.refreshTitle() {
+		t.s.tabsChanged()
 	}
 	url, title := t.location()
 	return TabInfo{ID: t.id, Target: t.targetID, URL: url, Title: title, Active: t.s.activeTab() == t}
@@ -235,6 +251,9 @@ func (t *tab) onEvent(ev event) {
 		t.mu.Lock()
 		delete(t.runtime.contexts, t.mainFrame)
 		t.mainFrame, t.url = p.Frame.ID, p.Frame.URL+p.Frame.URLFragment
+		// The old document's name is gone with it; until the new one speaks,
+		// the address is the honest label rather than the page we left.
+		t.title = ""
 		t.navigated++
 		t.pointer = pointerState{}
 		t.signalLocked()
@@ -273,7 +292,10 @@ func (t *tab) onEvent(ev event) {
 		t.mu.Unlock()
 		if main {
 			t.s.tabsChanged()
+			t.readTitleAfterLoad()
 		}
+	case "Page.frameTitleUpdated":
+		t.applyTitleEvent(ev.Params)
 	case "Page.javascriptDialogOpening":
 		var d Dialog
 		if json.Unmarshal(ev.Params, &d) != nil {
@@ -634,4 +656,41 @@ func (t *tab) checkCurrentURL() error {
 	}
 	_, err := checkURL(url, t.s.cfg.Roots)
 	return err
+}
+
+// readTitleAfterLoad reads the page's own name once its load has finished: the
+// cached one is empty for a page the agent never asked about, and a tab named
+// by its address is what a person sees instead. Read off the event queue,
+// because a round trip here would hold back every event behind it.
+func (t *tab) readTitleAfterLoad() {
+	go func() {
+		if t.refreshTitle() {
+			t.s.tabsChanged()
+		}
+	}()
+}
+
+// applyTitleEvent takes the host's relayed title. A page renames itself as it
+// goes — a script after load, a route change with no load at all — and a
+// subframe's name is never the tab's.
+func (t *tab) applyTitleEvent(params json.RawMessage) {
+	var p struct {
+		FrameID string `json:"frameId"`
+		Title   string `json:"title"`
+	}
+	if json.Unmarshal(params, &p) != nil {
+		return
+	}
+	t.mu.Lock()
+	// The host relays the view's own event, which carries no frame id, so ""
+	// is the page itself rather than a frame to reject.
+	main := p.FrameID == "" || p.FrameID == t.mainFrame
+	retitled := main && t.title != p.Title
+	if main {
+		t.title = p.Title
+	}
+	t.mu.Unlock()
+	if retitled {
+		t.s.tabsChanged()
+	}
 }

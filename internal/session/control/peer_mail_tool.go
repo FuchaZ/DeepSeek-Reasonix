@@ -30,6 +30,13 @@ func (d peerDirectory) SendPeerMessage(to, text string) (tool.PeerReceipt, error
 	return tool.PeerReceipt{ID: r.ID, To: tool.PeerView{Key: r.To.Key, Title: r.To.Title, Project: r.To.Project}}, nil
 }
 
+// RenameSession forwards the rename tool to the host that owns the panes, so
+// the boundary it enforces (own session, or one this one dispatched to) lives
+// in one place instead of being re-derived from a peers listing.
+func (d peerDirectory) RenameSession(to, title string) (tool.RenamedSession, error) {
+	return d.c.RenameSession(to, title)
+}
+
 // fmtPeerError is the refusal a peer tool reports: the error's identity, and
 // the setting whose change would lift it where one would.
 func fmtPeerError(err error) error {

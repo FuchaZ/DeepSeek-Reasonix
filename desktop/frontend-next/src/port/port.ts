@@ -791,6 +791,7 @@ export interface AgentPort extends RunningWorkPort, MemoryHoldPort, WorkspacePre
   // port answers for. A brokered pane's default lives on the machine its models
   // come from, so its refusal is typed: settings.default_model_brokered.
   setDefaultModel(ref: string): Promise<void>;
+  defaultModelPolicy(followsLastChoice?: boolean): Promise<boolean>;
   setEffort(effort: string): Promise<void>;
   // "" turns the session's model mode off.
   setModelMode(mode: string): Promise<void>;

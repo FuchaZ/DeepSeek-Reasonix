@@ -799,7 +799,7 @@ func (s *Server) models(w http.ResponseWriter, r *http.Request) {
 	if out == nil {
 		out = []modelEntry{}
 	}
-	writeJSON(w, map[string]any{"current": current, "label": label, "default": cfg.DefaultModel, "models": out})
+	writeModels(w, cfg, current, label, out)
 }
 
 func currentModelRef(c control.SessionAPI) string {

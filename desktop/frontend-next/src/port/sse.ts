@@ -624,6 +624,14 @@ export class SsePort extends SseTerminal implements AgentPort {
   setDefaultModel(ref: string) {
     return this.post("/default-model", { ref });
   }
+  async defaultModelPolicy(followsLastChoice?: boolean) {
+    if (followsLastChoice === undefined) {
+      const r = await this.get<{ defaultFollowsLastChoice?: boolean }>("/models?answers=all");
+      return r.defaultFollowsLastChoice === true;
+    }
+    await this.post("/default-model-policy", { followsLastChoice });
+    return followsLastChoice;
+  }
   setEffort(effort: string) {
     return this.post("/effort", { effort });
   }
