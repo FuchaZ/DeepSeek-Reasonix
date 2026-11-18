@@ -17,6 +17,7 @@ import { SECTION_NAME, SETTING_AT, pageHome } from "./prefsnav";
 import { SettingsNav, SettingsTitle } from "./SettingsNav";
 import { SettingsPageStyle, SoloStyle } from "./SettingsPageStyle";
 import { firstPage, pageOf } from "./settingPages";
+import { lastSettingsPage, rememberSettingsPage } from "../state/settingsPage";
 import { Group, SCOPE_SAID } from "./Group";
 import { CommonSettings } from "./CommonSettings";
 import { AgentSettings } from "./AgentSettings";
@@ -35,6 +36,7 @@ import { ExtAddMenu, type ExtAddWay } from "./ExtAddMenu";
 import { ExtDetail, ExtSplit, firstPick } from "./ExtDetail";
 import type { ExtPicked } from "./extpick";
 import { ModelSettings } from "./ModelSettings";
+import { FOLLOW_LAST_PICK } from "./ModelUsage";
 import { ServerRow } from "./ServerRow";
 import { SkillGroups } from "./SkillRow";
 import { ConfigTrouble } from "./ConfigTrouble";
@@ -82,9 +84,12 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
   const solo = !!soloSection;
   const openedSection = soloSection ?? openedName;
   const [picked, setPicked] = useState<ExtPicked | null>(null);
-  const [at, setAt] = useState<Section>(homeFor((openedSection as Section) || "session", openedAnchor));
+  // An explicit request wins; a plain open returns to where the reader left the
+  // sheet, and the first visit lands on 常用 rather than on a page they never chose.
+  const landing = (openedSection as Section) || lastSettingsPage() || "common";
+  const [at, setAt] = useState<Section>(homeFor(landing, openedAnchor));
   const [pages, setPages] = useState<Partial<Record<Section, string>>>(() => {
-    const home = homeFor((openedSection as Section) || "session", openedAnchor);
+    const home = homeFor(landing, openedAnchor);
     const first = pageOf(home, openedAnchor);
     return first ? { [home]: first } : {};
   });
@@ -97,6 +102,9 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
   // on its reasoning fields. The model ref's first segment is the source name.
   const declare = openedAnchor === "effort-declare" ? status?.modelRef?.split("/")[0] : undefined;
   const [models, setModels] = useState<ModelEntry[]>([]);
+  // Whether new conversations open on the model last picked in the composer,
+  // rather than on the one the default row names.
+  const [followsLastChoice, setFollowsLastChoice] = useState(false);
   const { roles, overrides, loadRoles } = useRoles(port);
   const [protocol, setProtocol] = useState<Record<string, string>>({});
   const [mcp, setMcp] = useState<McpEntry[]>([]);
@@ -155,7 +163,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
   }, [port, homePort, localPort, scopeAt]);
   // Adding or removing a source changes what the picker above can offer, so
   // the list is reloadable rather than read once at mount.
-  const loadModels = useModelCatalog(port, localPort, setModels);
+  const loadModels = useModelCatalog(port, localPort, setModels, setFollowsLastChoice);
 
   const currentExt = useRef({ port, reloadExt, loadModels, onChanged });
   currentExt.current = { port, reloadExt, loadModels, onChanged };
@@ -325,6 +333,12 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
     else navigation.leave(land);
   };
   useSettingLanding(root, landed, at, setLanded);
+  // A page opened on its own (an extension manager, a spend view) is that
+  // surface's destination, not a settings page, so it is not what the sheet
+  // comes back to.
+  useEffect(() => {
+    if (!solo) rememberSettingsPage(at);
+  }, [at, solo]);
 
   return (
     <SettingsLeaveContext.Provider value={navigation.register}><div
@@ -431,10 +445,18 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
           {at === "model" && (
             <ModelSettings port={port} onChanged={onChanged} onFailed={setFailed}
               usage={{
-                models, roles, main: status?.modelRef, busy, protocol,
+                models, roles, main: status?.modelRef, busy, protocol, followsLastChoice,
                 onMain: (ref) => run(ref, async () => {
+                  // The follow option is a policy, not a model: it records that
+                  // new conversations open on whatever the composer last picked.
+                  if (ref === FOLLOW_LAST_PICK) {
+                    await localPort.defaultModelPolicy(true);
+                    loadModels();
+                    return;
+                  }
                   await port.setModel(ref);
                   await localPort.setDefaultModel(ref);
+                  await localPort.defaultModelPolicy(false);
                   loadModels();
                 }),
                 effort: status?.effort || "auto", onEffort: (level) => run(`effort:${level}`, () => port.setEffort(level)),
