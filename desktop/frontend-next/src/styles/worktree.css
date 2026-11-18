@@ -39,3 +39,23 @@
 .workspace-palette-empty p { margin: 0 0 10px }
 .workspace-palette :is(button, summary):focus-visible { outline: 2px solid var(--focus); outline-offset: -2px }
 @media (max-width: 480px) { .worktree-sources button { gap: 7px; padding-inline: 8px } .worktree-sources button small { max-width: 92px; height: auto; padding: 2px 7px; white-space: normal } }
+.workspace-blank { position: fixed; z-index: 1000; box-sizing: border-box; width: min(430px, calc(100vw / var(--zoom, 1) - 24px)); padding: 16px 18px 18px; border: 1px solid var(--border); border-radius: var(--r-md); background: var(--float); color: var(--text); box-shadow: var(--shadow-float) }
+.workspace-blank-head { display: flex; align-items: flex-start; justify-content: space-between }
+.workspace-blank-mark { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--overlay); color: var(--muted) }
+.workspace-blank h2 { margin: 10px 0 12px; font: var(--w-semi) var(--fs-title)/1.3 var(--ui) }
+.workspace-blank-field { display: grid; gap: 6px; margin-bottom: 12px }
+.workspace-blank-field > span { color: var(--muted); font: var(--w-reg) var(--fs-meta)/1.4 var(--ui) }
+.workspace-blank-field input { box-sizing: border-box; width: 100%; height: 34px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--surface); color: var(--text); font: var(--w-reg) var(--fs-ui)/1.3 var(--ui) }
+.workspace-blank-field input:focus { outline: none; border-color: var(--focus) }
+.workspace-blank-pick { display: grid; place-items: center; gap: 6px; box-sizing: border-box; min-height: 92px; padding: 14px; border: 1px dashed var(--border); border-radius: var(--r-sm); background: var(--surface); text-align: center }
+.workspace-blank-pick[data-empty] { border-style: solid }
+.workspace-blank-pick button { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; height: 32px; padding: 0 12px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--raised); color: var(--text); font: var(--w-reg) var(--fs-ui)/1.3 var(--ui); cursor: pointer }
+.workspace-blank-pick button span { min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; direction: rtl }
+.workspace-blank-pick small { color: var(--faint); font: var(--w-reg) var(--fs-micro)/1.4 var(--ui) }
+.workspace-blank-pick input { box-sizing: border-box; width: 100%; height: 32px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--float); color: var(--text); font: var(--w-reg) var(--fs-ui)/1.3 var(--ui) }
+.workspace-blank-hint { margin: 0 0 14px; color: var(--faint); font: var(--w-reg) var(--fs-meta)/1.5 var(--ui) }
+.workspace-blank-go { display: flex; justify-content: flex-end; gap: 8px }
+.workspace-blank-go button { height: 32px; padding: 0 14px; border: 1px solid var(--border); border-radius: var(--r-sm); background: none; color: var(--text); font: var(--w-reg) var(--fs-ui)/1 var(--ui); cursor: pointer }
+.workspace-blank-go button.pick { border-color: transparent; background: var(--accent); color: var(--accent-fg) }
+.workspace-blank-go button:disabled { opacity: .5; cursor: not-allowed }
+.workspace-blank :is(button, input):focus-visible { outline: 2px solid var(--focus); outline-offset: -2px }

@@ -15,6 +15,7 @@ import { HttpError } from "../port/http_error";
 import { pinToViewport, zoom } from "./place";
 import { useRailQuery } from "./railsearch";
 import { StudioIcon } from "./StudioIcon";
+import { RenameProjectDialog } from "./RenameProjectDialog";
 import { TreeEmpty, TreeReading } from "./TreeReading";
 import { ListingProgress } from "./ListingProgress";
 import { copyText } from "./CopyButton";
@@ -1079,24 +1080,10 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
       {blankOpen && createPortal(
         <BlankProjectDialog adder={adder} onDone={async () => { await reload(); }}
           onClose={() => setBlankOpen(false)} onError={onError} />, document.body)}
-      {renameFor && createPortal(
-        <div className="workspace-blank" role="dialog" aria-label={t("session.rename_project")}>
-          <div className="workspace-blank-head">
-            <span className="workspace-blank-mark"><StudioIcon name="edit" /></span>
-            <button className="workspace-palette-close" aria-label={t("common.close")} data-action="workspace.rename-close" onClick={() => setRenameFor(null)}><StudioIcon name="close" /></button>
-          </div>
-          <h2>{t("session.rename_project")}</h2>
-          <p className="picknote">{renameFor.root}</p>
-          <label className="workspace-blank-field">
-            <span>{t("session.project_display_name")}</span>
-            <input autoFocus data-action-blur="workspace.rename" data-action-change="workspace.rename" data-action-keydown="workspace.rename" value={renameFor.name} onChange={(ev) => setRenameFor({ ...renameFor, name: ev.currentTarget.value })}
-              onKeyDown={(ev) => { if (ev.key === "Enter" && renameFor.name.trim()) void saveRename(); }} />
-          </label>
-          <div className="workspace-blank-go">
-            <button data-action="layer.dismiss" onClick={() => setRenameFor(null)}>{t("common.cancel")}</button>
-            <button className="pick" data-action="workspace.rename" disabled={!renameFor.name.trim()} onClick={() => void saveRename()}>{t("common.save")}</button>
-          </div>
-        </div>, document.body)}
+      {renameFor && <RenameProjectDialog root={renameFor.root} name={renameFor.name}
+        onName={(name) => setRenameFor({ ...renameFor, name })}
+        onClose={() => setRenameFor(null)}
+        onSave={() => void saveRename()} />}
       <ProjectsHeader adder={adder} bothFolded={bothFolded} searching={searching} onToggleBoth={() => toggleBothRuns()}
         onSelect={() => setSelection(new Set())} selecting={!!selection} canSelect={displayed.length > 0} />
       <div className="scroll">

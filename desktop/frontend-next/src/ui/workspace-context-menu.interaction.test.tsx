@@ -125,3 +125,17 @@ it("offers no batch entry for a project with nothing to pick", () => {
   expect((screen.getByRole("menuitem", { name: /批量管理/ }) as HTMLButtonElement).disabled).toBe(true);
   expect(document.querySelector(".session-batch")).toBeNull();
 });
+
+it("opens the rename card in the body, positioned, rather than inside the clipping sidebar", async () => {
+  const { row } = draw();
+  fireEvent.contextMenu(row("b"));
+  await userEvent.click(screen.getByRole("menuitem", { name: "重命名项目" }));
+  const card = screen.getByRole("dialog", { name: "重命名项目" });
+  // The sidebar clips its own contents, so a card drawn inside it loses the
+  // field's surroundings. It is a body-level card, and it carries the inline
+  // position the centring pass writes — without it a fixed card has nowhere to be.
+  expect(card.parentElement).toBe(document.body);
+  expect(card.style.left).not.toBe("");
+  expect(card.style.top).not.toBe("");
+  expect(screen.getByRole("textbox", { name: "项目名称" })).toBeTruthy();
+});

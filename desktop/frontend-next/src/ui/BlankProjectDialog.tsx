@@ -4,7 +4,7 @@ import { t } from "../i18n";
 import type { TreeWorkspace } from "../port/hub";
 import { StudioIcon } from "./StudioIcon";
 import { listenAction } from "./listen";
-import { pinToViewport } from "./place";
+import { useCenteredCard } from "./useCenteredCard";
 
 export interface BlankAdder {
   pickFolder: (preferred?: string) => Promise<string | null>;
@@ -26,20 +26,7 @@ export function BlankProjectDialog({ adder, onDone, onClose, onError }: {
   const [noPicker, setNoPicker] = useState(false);
   const [working, setWorking] = useState(false);
   const card = useRef<HTMLDivElement>(null);
-  // The card centres itself: the pill used to pin it from outside, and the
-  // sidebar's plus has no such hand to lend.
-  useEffect(() => {
-    const put = () => {
-      const el = card.current;
-      if (!el) return;
-      const box = el.getBoundingClientRect();
-      pinToViewport(el, (innerWidth - box.width) / 2, (innerHeight - box.height) / 2, 12);
-    };
-    put();
-    const observer = new ResizeObserver(put);
-    if (card.current) observer.observe(card.current);
-    return () => observer.disconnect();
-  }, []);
+  useCenteredCard(card);
   // The card is its own door: its field starts selected, Escape and an
   // outside click dismiss it, and its buttons are the only way through.
   useEffect(() => {
