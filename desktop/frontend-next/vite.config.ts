@@ -26,6 +26,9 @@ const ROUTES = [
   "/extensions", "/themes", "/plugins", "/market", "/surfaces", "/feedback",
   "/fork", "/summarize", "/forget", "/bypass", "/auto-approve-tools",
   "/permissions", "/sandbox", "/progress-watch", "/ask-timeout", "/session-ref-settings", "/settings-changed", "/changed-files-settings", "/schedules", "/feedback-level-notices", "/observability", "/fold-work-settings", "/turn-narration-settings", "/display-currency", "/auto-archive", "/persona", "/context", "/storage", "/tray", "/browser", "/browser-host", "/asks", "/update", "/receipt-settings", "/subagent-claims", "/write-lease", "/peers", "/dispatch-threads", "/dispatch-board",
+  // The credential bootstrap: without it a dev page cannot trade the launch
+  // token in its fragment for the cookie every mutation is gated on.
+  "/auth",
   "/mods", "/git",
   "/host", "/notifications", "/share", "/pair", "/device",
   "/web-access-settings", "/slash", "/workspaces", "/welcome", "/usage", "/config", "/studio",
