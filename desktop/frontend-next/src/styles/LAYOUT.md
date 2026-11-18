@@ -1754,6 +1754,22 @@ A sub-agent row, by the list's own width:
 - A nonempty collapsed plan draws the expanded plan's `.prog2` track below its summary, using completed steps over total steps from `stepDone`. Pending and running steps do not count as complete.
 - Opening the card replaces the optional track with the existing expanded progress. Goal-only, empty and hidden cards have no progress track; collapse, Escape, outside dismissal and focus return remain unchanged.
 
+## Two depths in a plan
+
+- A plan row is a phase or a sub-step of one, and the row carries `data-level` so
+  the distinction is read from the element rather than from a margin. A 12px
+  indent alone read as a misaligned pair of rows, not as depth.
+- A phase keeps the 18px ring and its ordinal: it is the row a person counts to,
+  and the badge names it. A sub-step draws a 14px borderless mark, a size and a
+  step of colour down, because it is progress inside a phase rather than a step
+  of the plan.
+- The badge follows the same rule: an in-hand sub-step answers with the phase
+  above it. A phase stays pending while its sub-steps run — the kernel's serial
+  state — so naming the sub-step would point the badge at a row drawn unticked.
+  The 正在做 line stays exact to the sub-step.
+- The rail's narrower reading (`.plan .s`) draws the same two depths as an 11px
+  ring and an 8px disc, since it shows no ordinals at all.
+
 ## Provider form fields
 
 - A compound input gives its editable text the space left after the unit label.

@@ -68,10 +68,44 @@ describe("the plan block", () => {
     expect(renderToStaticMarkup(<Plan steps={nested} />)).toContain("margin-inline-start:12px");
   });
 
+  // A phase and its sub-steps are two kinds of row. Indenting is the only thing
+  // that told them apart, which read as "not aligned" rather than as depth; the
+  // row now says which it is, so the mark can be drawn as the sub-step it is.
+  it("says on the row whether it is a phase or a sub-step", () => {
+    const nested: PlanStep[] = [
+      { text: "阶段", status: "in_progress", level: 0 },
+      { text: "子一", status: "pending", level: 1 },
+      { text: "子二", status: "pending", level: 1 },
+    ];
+    const html = renderToStaticMarkup(<Plan steps={nested} />);
+    expect(html.match(/data-level="0"/g)).toHaveLength(1);
+    expect(html.match(/data-level="1"/g)).toHaveLength(2);
+  });
+
   // todo_write rewrites the whole list every call, so two steps with the same
   // words must still be two rows rather than one React key collision.
   it("keeps duplicate steps apart", () => {
     const same: PlanStep[] = [{ text: "跑测试", status: "completed" }, { text: "跑测试", status: "in_progress" }];
     expect(renderToStaticMarkup(<Plan steps={same} />).match(/class="s"/g)).toHaveLength(2);
+  });
+});
+
+describe("the two depths are drawn as two kinds of mark", () => {
+  const sheet = (): string => {
+    const raw = import.meta.glob("../design/plan.css", { query: "?raw", import: "default", eager: true }) as Record<string, string>;
+    return Object.values(raw)[0];
+  };
+
+  it("sizes a sub-step's mark down and drops its ring", () => {
+    const css = sheet();
+    // A phase keeps the ring; a sub-step is progress inside one, so it reads as
+    // a smaller, borderless mark instead of a second step of the plan.
+    expect(css).toMatch(/\.plan-step\[data-level="1"\][^{]*\{[^}]*border:\s*0/);
+    expect(css).toMatch(/\.plan-step\[data-level="1"\][^{]*\{[^}]*width:\s*14px/);
+  });
+
+  it("keeps the rail's own reading at its two sizes", () => {
+    const css = sheet();
+    expect(css).toMatch(/\.plan \.s\[data-level="1"\][^{]*\{[^}]*width:\s*8px/);
   });
 });

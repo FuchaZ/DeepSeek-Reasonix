@@ -22,9 +22,23 @@
 .plan-step[data-state="done"] .plan-step-mark .studio-icon { width: 11px; height: 11px; stroke-width: 2.4; }
 .plan-steps[data-state="moving"] .plan-step[data-state="now"] .plan-step-mark { border-color: var(--net); background: var(--net-wash); color: var(--net); }
 .plan-steps[data-state="waiting"] .plan-step[data-state="now"] .plan-step-mark { border: 2px solid var(--warn); background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn-ink); }
+.plan-step[data-level="1"] { gap: 8px; padding-block: 4px; }
+.plan-step[data-level="1"] .plan-step-mark { width: 14px; height: 14px; border: 0; background: none; border-radius: var(--r-xs); font-size: var(--fs-micro); color: var(--faint); }
+.plan-step[data-level="1"][data-state="done"] .plan-step-mark { background: none; color: var(--faint); }
+.plan-step[data-level="1"][data-state="done"] .plan-step-mark .studio-icon { width: 10px; height: 10px; stroke-width: 2.2; }
+.plan-steps[data-state="moving"] .plan-step[data-level="1"][data-state="now"] .plan-step-mark { border: 0; background: none; color: var(--net); }
+.plan-steps[data-state="waiting"] .plan-step[data-level="1"][data-state="now"] .plan-step-mark { border: 0; background: none; color: var(--warn-ink); }
+.plan-step[data-level="1"] .plan-step-text { font: var(--w-reg) var(--fs-meta)/1.5 var(--ui); color: var(--muted); }
+.plan-step[data-level="1"][data-state="now"] .plan-step-text { font-weight: var(--w-med); }
 .plan-step-text { flex: 1; min-width: 0; color: var(--text); font: var(--w-reg) var(--fs-ui)/1.4 var(--ui); overflow-wrap: anywhere; }
 .plan-step[data-state="done"] .plan-step-text { color: var(--muted); }
 .plan-step[data-state="now"] .plan-step-text { font-weight: var(--w-med); }
+
+.plan .s[data-level="1"] { gap: 7px; padding-block: 4px; }
+.plan .s[data-level="1"] .b { width: 8px; height: 8px; border: 1px solid var(--ghost); }
+.plan .s[data-level="1"][data-done] .b { border-color: var(--faint); background: var(--faint); }
+.plan .s[data-level="1"][data-now] .b { border: 1px solid var(--accent); border-top-color: var(--accent); background: var(--accent); animation: none; }
+.plan .s[data-level="1"] .t { font-size: var(--fs-meta); opacity: .9; }
 
 .flow .call[data-k="plan"] { display: block; margin: 8px 0 0; padding: 0; border: 0; border-radius: 0; background: transparent; box-shadow: none; }
 .flow .call[data-k="plan"]:hover { background: transparent; }

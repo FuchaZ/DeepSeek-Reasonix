@@ -1,7 +1,7 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { t } from "../i18n";
 import { currentStep, stepDone, stepLabel, type PlanStep } from "../state/session";
-import { stepIndent as indent, stepKeys as keys } from "./PlanSteps";
+import { stepIndent as indent, stepKeys as keys, subStep } from "./PlanSteps";
 
 export function Plan({ steps, shownElsewhere, paused }: { steps: PlanStep[]; shownElsewhere?: boolean; paused?: boolean }) {
   const wrap = useRef<HTMLDivElement>(null);
@@ -49,6 +49,7 @@ export function Plan({ steps, shownElsewhere, paused }: { steps: PlanStep[]; sho
               key={id[i]}
               data-done={stepDone(st) ? "" : undefined}
               data-now={i === now ? "" : undefined}
+              data-level={subStep(st) ? "1" : "0"}
               style={{ animationDelay: `${Math.min(i, 6) * 34}ms`, marginInlineStart: indent(st) }}
             >
               {/* The state is the shape: a dotted ring is not started, a

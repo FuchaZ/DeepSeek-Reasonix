@@ -17,6 +17,11 @@ export function stepKeys(steps: PlanStep[]): string[] {
 
 export const stepIndent = (s: PlanStep) => (s.level ? Math.min(s.level, 4) * 12 : undefined);
 
+/** The kernel's list is two deep: a phase, and the sub-steps that carry its
+ *  progress. Written as an attribute rather than left to the indent because a
+ *  margin alone reads as misalignment, not as depth. */
+export const subStep = (s: PlanStep) => (s.level ?? 0) >= 1;
+
 type Mark = "done" | "now" | "todo";
 
 /** A proposal has not started, so every row is numbered whatever status the seed
@@ -34,7 +39,7 @@ export function PlanSteps({ steps, state }: { steps: PlanStep[]; state: StepsSta
       {steps.map((st, i) => {
         const mark: Mark = proposed ? "todo" : stepDone(st) ? "done" : i === now ? "now" : "todo";
         return (
-          <li key={id[i]} className="plan-step" data-state={mark} style={{ marginInlineStart: stepIndent(st) }}>
+          <li key={id[i]} className="plan-step" data-state={mark} data-level={subStep(st) ? "1" : "0"} style={{ marginInlineStart: stepIndent(st) }}>
             <span className="plan-step-mark" aria-label={mark === "done" ? t("plan.step.done") : mark === "now" ? t("plan.step.now") : t("plan.step.todo")}>
               {mark === "done" ? <StudioIcon name="check" /> : i + 1}
             </span>
@@ -46,10 +51,24 @@ export function PlanSteps({ steps, state }: { steps: PlanStep[]; state: StepsSta
   );
 }
 
-/** The ordinal a person reads for where the plan stands: the step in hand, or
- *  the next one to start. */
+/** The row a person counts to for step i: a sub-step answers with the phase it
+ *  sits under, because the phase is what the list draws at the margin. A phase
+ *  stays pending while its sub-steps run — the kernel's serial rule — so naming
+ *  the sub-step here would point the badge at a row the list shows unticked.
+ *  The kernel always keeps a phase immediately before its block, and promotes a
+ *  leading orphan to level 0, so the walk back always lands. */
+export function phaseOf(steps: PlanStep[], i: number): number {
+  if (!steps[i]?.level) return i;
+  for (let j = i; j >= 0; j--) {
+    if (!steps[j].level) return j;
+  }
+  return i;
+}
+
+/** The ordinal a person reads for where the plan stands: the phase in hand, or
+ *  the next one to start. The card's 正在做 line stays exact to the sub-step. */
 export function stepOrdinal(steps: PlanStep[]): number {
   const now = currentStep(steps);
-  if (now >= 0) return now + 1;
+  if (now >= 0) return phaseOf(steps, now) + 1;
   return Math.min(steps.filter(stepDone).length + 1, steps.length);
 }

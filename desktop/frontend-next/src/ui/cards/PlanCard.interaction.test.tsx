@@ -66,6 +66,24 @@ describe("the plan card", () => {
     expect(card().querySelector(".plan-card-foot")).toBeNull();
   });
 
+  // A phase stays pending while its sub-steps run — the kernel's serial state
+  // machine, not a skipped step — so the badge has to name the phase a person
+  // can count to, while the 正在做 line still names the sub-step in hand.
+  it("names the phase a person can count to, not the sub-step underneath it", () => {
+    const layered: PlanStep[] = [
+      { text: "阶段一", status: "completed", level: 0 },
+      { text: "子一", status: "completed", level: 1 },
+      { text: "阶段二", status: "pending", level: 0 },
+      { text: "子二", status: "in_progress", level: 1 },
+      { text: "子三", status: "pending", level: 1 },
+    ];
+    show(gate({ verdict: "start" }), live({ plan: layered, running: true }));
+    expect(badge()).toBe("第 3 / 5 步");
+    expect(card().querySelector(".plan-card-sub")?.textContent).toBe("正在做：子二");
+    // The phase itself keeps its pending mark: nothing has signed it off.
+    expect(marks()).toEqual(["done", "done", "todo", "now", "todo"]);
+  });
+
   it("marks the card waiting while a person is asked, without the turning mark", () => {
     show(gate({ verdict: "start" }), live({ plan: steps("completed", "in_progress", "pending"), running: true, blocked: true }));
     expect(card().getAttribute("data-phase")).toBe("waiting");
