@@ -46,6 +46,17 @@ function midSlash(text: string, caret: number): { from: number; to: number; toke
   return { from, to: rest < 0 ? text.length : from + rest, token: text.slice(from, caret) };
 }
 
+// A "/" that opens the caret's line — at the start of the text or right after a
+// newline — is where a command of its own begins. The kernel's grammar reads a
+// slash at the start of the line it is sent, so the line is asked about
+// standing alone and the whole catalogue comes back; mid-line ones stay chips.
+function lineSlash(text: string, caret: number): { from: number; to: number } | null {
+  const from = caret === 0 ? 0 : text.lastIndexOf("\n", caret - 1) + 1;
+  if (text[from] !== "/") return null;
+  const end = text.indexOf("\n", from);
+  return { from, to: end < 0 ? text.length : end };
+}
+
 // Whether the caret rests in a word that opens with "/" at the line start or
 // after a space: the one place a person is waiting for the command list. Prose
 // typed after a finished command still asks (an argument may complete) but is
@@ -61,7 +72,15 @@ interface ChipHost {
   touches: (caret: number) => boolean;
 }
 
-function ask(port: AgentPort, text: string, caret: number, mid: ReturnType<typeof midSlash>, signal: AbortSignal): Promise<Completion> {
+function ask(port: AgentPort, text: string, caret: number, mid: ReturnType<typeof midSlash>, line: { from: number; to: number } | null, signal: AbortSignal): Promise<Completion> {
+  // A line-opening slash asks about its line standing alone — the kernel reads
+  // a slash at the start of the line it is sent — and the answer's spans map
+  // back onto the full text.
+  if (line && !text.startsWith("/")) {
+    return port.complete(text.slice(line.from, line.to), caret - line.from, signal)
+      .then(withTyped)
+      .then((r) => ({ ...r, from: r.from + line.from, to: r.to + line.from }));
+  }
   if (!mid) return port.complete(text, caret, signal).then(withTyped);
   return port.complete(mid.token, mid.token.length, signal).then((r) => ({
     kind: "slash",
@@ -124,13 +143,14 @@ export function useCompletion(
     const id = ++asked.current;
     const onChip = chips?.touches(caret) ?? false;
     const mid = onChip ? null : midSlash(text, caret);
-    if (onChip || (!mid && !mightComplete(text))) {
+    const line = onChip ? null : lineSlash(text, caret);
+    if (onChip || (!mid && !line && !mightComplete(text))) {
       setCompletion(EMPTY);
       setLoading(false);
       return;
     }
     const previous = currentCompletion.current;
-    const slashy = mid !== null || text.startsWith("/");
+    const slashy = mid !== null || line !== null || text.startsWith("/");
     const compatible = slashy
       ? previous.kind === "slash" || previous.kind === "slash-arg"
       : previous.kind === "ref" || previous.kind === "session";
@@ -140,7 +160,7 @@ export function useCompletion(
       ? window.setTimeout(() => { if (id === asked.current) setLoading(true); }, 180)
       : undefined;
     const asking = new AbortController();
-    ask(port, text, caret, mid, asking.signal)
+    ask(port, text, caret, mid, line, asking.signal)
       .then((r) => {
         if (id === asked.current) {
           window.clearTimeout(timer);
