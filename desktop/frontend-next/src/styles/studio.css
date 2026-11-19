@@ -173,6 +173,7 @@ body { background: var(--page); }
   background: var(--raised);
   box-shadow: 0 1px 2px rgb(0 0 0 / .06), 0 10px 30px -24px rgb(0 0 0 / .32);
 }
+.composer-top { width: min(var(--column), calc(100% - var(--srail-w) - 42px)); margin: 0 auto 6px; display: flex; align-items: center; gap: 6px; min-width: 0; padding: 0 2px } .composer-top:empty { display: none }
 .compose::after { border-color: var(--border); }
 .compose:hover::after { border-color: color-mix(in srgb, var(--faint) 52%, var(--border)); }
 .compose:focus-within {

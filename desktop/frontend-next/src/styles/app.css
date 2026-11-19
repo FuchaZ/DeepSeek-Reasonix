@@ -635,10 +635,10 @@
      and the composer's; a child of the body would stop at the composer's edge. */
   .pane:has(> .pbody[data-dock]) {
     display: grid;
-    grid-template: "find side" auto "body side" minmax(0, 1fr) "compose side" auto / minmax(var(--dock-left-min), 1fr) minmax(0, var(--dock-w));
+    grid-template: "find side" auto "body side" minmax(0, 1fr) "pilltop side" auto "compose side" auto / minmax(var(--dock-left-min), 1fr) minmax(0, var(--dock-w));
   }
   .pane:has(> .pbody[data-dock]) > .findhost { grid-area: find }
-  .pane:has(> .pbody[data-dock]) > .pbody { grid-area: body }
+  .pane:has(> .pbody[data-dock]) > .pbody { grid-area: body }  .pane:has(> .pbody[data-dock]) > .composer-top { grid-area: pilltop }
   .pane:has(> .pbody[data-dock]) > .compose { grid-area: compose }
   .pane:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] {
     grid-area: side; min-width: 0; border-left: 1px solid var(--hair);
