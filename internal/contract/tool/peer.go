@@ -56,21 +56,6 @@ type ProjectOpener interface {
 	OpenProjects(ctx context.Context, paths []string) ([]OpenedProject, error)
 }
 
-// RenamedSession says whose title changed and to what. Path is the session
-// that was named; Target echoes what the caller asked for ("self" or "member").
-type RenamedSession struct {
-	Path   string
-	Title  string
-	Target string
-}
-
-// SessionRenamer is the optional capability the rename_session tool asks of a
-// peer directory. Only the caller's own session or one it dispatched to may be
-// renamed; that boundary belongs to the host. An empty to names the caller.
-type SessionRenamer interface {
-	RenameSession(to, title string) (RenamedSession, error)
-}
-
 // PeerLink joins the peer tools, built with the registry, to the controller
 // that exists only afterwards. Until the controller binds it the tools answer
 // that no session is listening.

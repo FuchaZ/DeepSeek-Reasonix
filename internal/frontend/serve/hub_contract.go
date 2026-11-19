@@ -6,8 +6,6 @@ type OpenRequest struct {
 	Root             string `json:"root"`
 	SessionPath      string `json:"sessionPath"`
 	Model            string `json:"model"`
-	// RoleText is the dispatch role a freshly opened session runs under.
-	RoleText string `json:"-"`
 }
 
 type RuntimeView struct {

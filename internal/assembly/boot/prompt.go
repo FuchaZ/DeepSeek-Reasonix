@@ -55,12 +55,6 @@ func buildPromptAssembly(ctx context.Context, opts Options, cfg *config.Config, 
 	// Persona edits enter the cache-stable prefix at the next runtime build.
 	p := persona.FromConfig(cfg.Agent.Persona)
 	sysPrompt = persona.ApplyPrefix(sysPrompt, p)
-	// A dispatch role is an identity for this session: it rides ahead of the
-	// first-party guidance the same way a persona prefix does. Ordinary sessions
-	// carry no role text, so their prefix is unchanged byte for byte.
-	if role := strings.TrimSpace(opts.RoleText); role != "" {
-		sysPrompt = persona.ApplyPrefix(sysPrompt, persona.Settings{Prefix: "Dispatch role: " + role})
-	}
 	// Output style: fold the selected persona/tone block into the base prompt
 	// before language/memory/skills append, so a "replace" style (keep-coding
 	// false) still keeps those. Applied once, into the cache-stable prefix.

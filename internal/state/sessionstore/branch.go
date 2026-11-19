@@ -53,10 +53,7 @@ type BranchMeta struct {
 	// AgentPreset (balanced|delivery) when both are present.
 	TokenMode string `json:"token_mode,omitempty"`
 	// AgentPreset is the session role setting (角色设定): balanced|delivery.
-	AgentPreset string `json:"agent_preset,omitempty"`
-	// RoleText is the dispatch role this session was opened under. It rides the
-	// sidecar so a resumed dispatch keeps the role in its system prompt.
-	RoleText         string `json:"role_text,omitempty"`
+	AgentPreset      string `json:"agent_preset,omitempty"`
 	Mode             string `json:"mode,omitempty"`
 	ToolApprovalMode string `json:"tool_approval_mode,omitempty"`
 	// SessionGrants are the tool answers the person gave for the rest of this
@@ -642,34 +639,6 @@ func RenameSession(sessionPath string, title string) error {
 	}
 	m.CustomTitle = strings.TrimSpace(title)
 	return saveBranchMeta(sessionPath, m, false)
-}
-
-// SetBranchRoleText records the dispatch role a session was opened under. An
-// empty role clears it, so a session returned to ordinary use stops injecting it.
-func SetBranchRoleText(sessionPath, role string) error {
-	if sessionPath == "" {
-		return fmt.Errorf("empty session path")
-	}
-	unlock, err := LockSessionMetaPath(sessionPath)
-	if err != nil {
-		return err
-	}
-	defer unlock()
-	meta, err := ensureBranchMetaUnlocked(sessionPath)
-	if err != nil {
-		return err
-	}
-	meta.RoleText = strings.TrimSpace(role)
-	return saveBranchMeta(sessionPath, meta, false)
-}
-
-// LoadBranchRoleText reads the dispatch role from a session's sidecar, if any.
-func LoadBranchRoleText(sessionPath string) string {
-	m, ok, err := LoadBranchMeta(sessionPath)
-	if err != nil || !ok {
-		return ""
-	}
-	return strings.TrimSpace(m.RoleText)
 }
 
 // LoadSessionModel reads the canonical provider/model ref saved beside a

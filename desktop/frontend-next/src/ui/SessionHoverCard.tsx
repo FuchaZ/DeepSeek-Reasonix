@@ -57,10 +57,10 @@ export function SessionHoverCard({ hub, ws, session, anchor, onClose, onOpenSess
         <div className="sesscard-threads">
           {threads.map((th, i) => (
             <button key={th.sessionPath ?? th.key ?? i} type="button" data-action="peer.thread-open"
-              data-session-path={th.sessionPath} data-state={th.state}
+              data-session-path={th.sessionPath}
               onClick={() => { if (th.sessionPath) { onClose(); onOpenSession(th.sessionPath); } }}>
               <i aria-hidden="true" />
-              <span>{t("chat.dispatch_thread_handling", { title: th.role || th.targetTitle || t("chat.dispatch_thread_unnamed") })}</span>
+              <span>{t("chat.dispatch_thread_handling", { title: th.role || t("chat.dispatch_thread_unnamed") })}</span>
             </button>
           ))}
         </div>

@@ -43,37 +43,18 @@ func newDispatchFixture(t *testing.T, userFile string) *dispatchFixture {
 		}
 	}
 	f := &dispatchFixture{t: t, hub: NewHub(HubOptions{}), peersDir: filepath.Join(home, "peers"), home: home}
-	f.installOpen()
-	return f
-}
-
-// installOpen gives this hub's book a way to build runtimes: a dispatch that
-// names a conversation takes that one back, as openBound does, so reopening a
-// live path is not a second pane.
-func (f *dispatchFixture) installOpen() {
 	f.hub.dispatch.open = func(_ context.Context, req OpenRequest, binding *agentcomposition.Binding) (*Runtime, error) {
+		f.opened++
 		f.requests = append(f.requests, req)
 		f.bindings = append(f.bindings, binding)
-		if req.SessionPath != "" {
-			if rt := f.hub.findSession(req.SessionPath); rt != nil {
-				return rt, nil
-			}
-		}
-		f.opened++
-		rt := f.adopt(req.Root, req.SessionPath)
+		rt := f.adopt(req.Root, "")
 		if f.startMode != "" {
 			rt.Server.Controller().(*control.Controller).SetToolApprovalMode(f.startMode)
 		}
 		rt.Server.Controller().(*control.Controller).SetPlanMode(f.startPlan)
 		return rt, nil
 	}
-}
-
-// forgetDispatches empties the book while the panes and their transcripts stay,
-// which is the state a process restart leaves: the book lives in memory, and
-// the role each session was opened under is on disk.
-func (f *dispatchFixture) forgetDispatches() {
-	f.hub.dispatch = dispatchBook{open: f.hub.dispatch.open}
+	return f
 }
 
 // adopt puts a peers-enabled session of root into the hub; path "" leaves it
@@ -564,61 +545,5 @@ func TestAnAllowRuleIsWhatLetsTheOwnProjectOpenASession(t *testing.T) {
 	}
 	if again.Key != first.Key {
 		t.Fatal("a role-less second dispatch opened another pane instead of reusing the first")
-	}
-}
-
-// A restart empties the dispatch book, not the conversation: the next task for
-// a role goes back to the session that role already named instead of opening a
-// second one beside it.
-func TestDispatchTakesBackTheSessionARoleAlreadyNames(t *testing.T) {
-	f := newDispatchFixture(t, dispatchOn)
-	sender := f.sender(f.project("alpha", true))
-	f.project("billing", true)
-	first, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key", "reviewer")
-	if err != nil {
-		t.Fatal(err)
-	}
-	pane := f.paneOf(first.Key)
-	writeSessionAt(t, pane.SessionPath())
-	path := pane.SessionPath()
-
-	f.forgetDispatches()
-	again, err := sender.DispatchToProject(context.Background(), "billing", "and again", "reviewer")
-	if err != nil {
-		t.Fatalf("after the book was lost: %v", err)
-	}
-	if again.Key != first.Key {
-		t.Fatalf("key = %q, want the %q the role already had", again.Key, first.Key)
-	}
-	if f.opened != 1 {
-		t.Fatalf("%d panes opened, want the one the role already had", f.opened)
-	}
-	if got := f.requests[len(f.requests)-1].SessionPath; got != path {
-		t.Fatalf("reopened %q, want %q", got, path)
-	}
-}
-
-// A conversation the person opened under the same words is theirs: only one the
-// trail shows this sender writing to may be taken back, so a dispatch never
-// claims a session it did not open.
-func TestDispatchLeavesAConversationThePersonNamedThemselves(t *testing.T) {
-	f := newDispatchFixture(t, dispatchOn)
-	sender := f.sender(f.project("alpha", true))
-	billing := f.project("billing", true)
-	mine := sessionstore.NewSessionPath(SessionDirFor(billing), "mine")
-	writeSessionAt(t, mine)
-	if err := sessionstore.SetBranchRoleText(mine, "reviewer"); err != nil {
-		t.Fatal(err)
-	}
-
-	got, err := sender.DispatchToProject(context.Background(), "billing", "rotate the key", "reviewer")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if f.paneOf(got.Key).SessionPath() == mine {
-		t.Fatal("a dispatch took over a conversation the person opened")
-	}
-	if f.opened != 1 {
-		t.Fatalf("%d panes opened, want a fresh one", f.opened)
 	}
 }

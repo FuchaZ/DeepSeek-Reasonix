@@ -117,9 +117,6 @@ type Options struct {
 	// falls back to balanced. It controls verification breadth without changing
 	// the provider-visible tool schema or base system prompt.
 	AgentPreset string
-	// RoleText is the dispatch role this session was opened under. Empty for an
-	// ordinary session, whose prefix stays byte-identical to a build without it.
-	RoleText string
 	// TokenMode is the deprecated one-version fallback for AgentPreset.
 	// When AgentPreset is empty, TokenMode is normalized through the legacy
 	// economy/full/delivery mapping. Prefer AgentPreset.

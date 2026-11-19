@@ -13,7 +13,6 @@ import (
 	"reasonix/internal/contract/agentcomposition"
 	"reasonix/internal/contract/config"
 	"reasonix/internal/session/control"
-	"reasonix/internal/state/peermail"
 	"reasonix/internal/state/sessionstore"
 )
 
@@ -68,18 +67,6 @@ func (b *dispatchBook) threadsFrom(senderPath string) []DispatchThread {
 		return nil
 	}
 	return append([]DispatchThread(nil), b.threads[senderPath]...)
-}
-
-// allThreads copies the book's senders, so a caller can ask what this hub
-// dispatched without walking the tree first.
-func (b *dispatchBook) allThreads() map[string][]DispatchThread {
-	b.mu.Lock()
-	defer b.mu.Unlock()
-	out := make(map[string][]DispatchThread, len(b.threads))
-	for sender, threads := range b.threads {
-		out[sender] = append([]DispatchThread(nil), threads...)
-	}
-	return out
 }
 
 type dispatchKey struct{ from, root, role string }
@@ -180,10 +167,7 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text, role
 		if secret, err = newPairSecret(); err != nil {
 			return control.DispatchResult{}, fmt.Errorf("%w: %w", control.ErrDispatchFailed, err)
 		}
-		// A restart empties the book, not the conversation: take back what an
-		// earlier dispatch opened under this role before opening another.
-		reuse := h.dispatchedPath(sender, root, role)
-		if target, err = h.openDispatchSession(ctx, from, sender, root, role, secret, reuse); err != nil {
+		if target, err = h.openDispatchSession(ctx, from, sender, root, role, secret); err != nil {
 			return control.DispatchResult{}, err
 		}
 	}
@@ -217,11 +201,11 @@ func newPairSecret() ([]byte, error) {
 }
 
 // openDispatchSession opens a fresh pane in root, or takes back the one an
-// earlier dispatch left waiting for the user's answer about the folder, or the
-// one reuse names. A declined folder is never opened for someone else's task;
-// one nobody has decided about is trusted by being named, and one that cannot be
-// trusted whole keeps its pane open on the trust card, task unsent.
-func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *control.Controller, root, role string, secret []byte, reuse string) (*Runtime, error) {
+// earlier dispatch left waiting for the user's answer about the folder. A folder
+// the user declined is not opened for someone else's task. A project in the
+// user's own list that nobody has decided about is trusted by being named; one
+// that cannot be trusted whole keeps its pane open on the trust card, task unsent.
+func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *control.Controller, root, role string, secret []byte) (*Runtime, error) {
 	binding := sender.CompositionBinding()
 	if binding != nil && binding.Workspace != "" && binding.Workspace != root {
 		return nil, fmt.Errorf("%w: %w", control.ErrDispatchFailed, agentcomposition.Unavailable(binding.Version.Definition.ID, "A bound composition cannot dispatch into another workspace."))
@@ -234,9 +218,7 @@ func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *co
 	target := h.runtimeByID(h.dispatch.getPending(from.ID, root, role))
 	if target == nil {
 		var err error
-		// A reused conversation keeps its own transcript: only a newly opened
-		// pane is given a fresh path below.
-		if target, err = open(ctx, OpenRequest{Root: root, SessionPath: reuse, Model: grant.Model, RoleText: role}, binding); err != nil {
+		if target, err = open(ctx, OpenRequest{Root: root, Model: grant.Model}, binding); err != nil {
 			return nil, fmt.Errorf("%w: %w", control.ErrDispatchFailed, err)
 		}
 	}
@@ -256,55 +238,14 @@ func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *co
 			return nil, projectError(control.ErrDispatchAwaitingTrust, root)
 		}
 	}
-	// The sender's posture governs either way: a conversation taken back must
-	// not run looser than the dispatch that reopened it.
 	ctrl.AdoptSessionGrant(grant)
 	ctrl.MarkOpenedByDispatch(sender.PeerKey(), secret, sender.DispatchDepth()+1)
-	if ctrl.SessionPath() == "" {
-		ctrl.SetFreshSessionPath(sessionstore.NewSessionPath(SessionDirFor(root), "dispatch"))
-	}
+	ctrl.SetFreshSessionPath(sessionstore.NewSessionPath(SessionDirFor(root), "dispatch"))
 	if role != "" {
-		if err := sessionstore.SetBranchRoleText(ctrl.SessionPath(), role); err != nil {
-			slog.Warn("dispatch: could not persist the session's role", "err", err)
-		}
 		h.nameDispatchPaneAfterRole(ctrl, root, role)
 	}
 	h.dispatch.set(from.ID, root, role, target.ID)
 	return target, nil
-}
-
-// dispatchedPath names the conversation an earlier dispatch opened under role in
-// root, for a hub that has restarted: the book lives in memory, while the
-// transcript and the role it was opened under are on disk. Only a session the
-// trail shows this sender writing to counts, so a conversation the person named
-// the same way stays theirs and is never taken over by a dispatch.
-func (h *Hub) dispatchedPath(sender *control.Controller, root, role string) string {
-	if role == "" {
-		return ""
-	}
-	self := sender.PeerKey()
-	if self == "" {
-		return ""
-	}
-	sent := map[string]bool{}
-	for _, r := range h.peerAudit() {
-		if r.Decision == peermail.DecisionSent && r.Sender == self {
-			sent[r.Receiver] = true
-		}
-	}
-	if len(sent) == 0 {
-		return ""
-	}
-	rows, unlisted := h.treeSessionRows(root)
-	for _, row := range append(rows, unlisted...) {
-		if row.Archived || !sent[control.PeerKeyForPath(row.Path)] {
-			continue
-		}
-		if sessionstore.LoadBranchRoleText(row.Path) == role {
-			return row.Path
-		}
-	}
-	return ""
 }
 
 // nameDispatchPaneAfterRole writes the role as a dispatched session's title:

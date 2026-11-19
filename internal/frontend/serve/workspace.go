@@ -18,7 +18,6 @@ import (
 	"reasonix/internal/contract/surface"
 	"reasonix/internal/platform/worktree"
 	"reasonix/internal/session/control"
-	"reasonix/internal/state/sessionstore"
 )
 
 // AllowWorkspaceSwitch grants POST /workspace. It is off until a host asks for
@@ -264,9 +263,6 @@ func (s *Server) rebuildOptions(cur control.SessionAPI, ref string) boot.Options
 	}
 	opts.NativeSurfaces = cur.NativeSurfaces()
 	opts.AgentPreset = cur.AgentPreset()
-	// A dispatch role lives in the sidecar, so a rebuild after a model switch or
-	// extension reload keeps the same identity in the system prompt.
-	opts.RoleText = sessionstore.LoadBranchRoleText(cur.SessionPath())
 	opts.WorkspaceRoot, opts.SessionDir = cur.WorkspaceRoot(), cur.SessionDir()
 	// Keep the logical session's private temporary directory across the rebuild.
 	if ctrl, ok := cur.(*control.Controller); ok && ctrl != nil {

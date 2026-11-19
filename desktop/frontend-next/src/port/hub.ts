@@ -5,11 +5,6 @@ import type { CloudShareOffer, DeviceSelf, PhoneAction, PhoneList, ShareOffer, S
 import { readableShareStatus } from "./share";
 import { SsePort } from "./sse";
 import { host } from "./host";
-import type { DispatchBoardRow, DispatchThread } from "./dispatch";
-
-// The collaboration wire types live on their own file; they are re-exported
-// here because every caller reaches them through this port.
-export type { DispatchBoardParty, DispatchBoardRow, DispatchThread } from "./dispatch";
 
 // How often a client waiting on a dial looks for the question it might be
 // stopped by. A person answers this one, so half a second is not the cost —
@@ -210,6 +205,14 @@ export interface HistorySearch {
   index: HistoryIndex;
 }
 
+/** One line of a session's dispatch record: the role the target was opened
+ *  under and the session the task landed on, as the hover card reads them. */
+export interface DispatchThread {
+  role?: string;
+  sessionPath?: string;
+  key?: string;
+}
+
 export interface HubPort extends SharePort {
   runtimes(): Promise<RuntimeView[]>;
   open(req: { root?: string; sessionPath?: string; agentComposition?: string }): Promise<RuntimeView>;
@@ -217,8 +220,6 @@ export interface HubPort extends SharePort {
   tree(window?: TreeWindow): Promise<TreeWorkspace[]>;
   /** What this session dispatched: the hub's book, by the session's path. */
   dispatchThreads(path: string): Promise<DispatchThread[]>;
-  /** Every dispatch this machine still has a record of, both ends named. */
-  dispatchBoard(): Promise<DispatchBoardRow[]>;
   /** The name a project reads by in the sidebar; the folder keeps its own. */
   setWorkspaceDisplayName(path: string, name: string): Promise<void>;
   /** Pin or unpin a project: a pinned one leads the list. */
@@ -411,10 +412,6 @@ export class SseHub implements HubPort {
 
   dispatchThreads(path: string) {
     return this.get<DispatchThread[]>("/dispatch-threads?path=" + encodeURIComponent(path));
-  }
-
-  dispatchBoard() {
-    return this.get<DispatchBoardRow[]>("/dispatch-board");
   }
 
   setWorkspaceDisplayName(path: string, name: string) {

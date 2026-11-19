@@ -198,10 +198,6 @@ export class MockHub implements HubPort {
     return Promise.resolve([]);
   }
 
-  dispatchBoard() {
-    return Promise.resolve([]);
-  }
-
   setWorkspaceDisplayName(_path: string, _name: string) {
     return Promise.resolve();
   }

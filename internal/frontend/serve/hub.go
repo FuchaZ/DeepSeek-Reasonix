@@ -23,7 +23,6 @@ import (
 	"reasonix/internal/contract/event"
 	"reasonix/internal/contract/provider"
 	"reasonix/internal/contract/surface"
-	"reasonix/internal/contract/tool"
 	"reasonix/internal/platform/notify"
 	"reasonix/internal/platform/update"
 	"reasonix/internal/session/control"
@@ -84,8 +83,6 @@ type Hub struct {
 	muxes   *eventMuxes
 	// dispatch remembers the panes a task was handed to; see dispatch.go.
 	dispatch dispatchBook
-	// boardJoin is the last tree join a board read walked; see dispatch_board.go.
-	boardJoin boardJoinMemo
 }
 
 // approvalStance is the Ask/Auto/YOLO posture the frontend is in, held by the
@@ -322,18 +319,14 @@ func (h *Hub) Open(ctx context.Context, req OpenRequest) (*Runtime, error) {
 	return h.openBound(ctx, req, nil)
 }
 
-// sessionBuildPosture resolves the model, preset and dispatch role of a session
-// being opened. A saved session's own record wins; a reopen with no saved model
-// reads the one recorded beside the transcript, because assembling the default
-// first and switching afterwards builds a runtime only to throw it away. The
-// request's role wins over the sidecar's so a fresh dispatch can name its pane.
+// sessionBuildPosture resolves the model and preset of a session being opened.
+// A saved session's own record wins; a reopen with no saved model reads the one
+// recorded beside the transcript, because assembling the default first and
+// switching afterwards builds a runtime only to throw it away.
 func sessionBuildPosture(req OpenRequest, settings *sessionstore.BranchMeta, root string) sessionBuildPostureResult {
-	out := sessionBuildPostureResult{model: strings.TrimSpace(req.Model), role: strings.TrimSpace(req.RoleText)}
+	out := sessionBuildPostureResult{model: strings.TrimSpace(req.Model)}
 	if settings != nil {
 		out.model, out.preset = strings.TrimSpace(settings.Model), settings.AgentPreset
-		if out.role == "" {
-			out.role = strings.TrimSpace(settings.RoleText)
-		}
 	}
 	if out.model == "" {
 		out.model = modelForReopenedSession(root, req.SessionPath)
@@ -341,7 +334,7 @@ func sessionBuildPosture(req OpenRequest, settings *sessionstore.BranchMeta, roo
 	return out
 }
 
-type sessionBuildPostureResult struct{ preset, model, role string }
+type sessionBuildPostureResult struct{ preset, model string }
 
 func (h *Hub) openBound(ctx context.Context, req OpenRequest, inherited *agentcomposition.Binding) (*Runtime, error) {
 	defer backgroundwork.Shared.Foreground()()
@@ -541,8 +534,6 @@ func (h *Hub) Handler() http.Handler {
 	mux.HandleFunc("GET /runtimes", h.listRuntimes)
 	mux.HandleFunc("POST /runtimes", h.openRuntime)
 	mux.HandleFunc("POST /runtimes/{id}/close", h.closeRuntime)
-	mux.HandleFunc("GET /dispatch-threads", h.dispatchThreadsHTTP)
-	mux.HandleFunc("GET /dispatch-board", h.dispatchBoardHTTP)
 	h.registerTreeRoutes(mux)
 	h.registerMuxRoutes(mux)
 	h.registerStudioVersionRoutes(mux)
@@ -677,11 +668,6 @@ func (h *Hub) publish(rt *Runtime) error {
 		rt.Server.mu.Lock()
 		ctrl, concrete := rt.Server.ctrl.(*control.Controller)
 		projects := projectBindings{dispatch: h.dispatcherFor(rt), open: openProjects}
-		// Naming a session is the hub's call: it owns the panes and the
-		// dispatch record the boundary is drawn from.
-		projects.rename = func(to, title string) (tool.RenamedSession, error) {
-			return h.renameSessionFor(rt, to, title)
-		}
 		if concrete {
 			rt.Server.currency = &h.currency
 		}

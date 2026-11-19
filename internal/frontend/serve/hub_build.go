@@ -37,7 +37,6 @@ func (h *Hub) buildPane(ctx context.Context, in paneBuild) (*boot.BuildResult, b
 			ComputerDriver:           h.opts.ComputerDriver,
 			Model:                    strings.TrimSpace(model),
 			AgentPreset:              in.posture.preset,
-			RoleText:                 in.posture.role,
 			WorkspaceRoot:            in.root,
 			SessionDir:               SessionDirFor(in.root),
 			Sink:                     in.paneSink,
