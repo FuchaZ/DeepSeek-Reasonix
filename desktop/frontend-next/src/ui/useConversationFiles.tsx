@@ -12,11 +12,26 @@ export function useConversationFiles(port: AgentPort, root: string, remote: bool
   const menuID = useRef(0);
   // A link opens its file once: the workbench reports it taken, so a later press
   // on Files, or anything else that re-renders it, finds nothing to replay.
+  //
+  // A path the conversation spelled is read against the workspace root, though
+  // the model writes it against whatever directory its shell ran in: `cd crate
+  // && cargo build` leaves `target/release/app.exe`, and the file is under
+  // `crate/`. The workspace is asked where the tail really lives before the tab
+  // opens, so a file that is there opens as itself instead of being reported
+  // gone — and a path that is already right costs one stat, not a walk.
   const ask = useCallback((path: string) => {
     const req = { path, port, root, consumed: () => setRequest((now) => (now === req ? undefined : now)) };
     setRequest(req);
     reveal();
-  }, [port, root, reveal]);
+    if (remote) return;
+    void port.workspaceResolvePath?.(path).then((found) => {
+      if (!found) return;
+      const at = found.root ? grantedFilePath(found.root, found.path) : found.path;
+      if (!at || at === path) return;
+      const moved = { path: at, port, root, consumed: () => setRequest((now) => (now === moved ? undefined : now)) };
+      setRequest(moved);
+    }).catch(() => {});
+  }, [port, root, reveal, remote]);
   useEffect(() => () => setRequest(undefined), [port, root]);
   const [platform, setPlatform] = useState("");
   const close = useCallback(() => setMenu(null), []);
@@ -78,6 +93,7 @@ export function useConversationFiles(port: AgentPort, root: string, remote: bool
         return held ? () => ask(held) : null;
       },
       image,
+      imageOf: (ref) => port.workspaceImageURL(ref.path, ref.root),
       granted: grantedMark,
       menu: offer,
     };

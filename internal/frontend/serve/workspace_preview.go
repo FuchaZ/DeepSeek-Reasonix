@@ -14,6 +14,27 @@ func previewRef(r *http.Request) workspacefile.Ref {
 func (s *Server) workspacePreviewRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("GET /workspace/preview/info", s.workspacePreviewInfo)
 	mux.HandleFunc("GET /workspace/preview/content", s.workspacePreviewContent)
+	mux.HandleFunc("GET /workspace/resolve", s.workspaceResolve)
+}
+
+// workspaceResolve answers where a path a conversation named really lives. Only
+// an unambiguous answer is given: a tail two files share is not a file this can
+// choose, and the caller keeps showing the path it was given.
+func (s *Server) workspaceResolve(w http.ResponseWriter, r *http.Request) {
+	ref, err := s.ctl().WorkspaceResolvePath(r.URL.Query().Get("path"))
+	if err != nil {
+		if errors.Is(err, workspacefile.ErrAmbiguous) {
+			refuse(w, http.StatusConflict, "workspace.path_ambiguous", err.Error(), nil)
+			return
+		}
+		if errors.Is(err, workspacefile.ErrMissing) {
+			refuse(w, http.StatusNotFound, "workspace.file_missing", err.Error(), nil)
+			return
+		}
+		refuse(w, http.StatusInternalServerError, "workspace.file_failed", err.Error(), nil)
+		return
+	}
+	writeJSON(w, ref)
 }
 
 func refusePreview(w http.ResponseWriter, err error) {

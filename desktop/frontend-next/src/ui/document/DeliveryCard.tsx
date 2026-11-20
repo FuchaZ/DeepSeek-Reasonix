@@ -11,6 +11,8 @@ import { grantedFilePath } from "../grantedfiles";
 import { DeliveryMenu, type DeliveryAction } from "./DeliveryMenu";
 import { FileTypeIcon } from "./FileTypeIcon";
 import { fileReference } from "../fileReference";
+import { fileKind } from "../fileKind";
+import { ImagePreview } from "../ImagePreview";
 
 export function DeliveryCard({ files, reply }: { files: DeliveredFile[]; reply?: ReplyActions }) {
   const counts = new Map<string, number>();
@@ -24,6 +26,18 @@ export function DeliveryCard({ files, reply }: { files: DeliveredFile[]; reply?:
         file={file} reply={reply} showLocation={(counts.get(file.path.split("/").at(-1)!) ?? 0) > 1} />)}
     </div>
   </div>;
+}
+
+// A picture a reply presents is the answer, so it is shown rather than only named:
+// the same controlled channel a conversation picture loads from serves it, and the
+// row below keeps the name, the open action and the menu. A picture that cannot
+// load leaves the row as it would have been without this.
+function DeliveryPicture({ path, name, src }: { path: string; name: string; src: string }) {
+  const [failed, setFailed] = useState(false);
+  if (fileKind(path) !== "image" || failed) return null;
+  return <ImagePreview src={src} name={name} className="delivery-picture">
+    <img src={src} alt={name} title={name} loading="lazy" onError={() => setFailed(true)} />
+  </ImagePreview>;
 }
 
 function DeliveryEntry({ file, reply, showLocation }: { file: DeliveredFile; reply?: ReplyActions; showLocation: boolean }) {
@@ -68,7 +82,9 @@ function DeliveryEntry({ file, reply, showLocation }: { file: DeliveredFile; rep
   if (!file.root && reply?.revealDeliveredFile)
     actions.push({ kind: "reveal", label: t("chat.show_in_folder"), icon: "folder", run: () => void run(() => reply.revealDeliveredFile!(file.path), t("chat.requested_showing_the_file_location")) });
   actions.push({ kind: "copy", label: t("common.copy_path"), icon: "copy", run: () => void run(() => copyText(absolute), t("chat.path_copied")) });
+  const picture = reply?.files?.imageOf?.(file) || undefined;
   return <div className="delivery-file" data-current={current ? "" : undefined}>
+    {picture && <DeliveryPicture path={file.path} name={name} src={picture} />}
     <button type="button" className="delivery-open" data-action="delivery.preview" data-target={path} disabled={!open} title={`${absolute}\n${description}`}
       aria-label={t("chat.preview_name", { name })} aria-describedby={detailID} aria-current={current ? "true" : undefined} onClick={() => open?.()}>
       <FileTypeIcon path={file.path} />

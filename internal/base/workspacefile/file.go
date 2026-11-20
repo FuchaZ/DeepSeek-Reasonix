@@ -24,6 +24,7 @@ const (
 var (
 	ErrDenied      = errors.New("file is outside authorized roots")
 	ErrMissing     = errors.New("file does not exist")
+	ErrAmbiguous   = errors.New("more than one file ends that way")
 	ErrNotFile     = errors.New("not a regular file")
 	ErrTooLarge    = errors.New("file exceeds preview limit")
 	ErrNotText     = errors.New("file is not UTF-8 text")

@@ -467,6 +467,14 @@ export class SsePort extends SseTerminal implements AgentPort {
     return { data: await res.arrayBuffer(), version: res.headers.get("X-Preview-Version") ?? "" };
   }
 
+  // A missing answer here is ordinary: the caller already has a path that read
+  // nothing, and this either names where the file really is or says it cannot.
+  async workspaceResolvePath(path: string, signal?: AbortSignal) {
+    const res = await fetch(`${this.base}/workspace/resolve?path=${encodeURIComponent(path)}`, { credentials: "same-origin", signal });
+    if (!res.ok) return null;
+    return await res.json() as import("./workspace").FileRef;
+  }
+
   workspaceImageURL(path: string, root?: string) {
     return `${this.base}/workspace/image?path=${encodeURIComponent(path)}${root ? `&root=${encodeURIComponent(root)}` : ""}`;
   }

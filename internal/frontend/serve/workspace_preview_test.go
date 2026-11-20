@@ -53,6 +53,72 @@ func TestWorkspacePreviewRoutesKeepBinaryOutOfJSON(t *testing.T) {
 	}
 }
 
+func TestWorkspaceResolveFindsAFileSpelledFromASubdirectory(t *testing.T) {
+	dir := testenv.TempDir(t)
+	at := filepath.Join(dir, "misyrup-rs", "target", "release", "app.exe")
+	if err := os.MkdirAll(filepath.Dir(at), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(at, []byte("binary"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	bc := NewBroadcaster()
+	ctrl := control.New(control.Options{Runner: fakeRunner{}, Sink: bc, WorkspaceRoot: dir})
+	t.Cleanup(ctrl.Close)
+	handler := operatorHandler(New(ctrl, bc, config.ServeConfig{}))
+
+	rec := httptest.NewRecorder()
+	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/workspace/resolve?path=target/release/app.exe", nil))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("resolve = %d %s", rec.Code, rec.Body.String())
+	}
+	var ref workspacefile.Ref
+	if err := json.Unmarshal(rec.Body.Bytes(), &ref); err != nil {
+		t.Fatal(err)
+	}
+	if ref.Path != "misyrup-rs/target/release/app.exe" || ref.Root != "" {
+		t.Fatalf("resolve = %+v, want the file's own path", ref)
+	}
+
+	// The resolved path is what the caller then reads, so it has to open.
+	read := httptest.NewRecorder()
+	handler.ServeHTTP(read, httptest.NewRequest(http.MethodGet, "/workspace/preview/info?path="+ref.Path, nil))
+	if read.Code != http.StatusOK {
+		t.Fatalf("the resolved path does not read: %d %s", read.Code, read.Body.String())
+	}
+}
+
+func TestWorkspaceResolveKeepsAnAmbiguousOrAbsentAnswerOut(t *testing.T) {
+	dir := testenv.TempDir(t)
+	for _, rel := range []string{"a/target/release/app.exe", "b/target/release/app.exe"} {
+		at := filepath.Join(dir, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(at), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(at, []byte("binary"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	bc := NewBroadcaster()
+	ctrl := control.New(control.Options{Runner: fakeRunner{}, Sink: bc, WorkspaceRoot: dir})
+	t.Cleanup(ctrl.Close)
+	handler := operatorHandler(New(ctrl, bc, config.ServeConfig{}))
+	for _, tc := range []struct {
+		query string
+		code  int
+	}{
+		{"target/release/app.exe", http.StatusConflict},
+		{"target/release/gone.exe", http.StatusNotFound},
+		{"../outside.exe", http.StatusNotFound},
+	} {
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/workspace/resolve?path="+tc.query, nil))
+		if rec.Code != tc.code {
+			t.Fatalf("%s = %d %s, want %d", tc.query, rec.Code, rec.Body.String(), tc.code)
+		}
+	}
+}
+
 func TestHistoryReconstructsOnlyConfirmedDeliveryResults(t *testing.T) {
 	body := `{"version":1,"files":[{"path":"docs/report.md","description":"Report"}]}`
 	msgs := []provider.Message{

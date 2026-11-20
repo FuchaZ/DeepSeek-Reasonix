@@ -120,6 +120,11 @@ export interface DeliveredFile extends FileRef {
 export interface WorkspacePreviewPort {
   workspacePreviewInfo(ref: FileRef, signal?: AbortSignal): Promise<PreviewInfo>;
   workspacePreviewContent(ref: FileRef, signal?: AbortSignal): Promise<{ data: ArrayBuffer; version: string }>;
+  /** Where a path spelled from another working directory really lives, or null
+   *  when the workspace cannot say: nothing ends that way, or more than one file
+   *  does. A conversation link is read against the workspace root, though the
+   *  model writes it against whatever directory its shell ran in. */
+  workspaceResolvePath(path: string, signal?: AbortSignal): Promise<FileRef | null>;
 }
 
 export interface WorkspaceEntry {

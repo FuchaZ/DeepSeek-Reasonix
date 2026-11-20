@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { DeliveryCard } from "./DeliveryCard";
 import type { ReplyActions } from "../cards/SayCard";
+import "../testkit";
 
 afterEach(cleanup);
 
@@ -80,4 +81,45 @@ it("supports keyboard menus and restores focus when Escape closes them", async (
   await user.keyboard("{Escape}");
   expect(screen.queryByRole("menu")).toBeNull();
   expect(document.activeElement).toBe(more);
+});
+
+const picture = (src = "/rt/r1/workspace/image?path=heart-gaps.png"): ReplyActions => ({
+  ...actions(),
+  files: { file: () => vi.fn(), link: () => null, image: () => null, imageOf: () => src },
+});
+
+it.each(["heart-gaps.png", "heart-gaps.jpg", "shots/HEART-GAPS.JPEG", "a.webp"])("shows a presented %s as a picture above its row", (path) => {
+  render(<DeliveryCard files={[{ path }]} reply={picture()} />);
+  const img = screen.getAllByRole("img")[0];
+  expect(img.getAttribute("src")).toBe("/rt/r1/workspace/image?path=heart-gaps.png");
+  expect(img.getAttribute("loading")).toBe("lazy");
+  expect(screen.getByRole("button", { name: `预览 ${path.split("/").at(-1)}` })).toBeTruthy();
+});
+
+it("opens the presented picture in the shared viewer and keeps the row's own actions", async () => {
+  const user = userEvent.setup();
+  render(<DeliveryCard files={[{ path: "heart-gaps.png" }]} reply={picture()} />);
+  await user.click(screen.getByRole("button", { name: "查看图片 heart-gaps.png" }));
+  const dialog = screen.getByRole("dialog", { name: "heart-gaps.png" });
+  expect(within(dialog).getByRole("img").getAttribute("src")).toBe("/rt/r1/workspace/image?path=heart-gaps.png");
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.getByRole("button", { name: /^预览.*heart-gaps.png/ })).toBeTruthy();
+  expect(screen.getByRole("button", { name: /更多.*heart-gaps.png/ })).toBeTruthy();
+});
+
+it("draws no picture for a file that is not an image, or where the conversation names no source", () => {
+  const { container } = render(<DeliveryCard files={[{ path: "report.pdf" }]} reply={picture()} />);
+  expect(container.querySelector(".delivery-picture")).toBeNull();
+  cleanup();
+  const bare = render(<DeliveryCard files={[{ path: "heart-gaps.png" }]} reply={actions()} />);
+  expect(bare.container.querySelector(".delivery-picture")).toBeNull();
+  expect(screen.getByRole("button", { name: /^预览.*heart-gaps.png/ })).toBeTruthy();
+});
+
+it("falls back to the row alone when the picture cannot load", () => {
+  const { container } = render(<DeliveryCard files={[{ path: "heart-gaps.png" }]} reply={picture()} />);
+  fireEvent.error(container.querySelector(".delivery-picture img")!);
+  expect(container.querySelector(".delivery-picture")).toBeNull();
+  expect(screen.getByRole("button", { name: /^预览.*heart-gaps.png/ })).toBeTruthy();
 });

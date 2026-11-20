@@ -80,6 +80,17 @@ marker follows the actual visible workbench file. Type icons do not imply suppor
 卡片容器达到 720 CSS 像素时显示两列，否则显示一列。“更多”菜单提供复制路径、
 添加到对话及宿主支持的原生操作。“查看中”跟随实际可见文件；图标不代表预览能力。
 
+A delivered picture is drawn above its row, bounded to the card's width and 260
+CSS pixels of height, keeping its aspect ratio. It loads through the controlled
+channel a conversation picture uses and opens the shared zoom viewer.
+
+- The row keeps its name, open action and menu.
+- A picture that does not load, and a file that is not one, keep the row alone.
+
+交付的图片画在它那一行上方，宽度随卡片、高 260 CSS 像素、保持原始比例。
+它走会话图片同一条受控通道，点击进入共用的缩放查看器，那一行的文件名、
+打开操作与菜单保持不变；加载失败或本来就不是图片时，只显示文件行。
+
 ## Boundaries / 边界
 
 - Controller preview APIs use the shared bounded, root-confined file service.

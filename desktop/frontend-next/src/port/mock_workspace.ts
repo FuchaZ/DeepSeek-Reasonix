@@ -30,6 +30,11 @@ export class MockWorkspace extends MockMemoryHold {
     const file = await this.workspaceFile(ref.path, ref.root);
     return { data: new TextEncoder().encode(file.content).buffer, version: file.revision };
   }
+  // The fixture knows no working directory other than the root, and reading a
+  // file to answer this would touch a spy a guard put on the read path.
+  async workspaceResolvePath(_path: string): Promise<import("./workspace").FileRef | null> {
+    return null;
+  }
   workspaceImageURL(path: string) { return `/fixture/${path}`; }
   opensFiles() { return false; }
   async openFile() {}

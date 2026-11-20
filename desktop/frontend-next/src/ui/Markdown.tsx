@@ -164,6 +164,8 @@ export interface LocalRefs {
   link(href: string): (() => void) | null;
   /** Where to load src from, or null to leave it as written. */
   image(src: string): string | null;
+  /** Where a file the conversation already resolved loads its own picture from. */
+  imageOf?(ref: import("../port/workspace").FileRef): string | null;
   path?(href: string): string | null;
   /** What a bare path in text may become a link to: the workspace's own file or one in a granted folder. */
   linkable?(href: string): string | null;
