@@ -239,14 +239,14 @@ func (c *client) ResetContext() {
 func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
 	requestCtx := provider.WithRequestAttemptCounter(ctx)
 	body, usedPrevious, wireMessages := c.buildRequestBody(req)
-	resp, err := c.send(requestCtx, body)
+	resp, err := c.send(requestCtx, body, req.SessionID)
 	downgrade := false
 	var apiErr *provider.APIError
 	if usedPrevious && errors.As(err, &apiErr) && apiErr.Status == http.StatusBadRequest {
 		downgrade = !isStalePreviousResponseError(err)
 		c.ResetContext()
 		body, _, wireMessages = c.buildRequestBodyWithContinuation(req, false)
-		resp, err = c.send(requestCtx, body)
+		resp, err = c.send(requestCtx, body, req.SessionID)
 		if err != nil {
 			return nil, &provider.ContinuationRecoveryError{Err: err}
 		}
@@ -260,7 +260,7 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	return out, nil
 }
 
-func (c *client) send(ctx context.Context, body map[string]any) (*http.Response, error) {
+func (c *client) send(ctx context.Context, body map[string]any, sessionID string) (*http.Response, error) {
 	payload, err := json.Marshal(body)
 	if err != nil {
 		return nil, fmt.Errorf("responses: marshal request: %w", err)
@@ -276,6 +276,7 @@ func (c *client) send(ctx context.Context, body map[string]any) (*http.Response,
 			req.Header.Set("x-dashscope-session-cache", "enable")
 		}
 		provider.ApplyOpenCodeGoIdentity(req, c.session.openCode)
+		provider.ApplySessionIdentity(req, sessionID)
 		provider.ApplyClientIdentity(req)
 		return req, nil
 	}

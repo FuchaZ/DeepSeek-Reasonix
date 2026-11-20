@@ -14,6 +14,10 @@ type Request struct {
 	// Mode is the session's model mode id. An adapter sends only a mode its
 	// config declared for this endpoint, so an unknown one reaches no wire.
 	Mode string `json:"Mode,omitempty"`
+	// SessionID names the conversation this call is part of, sent as the
+	// gateway session header (never in the body) so a gateway that groups
+	// usage by session can keep conversations apart. "" names none.
+	SessionID string `json:"SessionID,omitempty"`
 }
 
 // ResponseFormat asks a provider to constrain its output shape.

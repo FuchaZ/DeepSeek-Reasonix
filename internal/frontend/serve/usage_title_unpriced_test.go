@@ -74,7 +74,7 @@ func TestUsagePaidTotalCoversTitleGenerationSpend(t *testing.T) {
 		ref:   "deepseek/deepseek-v4-flash",
 		sink:  recorder,
 	}
-	if got, _ := s.tryGenerateTitle(ctx, "rename the login loop"); got == "" {
+	if got, _ := s.tryGenerateTitle(ctx, "rename the login loop", ""); got == "" {
 		t.Fatal("title generation produced no title; the fixture did not reach the usage emit")
 	}
 	if err := stats.Flush(ctx, dir); err != nil {

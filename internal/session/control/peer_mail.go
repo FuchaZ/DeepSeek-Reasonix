@@ -178,6 +178,20 @@ func (c *Controller) rebindPeers() {
 	c.publishPeerLiveLocked(path)
 }
 
+// peerTitle is the name a peer can match this session by: the title the person
+// gave it or the topic fill wrote, falling back to the branch id when neither
+// exists. The record's title is what list_peers prints and what a send resolves
+// against, so a branch id there makes every name the user says unresolvable —
+// the send misses, and the task lands wherever a guess sends it.
+func (c *Controller) peerTitle(path string) string {
+	if meta, ok, err := sessionstore.LoadBranchMeta(path); err == nil && ok {
+		if title := peerAttribute(firstNonEmptyStr(meta.CustomTitle, meta.TopicTitle)); title != "" {
+			return title
+		}
+	}
+	return peerAttribute(sessionstore.BranchID(path))
+}
+
 // publishPeerLiveLocked writes this session's record with a fresh beat; it is
 // called when the session changes and on every ingest tick.
 func (c *Controller) publishPeerLiveLocked(path string) {
@@ -190,7 +204,7 @@ func (c *Controller) publishPeerLiveLocked(path string) {
 	now := time.Now().UTC()
 	err := dir.PublishLive(peermail.Live{
 		SessionID: p.key, Instance: p.instance, SessionPath: path, PID: os.Getpid(), Hostname: host,
-		Title: peerAttribute(sessionstore.BranchID(path)), Project: peerAttribute(filepath.Base(c.WorkspaceRoot())),
+		Title: c.peerTitle(path), Project: peerAttribute(filepath.Base(c.WorkspaceRoot())),
 		StartedAt: now, BeatAt: now, Inbound: "hold",
 	})
 	if err != nil {

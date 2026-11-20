@@ -89,7 +89,7 @@ func (s *Server) drainTitles() {
 		f.mu.Unlock()
 
 		ctx, cancel := context.WithTimeout(context.Background(), titleFillTimeout)
-		title := s.generateTitle(ctx, job.source)
+		title := s.generateTitle(ctx, job.source, sessionstore.BranchID(job.name))
 		cancel()
 		if title != "" && s.titles.putIf(job.name, title, job.source, job.mod, func() bool { return f.wanted(job.name, job.source) }) {
 			s.bc.treeChanged()

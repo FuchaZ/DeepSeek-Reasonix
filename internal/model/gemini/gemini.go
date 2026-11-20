@@ -136,6 +136,7 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 		for name, value := range c.headers {
 			httpReq.Header.Set(name, value)
 		}
+		provider.ApplySessionIdentity(httpReq, req.SessionID)
 		provider.ApplyClientIdentity(httpReq)
 		return httpReq, nil
 	}

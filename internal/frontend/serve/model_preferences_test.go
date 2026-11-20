@@ -56,7 +56,7 @@ func TestTitleRoleUsesConfiguredModelWithFixedRequest(t *testing.T) {
 		if resp.StatusCode != http.StatusNoContent {
 			t.Fatalf("save title role = %d", resp.StatusCode)
 		}
-		if got := s.generateTitle(context.Background(), "fix login"); got != "Login fix" {
+		if got := s.generateTitle(context.Background(), "fix login", ""); got != "Login fix" {
 			t.Fatalf("title = %q", got)
 		}
 		got := <-requests
@@ -78,7 +78,7 @@ func TestTitleRoleUsesConfiguredModelWithFixedRequest(t *testing.T) {
 	}
 	clear := postProvider(t, server.URL, "/roles", `{"role":"title","ref":"","effort":"auto"}`)
 	clear.Body.Close()
-	if clear.StatusCode != http.StatusNoContent || s.generateTitle(context.Background(), "fix login") != "Login fix" {
+	if clear.StatusCode != http.StatusNoContent || s.generateTitle(context.Background(), "fix login", "") != "Login fix" {
 		t.Fatal("clearing the naming model must fall back to the startup chat model")
 	}
 	if got := <-requests; got.Model != "model-a" || got.Thinking["type"] != "disabled" || got.MaxTokens != 60 {

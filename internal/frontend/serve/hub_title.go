@@ -105,7 +105,7 @@ func (h *Hub) autoNameSession(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), titleFillTimeout)
 	defer cancel()
-	title, err := generator.tryGenerateTitle(ctx, source)
+	title, err := generator.tryGenerateTitle(ctx, source, sessionstore.BranchID(path))
 	if err != nil || title == "" {
 		refuseTitle(w, err)
 		return

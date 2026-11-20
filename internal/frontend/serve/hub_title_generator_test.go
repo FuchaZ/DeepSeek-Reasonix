@@ -142,7 +142,7 @@ func TestSessionTitleFallbackRecoversAfterInitializationFailure(t *testing.T) {
 	if second.titleModel.prov == nil || second.titleModel.sink == nil {
 		t.Fatal("fallback did not recover after the configuration was repaired")
 	}
-	if got := second.generateTitle(t.Context(), "hello"); got != "Short title" {
+	if got := second.generateTitle(t.Context(), "hello", ""); got != "Short title" {
 		t.Fatalf("recovered title = %q", got)
 	}
 }

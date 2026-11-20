@@ -89,13 +89,13 @@ func (c *client) openChatStream(ctx context.Context, req provider.Request) (<-ch
 
 func (c *client) openResolvedChatStream(ctx context.Context, req provider.Request) (<-chan provider.Chunk, error) {
 	wire := c.buildRequest(req)
-	stream, err := c.openStream(ctx, c.chatURL, wire, req.Tools)
+	stream, err := c.openStream(ctx, c.chatURL, wire, req.Tools, req.SessionID)
 	if err == nil || wire.StreamOptions == nil || !bodyRejected(err) || ctx.Err() != nil ||
 		!c.learned.streamFacts().asked.CompareAndSwap(false, true) {
 		return stream, err
 	}
 	wire.StreamOptions = nil
-	retried, retryErr := c.openStream(ctx, c.chatURL, wire, req.Tools)
+	retried, retryErr := c.openStream(ctx, c.chatURL, wire, req.Tools, req.SessionID)
 	if retryErr != nil {
 		return stream, err
 	}

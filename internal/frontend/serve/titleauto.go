@@ -70,7 +70,7 @@ func (s *Server) nameFirstTurn(path, first string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), titleFillTimeout)
 	defer cancel()
-	title, err := s.tryGenerateTitle(ctx, first)
+	title, err := s.tryGenerateTitle(ctx, first, sessionstore.BranchID(path))
 	if err != nil || title == "" || s.namedByAPerson(path) {
 		return
 	}

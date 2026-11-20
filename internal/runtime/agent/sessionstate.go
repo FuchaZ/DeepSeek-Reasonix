@@ -2,6 +2,7 @@ package agent
 
 import (
 	"reasonix/internal/state/sessionstore"
+	"strings"
 	"sync"
 	"sync/atomic"
 
@@ -79,4 +80,10 @@ func (r *sessionRuntime) session() *sessionstore.Session {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	return r.conversation
+}
+
+// branchID is the conversation's stable id — its transcript's branch id — for
+// gateways that group usage by session.
+func (r *sessionRuntime) branchID() string {
+	return sessionstore.BranchID(strings.TrimSpace(r.path))
 }

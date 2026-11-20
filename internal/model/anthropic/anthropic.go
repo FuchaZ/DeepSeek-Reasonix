@@ -254,8 +254,7 @@ func reservedCustomHeader(name string) bool {
 	}
 }
 
-// requestHeaders is what a client adds to every request beyond auth and
-// content negotiation, fixed for the client's lifetime.
+// requestHeaders is what a client adds to every request beyond auth and content negotiation, fixed for the client's lifetime.
 type requestHeaders struct {
 	custom          map[string]string
 	openCodeSession string
@@ -306,6 +305,7 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 		}
 		httpReq.Header.Set("anthropic-version", anthropicVersion)
 		c.headers.apply(httpReq)
+		provider.ApplySessionIdentity(httpReq, req.SessionID)
 		return httpReq, nil
 	}
 	resp, err := provider.SendWithRetry(requestCtx, c.http, c.sendOpts(), newReq)

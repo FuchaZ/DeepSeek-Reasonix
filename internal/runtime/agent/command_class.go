@@ -184,6 +184,7 @@ func (a *Agent) askTriage(ctx context.Context, systemPrompt, input, source strin
 		MaxTokens:      commandClassMaxOutTokens,
 		EffortOverride: commandClassEffort,
 		Temperature:    classTemperature,
+		SessionID:      a.sess.branchID(),
 	})
 	if err != nil {
 		return "", false

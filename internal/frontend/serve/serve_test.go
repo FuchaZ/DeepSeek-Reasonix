@@ -55,7 +55,7 @@ func TestGenerateTitleRecordsUsageWithModelIdentity(t *testing.T) {
 	s := &Server{
 		titleModel: titleProviderState{prov: titleUsageProvider{}, ref: "deepseek/deepseek-v4-flash", sink: sink},
 	}
-	if got := s.generateTitle(context.Background(), "hello"); got != "Short title" {
+	if got := s.generateTitle(context.Background(), "hello", ""); got != "Short title" {
 		t.Fatalf("title = %q", got)
 	}
 	if len(sink.events) != 1 || sink.events[0].Kind != event.Usage || sink.events[0].ModelRef != "deepseek/deepseek-v4-flash" {

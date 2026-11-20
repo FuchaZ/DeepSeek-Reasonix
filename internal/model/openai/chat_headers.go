@@ -7,7 +7,7 @@ import (
 )
 
 // setChatHeaders stamps the headers every streamed chat POST carries.
-func (c *client) setChatHeaders(req *http.Request) {
+func (c *client) setChatHeaders(req *http.Request, sessionID string) {
 	if IsDeepSeek(req.URL.String()) {
 		// DeepSeek's edge acknowledges an eagerly sent body with WINDOW_UPDATE before
 		// its own SETTINGS, which Go's HTTP/2 client rejects (RFC 9113 §3.4). Holding
@@ -19,5 +19,6 @@ func (c *client) setChatHeaders(req *http.Request) {
 	req.Header.Set("Accept", "text/event-stream")
 	applyCustomHeaders(req.Header, c.headers)
 	provider.ApplyOpenCodeGoIdentity(req, c.openCodeSession)
+	provider.ApplySessionIdentity(req, sessionID)
 	provider.ApplyClientIdentity(req)
 }

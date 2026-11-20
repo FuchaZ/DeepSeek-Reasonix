@@ -57,7 +57,7 @@ func waitTitle(t *testing.T, s *Server, name, source string, mod int64) string {
 func TestGenerateTitleStripsPasteLabelAndUsesTitleBudget(t *testing.T) {
 	prov := &recordingTitleProvider{}
 	s := &Server{titleModel: titleProviderState{prov: prov}}
-	got := s.generateTitle(context.Background(), "[已粘贴文本 #1 · 20 行]\nfix the login loop")
+	got := s.generateTitle(context.Background(), "[已粘贴文本 #1 · 20 行]\nfix the login loop", "")
 	if got != "fix the login loop" {
 		t.Fatalf("title = %q, want pasted label removed", got)
 	}

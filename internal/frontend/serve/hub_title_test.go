@@ -205,7 +205,7 @@ func TestTitleRequestStopsAtDeadline(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
 	s := &Server{titleModel: titleProviderState{prov: stalledTitleProvider{}}}
-	if got := s.requestTitle(ctx, "latest message", s.currentTitleProvider()); got != "" {
+	if got := s.requestTitle(ctx, "latest message", s.currentTitleProvider(), ""); got != "" {
 		t.Fatalf("timed out request produced %q", got)
 	}
 }

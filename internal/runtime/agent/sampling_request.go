@@ -143,6 +143,8 @@ func (a *Agent) buildSamplingRequest(ctx context.Context, trigger string) (sampl
 	// Host-owned and set after the extension ruling: the payload it rewrites
 	// has no mode, and a replaced request must not drop the session's choice.
 	req.Mode = a.sess.mode.get()
+	// Host-owned like the mode: an extension must not move a call to another conversation.
+	req.SessionID = a.sess.branchID()
 	// The same rule for the session's switched depth; an unset one leaves any override an extension set.
 	if level := a.sess.effort.get(); level != "" {
 		req.EffortOverride = level

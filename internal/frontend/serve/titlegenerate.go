@@ -39,7 +39,9 @@ func titleSource(first string) string {
 // tryGenerateTitle calls a lightweight LLM to produce a short session title. A
 // failure comes back as an error that says which kind it was; the title is
 // empty then, and callers that do not show it fall back to a preview.
-func (s *Server) tryGenerateTitle(ctx context.Context, firstMsg string) (string, error) {
+// sessionID names the conversation to a gateway that groups usage by session;
+// "" (a caller with no transcript) names none.
+func (s *Server) tryGenerateTitle(ctx context.Context, firstMsg, sessionID string) (string, error) {
 	firstMsg = titleSource(firstMsg)
 	model := s.currentTitleProvider()
 	if nilutil.IsNil(model.prov) || firstMsg == "" {
@@ -48,18 +50,18 @@ func (s *Server) tryGenerateTitle(ctx context.Context, firstMsg string) (string,
 	if r := []rune(firstMsg); len(r) > 300 {
 		firstMsg = string(r[:300]) + "..."
 	}
-	return s.tryRequestTitle(ctx, firstMsg, model)
+	return s.tryRequestTitle(ctx, firstMsg, model, sessionID)
 }
 
 // generateTitle is tryGenerateTitle for callers that fall back to a preview and
 // have no use for the reason.
-func (s *Server) generateTitle(ctx context.Context, firstMsg string) string {
-	title, _ := s.tryGenerateTitle(ctx, firstMsg)
+func (s *Server) generateTitle(ctx context.Context, firstMsg, sessionID string) string {
+	title, _ := s.tryGenerateTitle(ctx, firstMsg, sessionID)
 	return title
 }
 
-func (s *Server) requestTitle(ctx context.Context, firstMsg string, model titleProviderState) string {
-	title, _ := s.tryRequestTitle(ctx, firstMsg, model)
+func (s *Server) requestTitle(ctx context.Context, firstMsg string, model titleProviderState, sessionID string) string {
+	title, _ := s.tryRequestTitle(ctx, firstMsg, model, sessionID)
 	return title
 }
 
@@ -72,15 +74,15 @@ const (
 	titleThinkingMaxTokens = 1024
 )
 
-func (s *Server) tryRequestTitle(ctx context.Context, firstMsg string, model titleProviderState) (string, error) {
-	title, err := s.requestTitleWithin(ctx, firstMsg, model, titleMaxTokens)
+func (s *Server) tryRequestTitle(ctx context.Context, firstMsg string, model titleProviderState, sessionID string) (string, error) {
+	title, err := s.requestTitleWithin(ctx, firstMsg, model, titleMaxTokens, sessionID)
 	if errors.Is(err, errTitleThought) {
-		return s.requestTitleWithin(ctx, firstMsg, model, titleThinkingMaxTokens)
+		return s.requestTitleWithin(ctx, firstMsg, model, titleThinkingMaxTokens, sessionID)
 	}
 	return title, err
 }
 
-func (s *Server) requestTitleWithin(ctx context.Context, firstMsg string, model titleProviderState, maxTokens int) (string, error) {
+func (s *Server) requestTitleWithin(ctx context.Context, firstMsg string, model titleProviderState, maxTokens int, sessionID string) (string, error) {
 	ctx = provider.WithRequestAttemptCounter(ctx)
 	var usage *provider.Usage
 	defer func() {
@@ -101,6 +103,7 @@ func (s *Server) requestTitleWithin(ctx context.Context, firstMsg string, model 
 		},
 		Temperature: provider.TemperaturePtr(0),
 		MaxTokens:   maxTokens,
+		SessionID:   sessionID,
 	})
 	if err != nil {
 		return "", titleFailure(ctx, err)

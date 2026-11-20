@@ -429,7 +429,7 @@ func (c *client) Stream(ctx context.Context, req provider.Request) (<-chan provi
 	return out, nil
 }
 
-func (c *client) openStream(ctx context.Context, targetURL string, wireReq chatRequest, tools []provider.ToolSchema) (<-chan provider.Chunk, error) {
+func (c *client) openStream(ctx context.Context, targetURL string, wireReq chatRequest, tools []provider.ToolSchema, sessionID string) (<-chan provider.Chunk, error) {
 	requestCtx := provider.WithRequestAttemptCounter(ctx)
 	buf := bufPool.Get().(*bytes.Buffer)
 	buf.Reset()
@@ -446,7 +446,7 @@ func (c *client) openStream(ctx context.Context, targetURL string, wireReq chatR
 		if err != nil {
 			return nil, err
 		}
-		c.setChatHeaders(httpReq)
+		c.setChatHeaders(httpReq, sessionID)
 		return httpReq, nil
 	}
 	resp, err := provider.SendWithRetry(requestCtx, c.http, c.sendOpts(), newReq)
@@ -531,7 +531,7 @@ func (c *client) streamWithPrefixContinuation(ctx context.Context, req provider.
 		}
 
 		prefixReq := c.buildPrefixRequest(req, fullText.String(), fullReasoning.String())
-		next, err := c.openStream(ctx, c.prefixChatURL, prefixReq, req.Tools)
+		next, err := c.openStream(ctx, c.prefixChatURL, prefixReq, req.Tools, req.SessionID)
 		if err != nil {
 			emitUsageAndDone(ctx, out, totalUsage)
 			return

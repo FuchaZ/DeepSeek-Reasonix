@@ -38,7 +38,7 @@ func TestTitleWithoutDedicatedModelStillGenerates(t *testing.T) {
 	if err := s.initTitleProvider(); err != nil {
 		t.Fatal(err)
 	}
-	if got := s.generateTitle(context.Background(), "fix login"); got != "Login fix" {
+	if got := s.generateTitle(context.Background(), "fix login", ""); got != "Login fix" {
 		t.Fatalf("title = %q with no dedicated model, want Login fix from the chat model", got)
 	}
 	if got := <-models; got != "model-a" {
