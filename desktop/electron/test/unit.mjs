@@ -3419,6 +3419,39 @@ test("CUA repeated quit waits for owned driver cleanup", async () => {
 });
 
 
+test("a pinned CUA driver already in bin is adopted instead of fetched again", async () => {
+  const { install } = require("../packaging/install-cua-driver.js");
+  const stage = fs.mkdtempSync(path.join(os.tmpdir(), "reasonix-cua-adopt-"));
+  try {
+    // A driver an earlier build left behind: no stamp, and the download must
+    // still be skipped rather than repeated on every build. The probe stands in
+    // for running it, which a fixture written as text cannot do on Windows.
+    const exe = path.join(stage, process.platform === "win32" ? "cua-driver.exe" : "cua-driver");
+    fs.writeFileSync(exe, "fixture");
+    const before = fs.statSync(exe).mtimeMs;
+    const got = await install(process.platform, process.arch, stage, () => cuaContract.version);
+    assert.equal(got, exe);
+    assert.equal(fs.statSync(exe).mtimeMs, before, "the adopted driver is left untouched");
+    const pinned = cuaContract.artifacts[process.platform === "darwin" ? "darwin-universal" : `${process.platform}-${process.arch}`];
+    assert.equal(fs.readFileSync(exe + ".artifact", "utf8").trim(), `${pinned.name} ${pinned.sha256}`);
+  } finally {
+    fs.rmSync(stage, { recursive: true, force: true });
+  }
+});
+
+test("a driver of another version is not adopted", async () => {
+  const { install } = require("../packaging/install-cua-driver.js");
+  const stage = fs.mkdtempSync(path.join(os.tmpdir(), "reasonix-cua-stale-"));
+  try {
+    const exe = path.join(stage, process.platform === "win32" ? "cua-driver.exe" : "cua-driver");
+    fs.writeFileSync(exe, "fixture");
+    await assert.rejects(install(process.platform, process.arch, stage, () => "0.0.0"));
+    assert.equal(fs.existsSync(exe + ".artifact"), false, "a version this build did not pin leaves no stamp");
+  } finally {
+    fs.rmSync(stage, { recursive: true, force: true });
+  }
+});
+
 test("CUA extraction handles ZIP archives when GNU tar precedes the Windows reader", { skip: process.platform !== "win32" || !fs.existsSync("C:/Program Files/Git/usr/bin/tar.exe") }, () => {
   const { spawnSync } = require("node:child_process");
   const tar = "C:/Program Files/Git/usr/bin/tar.exe";

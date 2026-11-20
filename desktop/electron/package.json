@@ -11,7 +11,7 @@
     "build:host": "node packaging/build-host.js",
     "build:linux-payload": "node packaging/linux-payload.js",
     "test": "node --test test/unit.mjs test/linux-packaging.test.mjs test/globalshortcut.test.mjs",
-    "build:app": "electron-builder --dir",
+    "build:app": "electron-builder --dir -c.electronDist=node_modules/electron/dist",
     "build:dist": "electron-builder",
     "smoke": "electron test/smoke.js",
     "browser-live": "electron test/browser_live.js",

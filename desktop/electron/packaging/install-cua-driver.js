@@ -1,5 +1,6 @@
 "use strict";
 const fs = require("node:fs/promises");
+const { existsSync } = require("node:fs");
 const path = require("node:path");
 const os = require("node:os");
 const crypto = require("node:crypto");
@@ -29,8 +30,34 @@ function targetArchitecture(goarch, nativeArch) {
   throw new Error(`Unsupported CUA target architecture ${goarch}`);
 }
 
-async function install(platform = process.platform, arch = targetArchitecture(process.env.REASONIX_GOARCH, process.arch)) {
+// The version a driver already in bin/ reports, or "" when it cannot say. An
+// install that predates the stamp is adopted by this rather than re-fetched:
+// the pinned release is identified by the version it prints.
+function installedVersion(binary) {
+  const run = spawnSync(binary, ["--version"], { encoding: "utf8", windowsHide: true, timeout: 10000 });
+  if (run.status !== 0) return "";
+  const match = /\b(\d+\.\d+\.\d+)\b/.exec(run.stdout ?? "");
+  return match ? match[1] : "";
+}
+
+async function install(platform = process.platform, arch = targetArchitecture(process.env.REASONIX_GOARCH, process.arch), into = path.resolve(__dirname, "../bin"), probe = installedVersion) {
   const selected = artifact(platform, arch);
+  const name = platform === "win32" ? "cua-driver.exe" : "cua-driver";
+  const bin = into;
+  const destination = path.join(bin, name);
+  // What is in bin/ is this download's output, so the stamp recording which
+  // artifact produced it is enough to skip the ~100 MB fetch on every build.
+  const stamp = destination + ".artifact";
+  const wanted = `${selected.name} ${selected.sha256}`;
+  if (existsSync(destination)) {
+    try {
+      if ((await fs.readFile(stamp, "utf8")).trim() === wanted) return destination;
+    } catch {}
+    if (probe(destination) === lock.version) {
+      await fs.writeFile(stamp, wanted);
+      return destination;
+    }
+  }
   const tempRoot = path.resolve(os.tmpdir());
   const stage = await fs.mkdtemp(path.join(tempRoot, "reasonix-cua-"));
   try {
@@ -45,14 +72,12 @@ async function install(platform = process.platform, arch = targetArchitecture(pr
     const extracted = path.join(stage, "extracted");
     await fs.mkdir(extracted);
     extract(archive, extracted);
-    const name = platform === "win32" ? "cua-driver.exe" : "cua-driver";
     const source = await locate(extracted, name);
     if (!source) throw new Error("CUA artifact contains no driver executable");
-    const bin = path.resolve(__dirname, "../bin");
     await fs.mkdir(bin, { recursive: true });
-    const destination = path.join(bin, name);
     await fs.copyFile(source, destination);
     if (platform !== "win32") await fs.chmod(destination, 0o755);
+    await fs.writeFile(stamp, wanted);
     return destination;
   } finally {
     if (!path.resolve(stage).startsWith(tempRoot + path.sep)) throw new Error("Invalid CUA staging path");
