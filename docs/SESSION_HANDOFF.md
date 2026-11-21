@@ -191,12 +191,23 @@ node_modules/.bin/electron-builder --prepackaged ../../dist/win-unpacked \
      一部分；mux soak 证明百窗格。
    - **主因是结构性的**：1516 个测试 0 个 `t.Parallel()`，隔离全靠 `t.Setenv`
      （进程级环境变量，与 `t.Parallel` 互斥）。
-   - 根治方向：拆包让多测试二进制并行（`go test -p`），或把 `t.Setenv` 隔离改成
-     注入式。本机安全跑法：`-timeout 18m`。
-4. **仓库门禁 `go run ./tools/repolint -changed` 已全绿。** 上一轮遗留的三项仓库
+   - 根治方向：拆包多二进制并行（`go test -p`），或把 `t.Setenv` 隔离改成注入式。
+     本机安全跑法：`-timeout 18m`。
+4. **frontend-next 全量套件有 7 条既有失败**（2026-11-22 发现，已用父提交 `14b2911b1`
+   逐一对照复现，非本轮引入）：
+   - `navrail.interaction.test.tsx` 3 条：rail collapsed/off 时点「设置」落到 `common`
+     而不是期望的 `session` 分区；palette 用例。
+   - `dockgrid.test.ts` 1 条：browser column 走查。
+   - `ModelPrefix.test.tsx` 1 条：模型菜单前缀。
+   - `settings-search-language.interaction.test.tsx` 2 条：按英文标题落到未挂载的
+     mcp/skills 分区。
+   - **CI 不跑这套件**（ci.yml 头注：Studio 表面只在用户机器存在），漂移无人看守。
+     每条都要先判产品意图再修，留给下一轮。全量约 350s（934 文件，~1.46s/worker
+     的隔离开销约 135s，`isolate: false` 可省）。
+5. **仓库门禁 `go run ./tools/repolint -changed` 已全绿。** 上一轮遗留的三项仓库
    总量超限已在本轮修掉：`studio.css` 合并两行回到预算内、`SESSION_HANDOFF.md`
    补 `backup` 并在 CODEOWNERS 登记、四处超长块拆成列表。
-5. **已提交**到 `work/studio-session-20261121`。文件清单见下。
+6. **已提交**到 `work/studio-session-20261121`。文件清单见下。
 
 ## 5. 本轮改到的文件
 
