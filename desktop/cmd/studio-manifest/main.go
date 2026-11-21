@@ -166,14 +166,20 @@ func macArchiveKeys(name string) []string {
 }
 
 // windowsInstallerKey maps an installer artifact to the platform it upgrades.
-// Artifacts are named ReasonixStudio-windows-<arch>-installer.exe.
+// Artifacts are named ReasonixStudio-windows-<arch>-<version>-installer.exe.
+// The version segment is optional because releases published before it carried
+// the bare form and their manifests are still read.
 func windowsInstallerKey(name string) (string, bool) {
 	base, ok := strings.CutSuffix(name, "-installer.exe")
 	if !ok {
 		return "", false
 	}
-	arch, ok := strings.CutPrefix(base, artifactPrefix+"windows-")
-	if !ok || arch == "" {
+	rest, ok := strings.CutPrefix(base, artifactPrefix+"windows-")
+	if !ok || rest == "" {
+		return "", false
+	}
+	arch, _, _ := strings.Cut(rest, "-")
+	if arch == "" {
 		return "", false
 	}
 	return update.PlatformKey("windows", arch), true

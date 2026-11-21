@@ -234,6 +234,62 @@ func TestWindowsArchitecturesResolveToTheirOwnInstallers(t *testing.T) {
 	}
 }
 
+// The bare name is what every release before the version segment carried, and
+// installed clients still read those manifests: both forms must key the same
+// platform, or the update channel dies with the rename.
+func TestWindowsInstallerResolvesWithAndWithoutItsVersion(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		want string
+	}{
+		{"ReasonixStudio-windows-amd64-installer.exe", "windows-amd64"},
+		{"ReasonixStudio-windows-amd64-2.66.0-installer.exe", "windows-amd64"},
+		{"ReasonixStudio-windows-arm64-2.66.0-installer.exe", "windows-arm64"},
+	} {
+		got, ok := windowsInstallerKey(tc.name)
+		if !ok || got != update.PlatformKey("windows", strings.TrimPrefix(tc.want, "windows-")) {
+			t.Errorf("%s = %q (%v), want %s", tc.name, got, ok, tc.want)
+		}
+	}
+}
+
+// A portable archive never resolves as this fork's platform asset however it is
+// named: the updater has to install, and placing a zip is not something the
+// Studio side does.
+func TestAPortableArchiveIsNotAPlatformAsset(t *testing.T) {
+	dir := testenv.TempDir(t)
+	t.Setenv("GITHUB_REPOSITORY", "FuchaZ/DeepSeek-Reasonix")
+	for _, name := range []string{
+		"ReasonixStudio-windows-amd64-2.66.0-installer.exe",
+		"ReasonixStudio-windows-amd64-2.66.0-portable.zip",
+	} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(name), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := run(dir, "2.66.0", "z2.66.0", "", false); err != nil {
+		t.Fatalf("run: %v", err)
+	}
+	var m update.Manifest
+	raw, err := os.ReadFile(filepath.Join(dir, "latest.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &m); err != nil {
+		t.Fatal(err)
+	}
+	asset, ok := m.Platforms[update.PlatformKey("windows", "amd64")]
+	if !ok || !strings.HasSuffix(asset.URL, "-installer.exe") {
+		t.Fatalf("windows-amd64 = %+v, want the versioned installer", asset)
+	}
+	if _, ok := m.Downloads["ReasonixStudio-windows-amd64-2.66.0-portable.zip"]; ok {
+		t.Error("downloads offers the portable archive, which a reader has to place themselves")
+	}
+	if len(m.Platforms) != 1 {
+		t.Errorf("platforms = %+v, want the installer alone", m.Platforms)
+	}
+}
+
 // Every installed Linux client reads native_packages["linux-amd64"] as the
 // .deb and hands it to dpkg. The .rpm may add a key and never change that one.
 func TestRPMRidesBesideTheDebWithoutMovingItsKey(t *testing.T) {

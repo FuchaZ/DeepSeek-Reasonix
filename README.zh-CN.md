@@ -35,9 +35,9 @@
 
 ## 版本
 
-本 fork 从上游的 **v2.61.0** 接手——上游在这一点声明停止维护。发布沿 `studio` 线往上走：2.62.0 到 **2.65.0**。
+本 fork 从上游的 **v2.61.0** 接手——上游在这一点声明停止维护。发布沿 `studio` 线往上走：2.62.0 到 **2.66.0**。
 
-版本发布在本仓库自己的[发布页](https://github.com/FuchaZ/DeepSeek-Reasonix/releases)。上游最后一个版本仍是 v2.61.0。
+版本发布在本仓库自己的[发布页](https://github.com/FuchaZ/DeepSeek-Reasonix/releases)。Windows 提供安装包与便携包两份，文件名从 2.66.0 起带版本号。上游最后一个版本仍是 v2.61.0。
 
 ## 安装
 

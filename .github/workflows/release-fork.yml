@@ -95,20 +95,31 @@ jobs:
           REASONIX_VERSION: ${{ steps.version.outputs.version }}
         run: pnpm install --frozen-lockfile && pnpm run build:host
 
-      # The installer only. A portable archive is the upstream line's second
-      # package; this fork publishes the one file its users are told to run.
-      - name: Package the installer
+      # Both files this fork publishes: the installer for a machine that will
+      # take one, and the portable archive for a machine that will not. The
+      # version rides in the name so two builds on one disk stay apart.
+      #
+      # The names are overridden here rather than in electron-builder.yml
+      # because the upstream workflows (studio.yml, release-studio.yml) spell
+      # every artifact path with the bare form; and the suffix stays
+      # -installer.exe because studio-manifest keys the update channel off it.
+      - name: Package the installer and the portable archive
         working-directory: desktop/electron
         shell: bash
         run: |
           version="${{ steps.version.outputs.version }}"
-          pnpm exec electron-builder --win nsis --x64 -c.extraMetadata.version="$version"
+          pnpm exec electron-builder --win nsis zip --x64 \
+            -c.extraMetadata.version="$version" \
+            -c.win.artifactName='ReasonixStudio-windows-${arch}-${version}-portable.${ext}' \
+            -c.nsis.artifactName='ReasonixStudio-windows-${arch}-${version}-installer.${ext}'
           ls -la ../../dist/ReasonixStudio-*
 
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: studio-windows-amd64
-          path: dist/ReasonixStudio-windows-amd64-installer.exe
+          path: |
+            dist/ReasonixStudio-windows-amd64-*-installer.exe
+            dist/ReasonixStudio-windows-amd64-*-portable.zip
           if-no-files-found: error
           retention-days: 7
 
@@ -135,10 +146,14 @@ jobs:
           VERSION: ${{ needs.build-windows.outputs.version }}
         shell: bash
         run: |
-          test -f dist/ReasonixStudio-windows-amd64-installer.exe || { echo "::error::the installer is missing"; exit 1; }
+          installer="dist/ReasonixStudio-windows-amd64-${VERSION}-installer.exe"
+          portable="dist/ReasonixStudio-windows-amd64-${VERSION}-portable.zip"
+          test -f "$installer" || { echo "::error::the installer is missing"; exit 1; }
+          test -f "$portable" || { echo "::error::the portable archive is missing"; exit 1; }
           (cd dist && sha256sum ReasonixStudio-* > SHA256SUMS.txt)
           gh release create "$TAG" \
             --title "$TAG" \
             --notes-file "release-notes/studio/${VERSION}.md" \
-            dist/ReasonixStudio-windows-amd64-installer.exe \
+            "$installer" \
+            "$portable" \
             dist/SHA256SUMS.txt

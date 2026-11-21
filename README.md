@@ -39,9 +39,9 @@ Changes stay small and reviewable. Nothing here is a rewrite.
 
 ## Versions
 
-This fork continues from upstream's **v2.61.0** — the point where upstream declared maintenance stopped. Releases move along the `studio` line: 2.62.0 through **2.65.0**.
+This fork continues from upstream's **v2.61.0** — the point where upstream declared maintenance stopped. Releases move along the `studio` line: 2.62.0 through **2.66.0**.
 
-Releases are published from this repository's own [releases page](https://github.com/FuchaZ/DeepSeek-Reasonix/releases). v2.61.0 remains the last upstream release.
+Releases are published from this repository's own [releases page](https://github.com/FuchaZ/DeepSeek-Reasonix/releases). Windows ships two files — an installer and a portable archive — and their names carry the version from 2.66.0 on. v2.61.0 remains the last upstream release.
 
 ## Install
 
