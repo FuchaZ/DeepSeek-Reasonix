@@ -173,12 +173,12 @@ node_modules/.bin/electron-builder --prepackaged ../../dist/win-unpacked \
 ## 4. 待办与未完成项
 
 1. **`ask()` 的定位时机待定**（见第 2 节末）。当前每次点链接多一次请求。
-2. ~~remote 用例补强~~ **已完成**：`ui/workbench-spelled-path.interaction.test.tsx`
-   的 remote 用例现在挂上完整 WorkbenchPanel，先等标签页真的打开（`b.md`），再断言
-   `workspaceResolvePath` 未被调用——4 条全过，tsc 干净。
+2. ~~remote 用例补强~~ **已完成**：remote 用例现在挂上完整 WorkbenchPanel，先等
+   标签页真的打开，再断言 `workspaceResolvePath` 未被调用——4 条全过。
 3. **`internal/frontend/serve` 整套测试很慢**（本机 >600s，单次跑到 842s）。已用
    stash 验证：**在干净树上同样超时、同样在 `TestSabotageCountingHostWorkAddsAStepNobodyTook`
    失败**，是既有问题，不是本轮引入。需要单独排查。
+4. **仓库门禁 `go run ./tools/repolint -changed` 已全绿。** 上一轮遗留的三项仓库
    总量超限已在本轮修掉：`studio.css` 合并两行回到预算内、`SESSION_HANDOFF.md`
    补 `backup` 并在 CODEOWNERS 登记、四处超长块拆成列表。
 5. **已提交**到 `work/studio-session-20261121`。文件清单见下。
