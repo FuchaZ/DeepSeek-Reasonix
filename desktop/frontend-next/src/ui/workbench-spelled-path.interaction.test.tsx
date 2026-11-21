@@ -15,8 +15,8 @@ const tabs = () => [...document.querySelectorAll("[role=tab]")].map((e) => e.tex
 
 // A conversation link, opened the way the transcript opens one: through
 // useConversationFiles, into the panel that reads the file.
-function Harness({ port, link, root = "/w" }: { port: AgentPort; link: string; root?: string }) {
-  const files = useConversationFiles(port, root, false, true, () => {}, () => {});
+function Harness({ port, link, root = "/w", remote = false }: { port: AgentPort; link: string; root?: string; remote?: boolean }) {
+  const files = useConversationFiles(port, root, remote, true, () => {}, () => {});
   return (
     <>
       <button onClick={() => files.refs.link?.(link)?.()}>link</button>
@@ -26,9 +26,9 @@ function Harness({ port, link, root = "/w" }: { port: AgentPort; link: string; r
   );
 }
 
-async function draw(port: MockPort, link: string) {
+async function draw(port: MockPort, link: string, remote = false) {
   vi.spyOn(host(), "describe").mockResolvedValue({ ...await host().describe(), platform: "darwin" });
-  render(<Harness port={port} link={link} />);
+  render(<Harness port={port} link={link} remote={remote} />);
   await userEvent.click(screen.getByText("link"));
 }
 
@@ -70,13 +70,8 @@ describe("a file the conversation spelled from another directory", () => {
   it("does not ask a remote workspace, whose path names its own disk", async () => {
     const port = new MockPort();
     const resolve = vi.spyOn(port, "workspaceResolvePath");
-    vi.spyOn(host(), "describe").mockResolvedValue({ ...await host().describe(), platform: "darwin" });
-    function Remote() {
-      const files = useConversationFiles(port, "/w", true, true, () => {}, () => {});
-      return <button onClick={() => files.refs.link?.("a/b.md")?.()}>link</button>;
-    }
-    render(<Remote />);
-    await userEvent.click(screen.getByText("link"));
+    await draw(port, "a/b.md", true);
+    await waitFor(() => expect(tabs()).toContain("b.md"));
     expect(resolve).not.toHaveBeenCalled();
   });
 });
