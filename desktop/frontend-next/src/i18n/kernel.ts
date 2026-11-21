@@ -124,6 +124,7 @@ const SAID: Record<string, string> = {
   "terminal.exited": "kernel.the_shell_has_ended",
   "terminal.limit": "kernel.too_many_terminals_are_open",
   "workspace.file_missing": "kernel.the_file_was_not_found",
+  "workspace.path_ambiguous": "kernel.several_files_end_the_same_way",
   "workspace.file_failed": "kernel.the_file_operation_failed_try",
   "workspace.path_outside_tree": "kernel.that_path_is_outside_the_2",
   "workspace.root_not_granted": "kernel.that_folder_has_not_been",

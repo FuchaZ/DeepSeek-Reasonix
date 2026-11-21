@@ -259,6 +259,7 @@ export const KERNEL: Messages = {
   "kernel.search_model_model_is_no": { zh: "搜索模型「{model}」已不在配置里", en: "Search model “{model}” is no longer configured" },
   "kernel.search_model_model_must_be": { zh: "搜索模型「{model}」的格式应为 服务/模型", en: "Search model “{model}” must be written as service/model" },
   "kernel.search_model_model_s_connection": { zh: "搜索模型「{model}」所在的连接没有凭据", en: "Search model “{model}”'s connection has no credentials" },
+  "kernel.several_files_end_the_same_way": { zh: "多个文件都以这个路径结尾，说不准是哪一个；把完整路径发来即可", en: "Several files end this way, so which one is meant is not decidable; send the full path" },
   "kernel.search_model_model_s_connection_2": { zh: "搜索模型「{model}」所在的连接还没有添加：先添加这个连接，再选它", en: "Search model “{model}”'s connection has not been added yet: add that connection first, then pick it" },
   "kernel.select_an_approval_rule_to": { zh: "请选择要收回的授权规则", en: "Select an approval rule to revoke" },
   "kernel.sending_is_paused_this_message": { zh: "待发送已暂停，这条消息已排入队列，点“继续派发”后才会发送", en: "Sending is paused. This message is queued and goes out once you press Release" },
