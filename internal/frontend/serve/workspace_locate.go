@@ -8,6 +8,8 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+
+	"reasonix/internal/base/workspacefile"
 )
 
 const codeLocateNoWindow = "workspace.locate_no_window"
@@ -41,6 +43,17 @@ func (s *Server) workspaceLocate(w http.ResponseWriter, r *http.Request) {
 		}
 		target = filepath.Join(root, rel)
 		inside, err := insideRealRoot(root, target)
+		if errors.Is(err, fs.ErrNotExist) {
+			found, suffixErr := suffixUnder(root, rel)
+			switch {
+			case suffixErr == nil:
+				target = filepath.Join(root, found)
+				inside, err = insideRealRoot(root, target)
+			case errors.Is(suffixErr, workspacefile.ErrAmbiguous):
+				refuse(w, http.StatusConflict, "workspace.path_ambiguous", suffixErr.Error(), nil)
+				return
+			}
+		}
 		switch {
 		case errors.Is(err, fs.ErrNotExist):
 			refuse(w, http.StatusNotFound, "workspace.file_missing", err.Error(), nil)
@@ -59,6 +72,19 @@ func (s *Server) workspaceLocate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, workspaceLocation{Path: target, Dir: info.IsDir()})
+}
+
+// suffixUnder answers where a path a conversation spelled from another
+// directory really lives: `cd crate && cargo build` leaves
+// `target/release/app.exe` though the file is under `crate/`. Only an
+// unambiguous answer is given; two files ending the same way is a question for
+// the person.
+func suffixUnder(root, rel string) (string, error) {
+	found, err := (workspacefile.Service{Primary: root}).Suffix(filepath.ToSlash(rel))
+	if err != nil {
+		return "", err
+	}
+	return found.Path, nil
 }
 
 // refuseLocalOnly answers for a remote pane the routes whose answer is a path

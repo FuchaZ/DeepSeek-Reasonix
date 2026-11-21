@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"reasonix/internal/base/testenv"
@@ -81,6 +82,68 @@ func TestLocateNamesOnlyEntriesInsideTheWorkspace(t *testing.T) {
 
 	if code, _, why := locate(s, locateRequest("out/gone")); code != http.StatusNotFound || why.Code != "workspace.file_missing" {
 		t.Errorf("a missing entry = %d %+v, want workspace.file_missing", code, why)
+	}
+}
+
+// A path a conversation spelled from another directory names the file where it
+// really lives: the shell shows that file, not the absent one it read.
+func TestLocateFindsAFileSpelledFromAnotherDirectory(t *testing.T) {
+	root := testenv.TempDir(t)
+	real := filepath.Join(root, "misyrup-rs", "target", "debug", "misyrup-gui.exe")
+	if err := os.MkdirAll(filepath.Dir(real), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(real, []byte("binary"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	abs, _ := filepath.Abs(root)
+	code, at, why := locate(locateServer(t, root, true), locateRequest("target/debug/misyrup-gui.exe"))
+	if code != http.StatusOK || at.Path != real || at.Dir {
+		t.Fatalf("locate a spelled path = %d %+v %+v, want %q", code, at, why, real)
+	}
+	if !filepath.IsAbs(at.Path) || !strings.HasPrefix(at.Path, abs) {
+		t.Fatalf("locate answered %q, want an absolute path inside %q", at.Path, abs)
+	}
+}
+
+// Two files ending the same way is a question for the person, so neither is
+// picked: the answer says which file is meant would have to be told.
+func TestLocateRefusesAnAmbiguousTail(t *testing.T) {
+	root := testenv.TempDir(t)
+	for _, rel := range []string{"a/target/debug/app.exe", "b/target/debug/app.exe"} {
+		at := filepath.Join(root, filepath.FromSlash(rel))
+		if err := os.MkdirAll(filepath.Dir(at), 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(at, []byte("binary"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	code, at, why := locate(locateServer(t, root, true), locateRequest("target/debug/app.exe"))
+	if code != http.StatusConflict || why.Code != "workspace.path_ambiguous" {
+		t.Fatalf("locate an ambiguous tail = %d %+v %+v, want workspace.path_ambiguous", code, at, why)
+	}
+}
+
+// A tail nothing matches stays missing: the shell reports the path gone rather
+// than showing a folder it guessed at.
+func TestLocateKeepsATailNothingMatchesMissing(t *testing.T) {
+	root := testenv.TempDir(t)
+	writeLocateFile(t, root, "misyrup-rs/target/release/app.exe")
+	code, at, why := locate(locateServer(t, root, true), locateRequest("target/debug/app.exe"))
+	if code != http.StatusNotFound || why.Code != "workspace.file_missing" {
+		t.Fatalf("locate an unmatched tail = %d %+v %+v, want workspace.file_missing", code, at, why)
+	}
+}
+
+func writeLocateFile(t *testing.T, root, rel string) {
+	t.Helper()
+	at := filepath.Join(root, filepath.FromSlash(rel))
+	if err := os.MkdirAll(filepath.Dir(at), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(at, []byte("binary"), 0o600); err != nil {
+		t.Fatal(err)
 	}
 }
 
