@@ -363,11 +363,6 @@ export function App({ hub }: { hub: HubPort }) {
   );
 
   const openPeerSession = useCallback((path: string) => void openPane({ sessionPath: path }).catch(fail), [openPane, fail]);
-  // Pane memoizes on its props; the opener rides a ref so a tab switch does not
-  // hand every pane a new identity and re-render them all.
-  const openPeerSessionRef = useRef(openPeerSession);
-  openPeerSessionRef.current = openPeerSession;
-  const openPeerSessionStable = useCallback((path: string) => openPeerSessionRef.current(path), []);
 
   const openFromSidebar = useSidebarOpen<PaneView>(runtimes, openPane, setActive, setViewRequests, "flow");
   const adder = useAddWorkspace(hub, reloadTree, fail, useCallback((workspace) => openPaneRef.current({ root: workspace.root }), []));
@@ -702,7 +697,6 @@ export function App({ hub }: { hub: HubPort }) {
                   onSettings={openSettings}
                   onFeedback={FEEDBACK_RETIRED ? undefined : openFeedback}
                   onOpenSession={openSessionFor(rt.id)}
-                  onOpenPeerSession={openPeerSessionStable}
                   theme={scheme}
                   dockW={shownDockW}
                   dockMax={dockLimit}

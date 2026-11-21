@@ -65,7 +65,6 @@ import { refreshTodos } from "../state/restore";
 import { speedOf } from "./speed";
 import { RuntimeBar } from "./RuntimeBar";
 import { PeerHeldBar } from "./PeerHeldBar";
-import { DispatchThreadsBar } from "./DispatchThreadsBar";
 import { PostureNote, postureNote } from "./PostureNote";
 import { MemorySuggestRow } from "./MemorySuggestRow";
 import { SidePanel } from "./SidePanel";
@@ -106,7 +105,7 @@ const totalsOf = (st: SessionStatus) => ({
   incompleteReason: st.sessionCostQuote?.incompleteReason,
 });
 
-function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFocus, onReport, onSessionChanged, onTurnDone, pulse, findPulse, findTogglePulse = 0, filesPulse = 0, terminalPulse = 0, viewRequest, sessionRef, onSettings, onFeedback, onOpenSession, onOpenPeerSession, onOpenProject, projects = [], adder, connect, theme, dockW, dockMax, onDockW, manualBrowser = false, onManualBrowser, alert, failure }: PaneProps) {
+function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFocus, onReport, onSessionChanged, onTurnDone, pulse, findPulse, findTogglePulse = 0, filesPulse = 0, terminalPulse = 0, viewRequest, sessionRef, onSettings, onFeedback, onOpenSession, onOpenProject, projects = [], adder, connect, theme, dockW, dockMax, onDockW, manualBrowser = false, onManualBrowser, alert, failure }: PaneProps) {
   const [s, dispatch] = useReducer(reduce, initialState);
   const [traj, trajDispatch] = useReducer(reduceTraj, initialTraj);
   const [sessionRead, setSessionRead] = useState<SessionRead>({ kind: "pending" });
@@ -696,7 +695,6 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
           onOpenJob={jobsLive.open}
           usage={status?.sessionUsage} quote={status?.sessionCostQuote} tariff={status?.tariff} onTariffFlip={refreshStatus}
           authoredTurns={status?.authoredTurns}
-          peers={<DispatchThreadsBar port={port} onOpen={onOpenPeerSession} />}
         />
         {reloadFailure && <ReloadNotice failure={reloadFailure} onReload={onReloadSession} />}
         {/* Below the box, under a ceiling of their own. Both arrive unbidden and

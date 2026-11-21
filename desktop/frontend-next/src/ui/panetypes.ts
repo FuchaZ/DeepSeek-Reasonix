@@ -84,9 +84,6 @@ export interface PaneProps {
   onFeedback?: () => void;
   // Open a session this pane made, beside it: a branch is its own conversation.
   onOpenSession?: (path: string) => void;
-  // Open a session another of the user's sessions dispatched to. No root: the
-  // peer may live in another project, and only the path is known for certain.
-  onOpenPeerSession?: (path: string) => void;
   // The window's own escape for a pane whose folder vanished from disk; the
   // project question itself lives in the composer's pill now.
   onOpenProject: () => void;
