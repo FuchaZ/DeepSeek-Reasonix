@@ -2,7 +2,7 @@
 owner: @FuChaZ
 backup: @esengine
 status: active
-reviewed: 2026-11-21
+reviewed: 2026-11-22
 ---
 
 # 会话交付图片预览 · 相对路径定位 · 构建提速 — 交接
@@ -54,6 +54,10 @@ reviewed: 2026-11-21
 - `session/control/port.go`：接口加这个方法。
 - `frontend/serve/workspace_preview.go`：新增 `GET /workspace/resolve?path=...`，
   404 用 `workspace.file_missing`，409 用新码 `workspace.path_ambiguous`。
+- `frontend/serve/workspace_locate.go`：reveal 通道（`GET /workspace/locate`，Electron
+  的「打开/显示」走这条）补上同一个尾部回退——上一轮只接了 preview 通道，点「打开」
+  对拼写路径仍然 404。字面命中只花一次 stat；未命中才遍历，歧义返回
+  `workspace.path_ambiguous`。
 - 前端接口：`port/workspace.ts` 的 `WorkspacePreviewPort` 加 `workspaceResolvePath`。
 - `port/sse.ts` 实现（非 2xx 一律返回 null，这属于"问不到"，不是错误）；
   `port/mock_workspace.ts` 返回 null（**不要**在 mock 里读文件，会踩到测试对读路径的
@@ -73,7 +77,8 @@ reviewed: 2026-11-21
 - 新增 `ui/workbench-spelled-path.interaction.test.tsx` 4 条（定位成功、路径本来就对
   不重复开、定位不到保留"找不到"、remote 不问）。
 - Go 侧 `./internal/base/workspacefile` 与
-  `./internal/frontend/serve -run TestWorkspace...` 全过。
+  `./internal/frontend/serve -run 'TestLocate|TestHubRefusesToLocate|TestWorkspace...'`
+  全过（locate 新增 3 条：定位成功、歧义拒绝、不猜）。
 - 前端相关 3 个套件 25 条全过。
 
 ## 3. 编译慢（已完成）
@@ -201,9 +206,52 @@ internal/session/control/workspace_preview.go          +WorkspaceResolvePath
 internal/session/control/port.go                       接口
 internal/frontend/serve/workspace_preview.go           +GET /workspace/resolve
 internal/frontend/serve/workspace_preview_test.go      +2 路由用例
+internal/frontend/serve/workspace_locate.go            reveal 通道同样按尾部定位
+internal/frontend/serve/workspace_locate_test.go       +3 用例
 docs/FILE_PREVIEW.md                                   卡片图片预览说明
 ```
 
 `WorkbenchPanel.tsx` 中途加过 `onMissing` 回调，后来判定归属层不对（`documentView`
 决定 `useWorkbenchFiles` 的 path 为空，`.exe` 走的是文档预览路径，回调根本不触发），
 已完全回退，`git diff` 现在为空——它不在上面的清单里。
+
+## 6. 底栏「会话互聊」图标与悬停面板（本轮只调研，未改）
+
+**现象**：每条会话底栏 MeterRail 上有 `会话互聊 N` 小徽章，悬停展开一张卡片
+（`处理『…』的回信` / `已派发 N 个会话`）。用户不想要这个图标和这张卡片。
+
+**结论：不是漏删，是被有意留下的旧实现。**
+
+- 之前那轮删除（`78b1b5513` + `04cbee846`）后由 `fa8a673fc`（11-19 13:15）回退。
+- 删掉的是「协作工作板」：`/dispatch-board` 路由、`dispatch_board.go` /
+  `dispatch_status.go` / `hub_rename.go`、`rename_session` 工具、role 进系统提示词、
+  本项目/跨项目分组与状态灯。
+- chip 被有意退回旧实现。提交说明原文：*the frontend chip goes back to the
+  sender's own record*。所以现在看到的是回退后的形态，不是没删干净。
+- 真正「整块功能删光」的是 `c2e58be4a`（11-19 22:58），只在 `remotes/oliver/torch`
+  线上，随 `studio-v2.66.1` / `2.67.0` 走。本线 `origin/studio`（= `z2.66.0`）
+  与它无共同祖先，从未合入，不存在漏合并。
+- 与版本无关：chip 源码 blob 在 `z2.65.0`、2.65.1（`4c5a29583`）、`z2.66.0`
+  三处完全相同（`2e4ccabd`）。本机安装版 bundle 里也没有 `会话协作工作板` /
+  `dispatch_board`。2.65.1 → 2.66.0 升级不改变这里的行为。
+
+**当前代码落点**（供后续接手）：
+
+- `ui/Pane.tsx:699`：把 `<DispatchThreadsBar port={port} .../>` 传给 `MeterRail`
+  的 `peers` 插槽（`MeterRail.tsx:59,124`）。这是底栏那一处的唯一挂载点。
+- 组件 `ui/DispatchThreadsBar.tsx`；样式 `design/sesscard.css:35-66`；
+  数据来自 `GET /peers` 的 `threads`（`internal/frontend/serve/peers.go`）。
+
+**最小改动方案**（用户已叫停，本轮未执行）：
+
+- 摘掉 `Pane.tsx:699` 的 `peers` 传参，图标与卡片即消失。但仓库有门禁，
+  不能只摘这一行：`src/orphan.test.ts` 会让未挂载组件失败，
+  `msg.test.ts` 会让未使用的 i18n key 失败，删除必须成套。
+- 连带清理：`Pane.tsx:68` 的 import、`panetypes.ts:89` 的 `onOpenPeerSession`、
+  `App.tsx:365-370,705` 的 `openPeerSessionStable` 接线、
+  `MeterRail.tsx` 的 `peers` prop、`sesscard.css` 的 chip 规则、
+  `msg/chat.ts:140-141` 两个专用 key、测试 `ui/dispatch-threads-bar.test.tsx`。
+- 注意 `App.tsx:541` 的 `PeerThreadsProvider` 仍用 `openPeerSession`，要保留，
+  别和 `openPeerSessionStable` 一起删掉。
+- 不要动：设置页「会话互聊」整页（`Settings.tsx:443`）、`PeerHeldBar`、
+  `SessionHoverCard`、侧栏 `PeerThreadMark`、后端 peer 能力——用户只要底栏这一处消失。
