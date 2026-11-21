@@ -172,12 +172,27 @@ node_modules/.bin/electron-builder --prepackaged ../../dist/win-unpacked \
 
 ## 4. 待办与未完成项
 
-1. **`ask()` 的定位时机待定**（见第 2 节末）。当前每次点链接多一次请求。
+1. ~~`ask()` 的定位时机待定~~ **已定（2026-11-22）：保持现状**。备选方案（读取报
+   `file_missing` 后才问 resolve）省下的只是一次本机回环请求（服务端通常一次 stat，
+   亚毫秒级），代价是可解析路径先闪一次「找不到」再改开——不值得。真正丢文件时两种
+   方案都要付同一次工作区遍历，所以差异只有这一次亚毫秒请求对一次可见的闪失。
 2. ~~remote 用例补强~~ **已完成**：remote 用例现在挂上完整 WorkbenchPanel，先等
    标签页真的打开，再断言 `workspaceResolvePath` 未被调用——4 条全过。
-3. **`internal/frontend/serve` 整套测试很慢**（本机 >600s，单次跑到 842s）。已用
-   stash 验证：**在干净树上同样超时、同样在 `TestSabotageCountingHostWorkAddsAStepNobodyTook`
-   失败**，是既有问题，不是本轮引入。需要单独排查。
+3. **`internal/frontend/serve` 整套测试很慢**（本机 662–842s，>go test 默认 600s 超时）。
+   已排查（2026-11-22），要点：
+   - **没有"失败"的测试**：`TestSabotageCountingHostWorkAddsAStepNobodyTook` 单独跑
+     1.27s 就过；之前被点名是因为整套超过默认 10 分钟超时，panic 列出当时正在跑的
+     无辜测试。
+   - verbose 计时：1483 过 / 1 败 / 31 skip / 661.7s。那次唯一的失败
+     `TestEveryRefusalCodeIsTranslated` 是 `workspace.path_ambiguous` 缺桌面译名，
+     **已修**。
+   - 分布是长尾：最慢 25 个合计约 170s，都是固有成本——ask 超时测试证明的就是产品
+     下限 `MinAskTimeoutSeconds=10`；tree/archive 夹具的 348 个会话文件计数是断言的
+     一部分；mux soak 证明百窗格。
+   - **主因是结构性的**：1516 个测试 0 个 `t.Parallel()`，隔离全靠 `t.Setenv`
+     （进程级环境变量，与 `t.Parallel` 互斥）。
+   - 根治方向：拆包让多测试二进制并行（`go test -p`），或把 `t.Setenv` 隔离改成
+     注入式。本机安全跑法：`-timeout 18m`。
 4. **仓库门禁 `go run ./tools/repolint -changed` 已全绿。** 上一轮遗留的三项仓库
    总量超限已在本轮修掉：`studio.css` 合并两行回到预算内、`SESSION_HANDOFF.md`
    补 `backup` 并在 CODEOWNERS 登记、四处超长块拆成列表。
@@ -215,7 +230,16 @@ docs/FILE_PREVIEW.md                                   卡片图片预览说明
 决定 `useWorkbenchFiles` 的 path 为空，`.exe` 走的是文档预览路径，回调根本不触发），
 已完全回退，`git diff` 现在为空——它不在上面的清单里。
 
-## 6. 底栏「会话互聊」图标与悬停面板（本轮只调研，未改）
+## 6. 底栏「会话互聊」图标与悬停面板（~~只调研~~ → 已摘除，2026-11-22）
+
+**已执行**（2026-11-22）：底栏 chip 与悬停卡按下面的方案成套摘除：
+- 摘掉的：组件 `DispatchThreadsBar.tsx` 与它的测试、`Pane` 的 `peers` 插槽、
+  `MeterRail` 的 `peers` prop、`onOpenPeerSession`、`openPeerSessionStable`、
+  `sesscard.css` 的 chip 规则、两个专用 i18n key。
+- 保留的：设置页「会话互聊」、`PeerHeldBar`、`SessionHoverCard`、`PeerThreadMark`、
+  后端 peer 能力。
+- 验证：orphan 与 i18n 门禁、MeterRail/Pane/Peer 相邻套件、设置页套件全过。
+  研究记录保留如下。
 
 **现象**：每条会话底栏 MeterRail 上有 `会话互聊 N` 小徽章，悬停展开一张卡片
 （`处理『…』的回信` / `已派发 N 个会话`）。用户不想要这个图标和这张卡片。
