@@ -1,5 +1,6 @@
 ---
 owner: @FuChaZ
+backup: @esengine
 status: active
 reviewed: 2026-11-21
 ---
@@ -42,10 +43,10 @@ reviewed: 2026-11-21
 
 **修法**（按尾部唯一定位，不做猜测）：
 
-- `internal/base/workspacefile/suffix.go`（新增）：`Service.Suffix(written)`。先按
-  原样 `Resolve` + `Stat`，命中就返回——正常路径只花一次 stat，不遍历。没命中才在
-  授权根下按路径尾部匹配，最多收集 2 个命中，多于 1 个返回 `ErrAmbiguous`。
-  跳过 `node_modules`、`vendor`、`.git` 等（`skipScanDir`），否则一次查找会变成
+- `internal/base/workspacefile/suffix.go`（新增）：`Service.Suffix(written)`。先按原样
+  `Resolve` + `Stat`，命中就返回——正常路径只花一次 stat，不遍历。
+- 没命中才在授权根下按路径尾部匹配，最多收集 2 个命中，多于 1 个返回 `ErrAmbiguous`。
+- 遍历跳过 `node_modules`、`vendor`、`.git` 等（`skipScanDir`），否则一次查找会变成
   几分钟的磁盘扫描。返回的 `Ref` 保留找到它的那个根。
 - `workspacefile/file.go`：新增 `ErrAmbiguous`。
 - `session/control/workspace_preview.go`：`Controller.WorkspaceResolvePath`，与预览
@@ -53,22 +54,27 @@ reviewed: 2026-11-21
 - `session/control/port.go`：接口加这个方法。
 - `frontend/serve/workspace_preview.go`：新增 `GET /workspace/resolve?path=...`，
   404 用 `workspace.file_missing`，409 用新码 `workspace.path_ambiguous`。
-- 前端：`port/workspace.ts` 的 `WorkspacePreviewPort` 加 `workspaceResolvePath`；
-  `port/sse.ts` 实现（非 2xx 一律返回 null，这属于"问不到"，不是错误）；
-  `port/mock_workspace.ts` 返回 null（**不要**在 mock 里读文件，会踩到测试对读路径
-  的 spy）。`ui/useConversationFiles.tsx` 的 `ask()` 在打开前查一次，命中且路径不同
-  就改开真实路径；`remote` 为真时跳过——远端 kernel 的路径指的是它自己的盘。
+- 前端接口：`port/workspace.ts` 的 `WorkspacePreviewPort` 加 `workspaceResolvePath`。
+- `port/sse.ts` 实现（非 2xx 一律返回 null，这属于"问不到"，不是错误）；
+  `port/mock_workspace.ts` 返回 null（**不要**在 mock 里读文件，会踩到测试对读路径的
+  spy）。
+- `ui/useConversationFiles.tsx` 的 `ask()` 在打开前查一次，命中且路径不同就改开真实
+  路径；`remote` 为真时跳过——远端 kernel 的路径指的是它自己的盘。
 
 > 注意：`ask()` 是**所有对话链接**的入口，所以每次点链接都会发一次
 > `/workspace/resolve`。本意是"本来就对只花一次 stat"，但这毕竟是多一次请求。
 > 若觉得不值，可改成只在读取报 `file_missing` 后再问——代价是标签页先用错名开一次。
 > 这条待定，见第 4 节。
 
-验证：`suffix_test.go` 8 条；`workspace_preview_test.go` 新增 2 条路由测试（含"解析
-出来的路径真的能读"）；新增 `ui/workbench-spelled-path.interaction.test.tsx` 4 条
-（定位成功、路径本来就对不重复开、定位不到保留"找不到"、remote 不问）。Go 侧
-`./internal/base/workspacefile` 与 `./internal/frontend/serve -run TestWorkspace...` 全过；
-前端相关 3 个套件 25 条全过。
+验证：
+
+- `suffix_test.go` 8 条。
+- `workspace_preview_test.go` 新增 2 条路由测试（含"解析出来的路径真的能读"）。
+- 新增 `ui/workbench-spelled-path.interaction.test.tsx` 4 条（定位成功、路径本来就对
+  不重复开、定位不到保留"找不到"、remote 不问）。
+- Go 侧 `./internal/base/workspacefile` 与
+  `./internal/frontend/serve -run TestWorkspace...` 全过。
+- 前端相关 3 个套件 25 条全过。
 
 ## 3. 编译慢（已完成）
 
@@ -104,11 +110,13 @@ reviewed: 2026-11-21
 `--dir` 也一直是 7 秒级；安装包本身只多 3 分钟。真正能把一次构建拖到十几分钟的是：
 
 - **Electron 每次重新联网。** 不传 `-c.electronDist` 时，electron-builder 会走
-  `@electron/get`，而它每次构建都要重新拉 `SHASUMS256.txt`（`cacheMode: Bypass`，见
+  `@electron/get`。
+- 它每次构建都要重新拉 `SHASUMS256.txt`（`cacheMode: Bypass`，见
   `app-builder-lib/out/util/electronGet.js` 的注释），所以即使 158MB 的
-  `electron-v45.2.3-win32-x64.zip` 已在缓存里仍要联网。本机当前 34s 后报
-  `unable to get local issuer certificate`；网络慢时就是 2.62 交接里记的「卡十分钟」。
-  2.62 的构建命令带了 `-c.electronDist=<本地 zip>`，后来的 `build:app` 没带。
+  `electron-v45.2.3-win32-x64.zip` 已在缓存里仍要联网。
+- 本机当前 34s 后报 `unable to get local issuer certificate`；网络慢时就是 2.62
+  交接里记的「卡十分钟」。
+- 2.62 的构建命令带了 `-c.electronDist=<本地 zip>`，后来的 `build:app` 没带。
 - **CUA 驱动** 见上一节，已修复。
 - `go test ./internal/frontend/serve` 的 **842s** 是测试，不是编译/打包（见第 4 节）；
   若构建前跑整套测试，会额外多出约 14 分钟。
@@ -165,9 +173,9 @@ node_modules/.bin/electron-builder --prepackaged ../../dist/win-unpacked \
 3. **`internal/frontend/serve` 整套测试很慢**（本机 >600s，单次跑到 842s）。已用
    stash 验证：**在干净树上同样超时、同样在 `TestSabotageCountingHostWorkAddsAStepNobodyTook`
    失败**，是既有问题，不是本轮引入。需要单独排查。
-4. **仓库门禁 `go run ./tools/repolint -changed` 仍有一项红**：
-   `css-size` 仓库总量 8854 > 8853。已在干净树上验证是**既有超限**，与改动无关。
-   其余三项（doc-prose / essay / temp-dir）本轮都已修到 0。
+4. **仓库门禁 `go run ./tools/repolint -changed` 已全绿。** 上一轮遗留的三项仓库
+   总量超限已在本轮修掉：`studio.css` 合并两行回到预算内、`SESSION_HANDOFF.md`
+   补 `backup` 并在 CODEOWNERS 登记、四处超长块拆成列表。
 5. **已提交**到 `work/studio-session-20261121`。文件清单见下。
 
 ## 5. 本轮改到的文件

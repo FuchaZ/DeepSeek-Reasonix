@@ -3613,7 +3613,6 @@ svg.studio-icon[data-kind="image"] { color: var(--ok); }
    with --hair, and its words are the size of the rows that opened it. One word
    最近 carries the order both ways; the arrow says which. */
 .portmenu.session-filter-menu .mi { min-height: 30px; padding: 5px 8px; gap: 8px; border-radius: var(--r-sm); }
-.portmenu.session-filter-menu .mi .lb { font: var(--w-med) var(--fs-ui)/1.35 var(--ui); }
-.portmenu.session-filter-menu .mi .rt { color: var(--muted); font: var(--w-reg) var(--fs-ui)/1 var(--ui); }
+.portmenu.session-filter-menu .mi .lb { font: var(--w-med) var(--fs-ui)/1.35 var(--ui); } .portmenu.session-filter-menu .mi .rt { color: var(--muted); font: var(--w-reg) var(--fs-ui)/1 var(--ui); }
 :root .portmenu.session-filter-menu .mi[data-on], :root .portmenu.session-filter-menu .mi[data-on]:hover { background: transparent; }
 .portmenu.session-filter-menu .mi[data-on] .lb { color: var(--text); font-weight: var(--w-semi); }
