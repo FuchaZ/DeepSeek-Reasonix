@@ -40,7 +40,19 @@ function installedVersion(binary) {
   return match ? match[1] : "";
 }
 
-async function install(platform = process.platform, arch = targetArchitecture(process.env.REASONIX_GOARCH, process.arch), into = path.resolve(__dirname, "../bin"), probe = installedVersion) {
+// downloadArtifact fetches the pinned release asset and returns its bytes, so
+// a caller can stand in for the network: the digest check belongs to install.
+async function downloadArtifact(selected) {
+  const url = `https://github.com/${lock.repository}/releases/download/${lock.tag}/${selected.name}`;
+  const response = await fetch(url, { signal: AbortSignal.timeout(120000) });
+  if (!response.ok) throw new Error(`CUA download failed: HTTP ${response.status}`);
+  const bytes = Buffer.from(await response.arrayBuffer());
+  if (bytes.length > 128 * 1024 * 1024) throw new Error("CUA artifact exceeds size limit");
+  if (crypto.createHash("sha256").update(bytes).digest("hex") !== selected.sha256) throw new Error("CUA artifact SHA-256 mismatch");
+  return bytes;
+}
+
+async function install(platform = process.platform, arch = targetArchitecture(process.env.REASONIX_GOARCH, process.arch), into = path.resolve(__dirname, "../bin"), probe = installedVersion, fetchArtifact = downloadArtifact) {
   const selected = artifact(platform, arch);
   const name = platform === "win32" ? "cua-driver.exe" : "cua-driver";
   const bin = into;
@@ -61,12 +73,7 @@ async function install(platform = process.platform, arch = targetArchitecture(pr
   const tempRoot = path.resolve(os.tmpdir());
   const stage = await fs.mkdtemp(path.join(tempRoot, "reasonix-cua-"));
   try {
-    const url = `https://github.com/${lock.repository}/releases/download/${lock.tag}/${selected.name}`;
-    const response = await fetch(url, { signal: AbortSignal.timeout(120000) });
-    if (!response.ok) throw new Error(`CUA download failed: HTTP ${response.status}`);
-    const bytes = Buffer.from(await response.arrayBuffer());
-    if (bytes.length > 128 * 1024 * 1024) throw new Error("CUA artifact exceeds size limit");
-    if (crypto.createHash("sha256").update(bytes).digest("hex") !== selected.sha256) throw new Error("CUA artifact SHA-256 mismatch");
+    const bytes = await fetchArtifact(selected);
     const archive = path.join(stage, selected.name);
     await fs.writeFile(archive, bytes);
     const extracted = path.join(stage, "extracted");

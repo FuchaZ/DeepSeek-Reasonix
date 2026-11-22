@@ -3445,7 +3445,12 @@ test("a driver of another version is not adopted", async () => {
   try {
     const exe = path.join(stage, process.platform === "win32" ? "cua-driver.exe" : "cua-driver");
     fs.writeFileSync(exe, "fixture");
-    await assert.rejects(install(process.platform, process.arch, stage, () => "0.0.0"));
+    // A version mismatch falls through to the download, so the test stands in
+    // for an offline machine: the rejection is the failed fetch, and no stamp
+    // may survive it.
+    await assert.rejects(install(process.platform, process.arch, stage, () => "0.0.0", async () => {
+      throw new Error("offline");
+    }));
     assert.equal(fs.existsSync(exe + ".artifact"), false, "a version this build did not pin leaves no stamp");
   } finally {
     fs.rmSync(stage, { recursive: true, force: true });
