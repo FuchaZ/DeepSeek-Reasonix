@@ -24,6 +24,10 @@ reviewed: 2026-11-22
 `desktop/frontend-next/pnpm-lock.yaml` 漂移，以及它生成的
 `desktop/electron/pnpm-workspace.yaml` 占位文件。
 
+2026-11-23 追加一轮：卡顿排查与修复（第 8 节，`156561e9c`），以及打包版本号
+教训（§3.1 命令块已更正——版本必须在 `--dir` 步注入，`--prepackaged` 补不了；
+host 用 `REASONIX_VERSION`）。
+
 ## 1. 交付卡片里的图片直接预览（已完成）
 
 会话回复里由 `present_files` 交付的 png/jpg，原来只有一行「图标 + 文件名 + 打开」。
@@ -159,23 +163,34 @@ cd ../electron && pnpm install --frozen-lockfile
 cd desktop/frontend-next
 node_modules/.bin/tsc -b && node_modules/.bin/vite build
 
-# 内核（Go 要在 PATH 上；本机是 /d/Go tools/go/bin）
+# 内核（Go 要在 PATH 上；本机是 /d/Go tools/go/bin）。REASONIX_VERSION 注入
+# host 自述的版本，与包版本保持一致
 cd ../electron
-PATH="/d/Go tools/go/bin:$PATH" node packaging/build-host.js
+REASONIX_VERSION=<版本号> PATH="/d/Go tools/go/bin:$PATH" node packaging/build-host.js
 
-# 解包应用（用本地 Electron，不联网）
-node_modules/.bin/electron-builder --dir -c.electronDist=node_modules/electron/dist
+# 解包应用（用本地 Electron，不联网）。版本必须在这一步注入：
+# app.getVersion() 读的是此刻打进包里的 package.json（树上永远是 0.0.0），
+# --prepackaged 阶段补传 extraMetadata 改不了已打好的归档（2026-11-23 实测
+# 打出的包 About 页仍读 0.0.0）。CI 同序：release-studio.yml 的
+# "Build the bundle" 步。
+node_modules/.bin/electron-builder --dir -c.electronDist=node_modules/electron/dist \
+  -c.extraMetadata.version=<版本号>
 
 # 关闭 Studio 后，把 dist/win-unpacked 覆盖到 %LOCALAPPDATA%\Programs\Reasonix Studio
 ```
 
 需要安装包时，复用上一步的 `win-unpacked` 再跑一次（+3 分钟，不触发 Electron
-下载）：
+下载）。`--prepackaged` 时把 `-c.extraMetadata.version` 写成同一个版本号，让
+安装包元数据与包内一致（真正生效的是 `--dir` 那一步）：
 
 ```sh
 node_modules/.bin/electron-builder --prepackaged ../../dist/win-unpacked \
-  --win nsis -c.extraMetadata.version=2.65.0
+  --win nsis -c.extraMetadata.version=<版本号>
 ```
+
+> 文件名本身不带版本号：`artifactName` 是仓库规定（`-installer` 后缀是
+> studio-manifest 的渠道识别），带版本的名字是发布流水线发布时另起的。本地
+> 发布给自己用，装完自己 `mv` 一个版本号上去即可。
 
 > PowerShell 里把 `node_modules/.bin/xxx` 写成 `node_modules\.bin\xxx.CMD`；上面是
 > Git Bash 写法。
@@ -358,3 +373,42 @@ docs/SESSION_HANDOFF.md                                本文件的各节更新
 
 **验证**：内核受影响域 151s 全过；4 条 ghost 测试全过；前端 ghost+remove 6 条全过；
 `Workspaces.tsx` 压回预算（1157/1158，未放宽基线）。
+
+## 8. 卡顿排查与修复 + 打包版本号教训（2026-11-23）
+
+**症状**：长对话打开/长跑后 GUI 卡顿（流式时 R 标与计时徽标丢帧、打字掉帧）；
+侧栏折叠必卡且重载不缓解。
+
+**诊断**（帧采样实测 + 两条机制线）：
+
+- 交互卡顿 = 每个 wire 事件的 O(全记录) 扫描 ×14 处、定位轨每帧（且每渲染
+  重建 observer）对全部挂载块强制布局、每事件全量 Block 双重渲染、
+  `/status` 每秒 4 次双份 `JSON.stringify`。
+- 折叠卡顿 = `.app` 上注册型继承自定义属性的 CSS 补间逐帧重算 `.flow` 外
+  整棵树 + 折叠首帧挂载/卸载整棵会话树 + 折叠期 ResizeObserver 风暴。
+- `perf/README` 自己警告过：空闲快机器上 60fps，卡的从来不在这一档——
+  复测用了 ×6 降频档。
+
+**已修**（`156561e9c`，13 文件）：
+
+- 定位轨 RO 节流 150ms + measureRef 解耦；`railMarks`/owed/echoes/paired
+  身份稳定；七处扫描按既有 revision-memo 范式收敛；`sameJson` 替换双份
+  stringify；held 选区抽 `heldselection.ts`。
+- 教训：`useEarlierFold` 的切片**不能** revision 化——它是流式渲染源
+  （`live = items[tail]`），文本 delta 不 bump revision，锁死后流式文本
+  不渲染，被 `pane-visibility` 等四个测试文件抓住回退。
+
+**实测**（×6 降频 t2000）：
+
+- 滚动 p50 127-644ms → 84-162ms；折叠最好 case p50 403ms → 76ms。
+- 空闲档两版都满帧（模拟内容轻，拉不开差距）。
+- 剩余折叠成本 = B1（属性补间逐帧重算）+ B2（首帧挂树），属设计取舍，
+  **待用户拍板方案**后做第二批。
+
+**打包版本号教训**：
+
+- 本地快路径此前漏了版本注入——app 版本来自 `--dir` 步打进归档的
+  package.json（树上恒为 0.0.0），`--prepackaged` 补传 extraMetadata 无效
+  （实测 About 页 0.0.0，与上两轮改动无关）。
+- host 版本靠 `REASONIX_VERSION` 注入 ldflags。
+- §3.1 的命令块已更正，**以后打包必须带版本号**，与 CI 同序。
