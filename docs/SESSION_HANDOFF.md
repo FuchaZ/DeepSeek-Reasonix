@@ -7,8 +7,18 @@ reviewed: 2026-11-22
 
 # 会话交付图片预览 · 相对路径定位 · 构建提速 — 交接
 
-本轮三件事，前两件已完成并有测试，第三件的验收数据在下面。改动已提交到
-`work/studio-session-20261121`；未纳入的是本地 pnpm 11 造成的
+主体三件事（1–3 节）已完成并有测试。2026-11-22 凌晨追加一轮（4–6 节的状态都是那轮
+写定的），四件事：
+
+- reveal 通道（`/workspace/locate`）补上同一个尾部定位，点「打开」不再对拼写路径 404。
+- 底栏「会话互聊」chip 与悬停卡成套摘除（第 6 节）。
+- serve 套件唯一真失败（`workspace.path_ambiguous` 缺桌面译名）修复；慢的排查结论
+  见第 4 节第 3 条。
+- frontend-next 的 7 条既有失败全修（都是测试押着旧形状，无产品 bug），见第 4 节
+  第 4 条。
+
+**当前两条套件 0 败**：serve 1483 过 / 31 skip，frontend-next 934 文件 / 6911 测试
+全过。改动全部提交在 `work/studio-session-20261121`；未纳入的是本地 pnpm 11 造成的
 `desktop/frontend-next/pnpm-lock.yaml` 漂移，以及它生成的
 `desktop/electron/pnpm-workspace.yaml` 占位文件。
 
@@ -66,9 +76,7 @@ reviewed: 2026-11-22
   路径；`remote` 为真时跳过——远端 kernel 的路径指的是它自己的盘。
 
 > 注意：`ask()` 是**所有对话链接**的入口，所以每次点链接都会发一次
-> `/workspace/resolve`。本意是"本来就对只花一次 stat"，但这毕竟是多一次请求。
-> 若觉得不值，可改成只在读取报 `file_missing` 后再问——代价是标签页先用错名开一次。
-> 这条待定，见第 4 节。
+> `/workspace/resolve`。定位时机已定案（保持现状），理由见第 4 节第 1 条。
 
 验证：
 
@@ -204,10 +212,12 @@ node_modules/.bin/electron-builder --prepackaged ../../dist/win-unpacked \
    - 修后全量 **934 文件 / 6911 测试全过**。CI 仍不跑这套件（ci.yml 头注：Studio
      表面只在用户机器存在）。全量约 350s（~1.46s/worker 的隔离开销约 135s，
      `isolate: false` 可省）。
-5. **仓库门禁 `go run ./tools/repolint -changed` 已全绿。** 上一轮遗留的三项仓库
-   总量超限已在本轮修掉：`studio.css` 合并两行回到预算内、`SESSION_HANDOFF.md`
-   补 `backup` 并在 CODEOWNERS 登记、四处超长块拆成列表。
-6. **已提交**到 `work/studio-session-20261121`。文件清单见下。
+5. **仓库门禁 `go run ./tools/repolint -changed` 全绿**（2026-11-22 复核）。上一轮
+   遗留的三项仓库总量超限已修掉：`studio.css` 合并两行回到预算内、`SESSION_HANDOFF.md`
+   补 `backup` 并在 CODEOWNERS 登记、四处超长块拆成列表。顺手修掉树上 gofmt 漂移的
+   `internal/platform/update/release_unit_test.go`（`52ede7a97`）。
+6. **已提交**到 `work/studio-session-20261121`。上一轮清单见第 5 节；追加轮清单见
+   第 5.1 节。
 
 ## 5. 本轮改到的文件
 
@@ -241,6 +251,27 @@ docs/FILE_PREVIEW.md                                   卡片图片预览说明
 决定 `useWorkbenchFiles` 的 path 为空，`.exe` 走的是文档预览路径，回调根本不触发），
 已完全回退，`git diff` 现在为空——它不在上面的清单里。
 
+### 5.1 追加轮（2026-11-22 凌晨）改到的文件
+
+```
+desktop/frontend-next/src/i18n/kernel.ts               +workspace.path_ambiguous 译名映射
+desktop/frontend-next/src/i18n/msg/kernel.ts           +译名文案（中/英）
+desktop/frontend-next/src/ui/DispatchThreadsBar.tsx    (删除) chip 组件
+desktop/frontend-next/src/ui/dispatch-threads-bar.test.tsx (删除)
+desktop/frontend-next/src/ui/Pane.tsx                  摘掉 peers 插槽与 import
+desktop/frontend-next/src/ui/MeterRail.tsx             摘掉 peers prop
+desktop/frontend-next/src/ui/panetypes.ts              摘掉 onOpenPeerSession
+desktop/frontend-next/src/ui/App.tsx                   摘掉 openPeerSessionStable
+desktop/frontend-next/src/design/sesscard.css          摘掉 chip 规则（34 行）
+desktop/frontend-next/src/i18n/msg/chat.ts             摘掉两个专用 key
+desktop/frontend-next/src/ui/navrail.interaction.test.tsx        落点断言跟新规则
+desktop/frontend-next/src/styles/dockgrid.test.ts               +pilltop 行
+desktop/frontend-next/src/ui/ModelPrefix.test.tsx               +随上次选择行
+desktop/frontend-next/src/ui/settings-search-language.interaction.test.tsx  密封化
+internal/platform/update/release_unit_test.go          gofmt
+docs/SESSION_HANDOFF.md                                本文件的各节更新
+```
+
 ## 6. 底栏「会话互聊」图标与悬停面板（~~只调研~~ → 已摘除，2026-11-22）
 
 **已执行**（2026-11-22）：底栏 chip 与悬停卡按下面的方案成套摘除：
@@ -270,14 +301,14 @@ docs/FILE_PREVIEW.md                                   卡片图片预览说明
   三处完全相同（`2e4ccabd`）。本机安装版 bundle 里也没有 `会话协作工作板` /
   `dispatch_board`。2.65.1 → 2.66.0 升级不改变这里的行为。
 
-**当前代码落点**（供后续接手）：
+**摘除前的代码落点**（历史记录，组件已不在树上）：
 
 - `ui/Pane.tsx:699`：把 `<DispatchThreadsBar port={port} .../>` 传给 `MeterRail`
   的 `peers` 插槽（`MeterRail.tsx:59,124`）。这是底栏那一处的唯一挂载点。
 - 组件 `ui/DispatchThreadsBar.tsx`；样式 `design/sesscard.css:35-66`；
   数据来自 `GET /peers` 的 `threads`（`internal/frontend/serve/peers.go`）。
 
-**最小改动方案**（用户已叫停，本轮未执行）：
+**当时的方案**（已按此执行，保留作记录）：
 
 - 摘掉 `Pane.tsx:699` 的 `peers` 传参，图标与卡片即消失。但仓库有门禁，
   不能只摘这一行：`src/orphan.test.ts` 会让未挂载组件失败，
