@@ -17,6 +17,7 @@ type workspaceProject struct {
 	root       string
 	roots      []string
 	remembered bool
+	removed    bool
 }
 
 func projectRoot(root string) string {
@@ -54,6 +55,7 @@ func groupWorkspaces(refs []rootRef) []workspaceProject {
 		}
 		p := &out[at]
 		p.remembered = p.remembered || ref.remembered
+		p.removed = p.removed || ref.removed
 		for _, dir := range []string{source, ref.dir} {
 			if !slices.Contains(p.roots, dir) {
 				p.roots = append(p.roots, dir)

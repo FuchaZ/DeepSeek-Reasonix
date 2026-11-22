@@ -37,6 +37,10 @@ type List struct {
 	// identity keys the caller owns. The folder stops being listed; its files
 	// stay, and asking for it again is what lifts the removal.
 	Removed []string `json:"removed,omitempty"`
+	// RemovedPaths keeps the folder path each Removed identity named, so the
+	// sidebar can still show the project's archive after a removal — the row
+	// needs the folder the tombstone alone cannot name. Cleared with Removed.
+	RemovedPaths map[string]string `json:"removedPaths,omitempty"`
 }
 
 // maxRemoved bounds the tombstones the list carries, so a long session of
@@ -44,15 +48,26 @@ type List struct {
 const maxRemoved = 64
 
 // Remove records that the folder named by the identity id was taken off the
-// sidebar. Empty ids and duplicates are ignored; the oldest entry gives way
-// once the list is full.
-func (l *List) Remove(id string) {
+// sidebar. Path is the folder spelling the removal saw, kept so the sidebar can
+// still reach the project's archive; empty is allowed. Empty ids and duplicates
+// are ignored — a later spelling is ignored too — and the oldest entry gives
+// way once the list is full.
+func (l *List) Remove(id, path string) {
 	id = strings.TrimSpace(id)
 	if id == "" || slices.Contains(l.Removed, id) {
 		return
 	}
+	if path = strings.TrimSpace(path); path != "" {
+		if l.RemovedPaths == nil {
+			l.RemovedPaths = map[string]string{}
+		}
+		l.RemovedPaths[id] = path
+	}
 	l.Removed = append(l.Removed, id)
 	if len(l.Removed) > maxRemoved {
+		for _, gone := range l.Removed[:len(l.Removed)-maxRemoved] {
+			delete(l.RemovedPaths, gone)
+		}
 		l.Removed = l.Removed[len(l.Removed)-maxRemoved:]
 	}
 }
@@ -65,6 +80,7 @@ func (l *List) Restore(id string) {
 	if id == "" {
 		return
 	}
+	delete(l.RemovedPaths, id)
 	l.Removed = slices.DeleteFunc(l.Removed, func(removed string) bool { return removed == id })
 }
 
@@ -138,6 +154,13 @@ func Read(path string) (List, error) {
 		}
 	}
 	list.Removed = removed
+	// A path whose tombstone did not survive the read (a hand-edited file, an
+	// older writer) can serve no ghost row: keep the two fields one shape.
+	for id := range list.RemovedPaths {
+		if !slices.Contains(list.Removed, id) {
+			delete(list.RemovedPaths, id)
+		}
+	}
 	if !slices.Contains(paths, list.Launch) {
 		list.Launch = ""
 		if len(paths) > 0 {

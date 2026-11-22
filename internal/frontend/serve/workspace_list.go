@@ -134,6 +134,105 @@ func workspaceRemoved(dir string) bool {
 	return workspaceRemovedIdentity(list, dir)
 }
 
+// removedWorkspace is one tombstone with the folder spelling the removal saw.
+type removedWorkspace struct {
+	identity string
+	dir      string
+}
+
+// removedWorkspaceEntries lists the removals on record with the folder each
+// names. A removal records its own spelling; a tombstone written before that
+// field existed falls back to its identity — the folder's canonical path,
+// which answers on disk just as well. Whether it still holds conversations
+// is the caller's check: an unusable spelling lists no sessions, no ghost.
+func removedWorkspaceEntries() []removedWorkspace {
+	list, _ := readWorkspaceList(workspacesPath())
+	if len(list.Removed) == 0 {
+		return nil
+	}
+	out := make([]removedWorkspace, 0, len(list.Removed))
+	for _, id := range list.Removed {
+		dir := list.RemovedPaths[id]
+		if dir == "" {
+			dir = id
+		}
+		out = append(out, removedWorkspace{identity: id, dir: dir})
+	}
+	return out
+}
+
+// pruneRemovedWorkspaceRecord clears a removal whose conversations are all
+// gone: the ghost row was the removal's only visible shape, so an empty
+// archive retires the record instead of keeping an invisible tombstone.
+// Reports whether the record was cleared.
+func pruneRemovedWorkspaceRecord(dir string) bool {
+	if dir == "" || !workspaceRemoved(dir) || workspaceHasListableSessions(dir) {
+		return false
+	}
+	err := updateWorkspaceList(context.Background(), true, func(list *workspaceList) error {
+		list.Restore(projectIdentity(dir))
+		return nil
+	})
+	if err != nil {
+		slog.Warn("serve: retire an emptied removal", "err", err)
+		return false
+	}
+	return true
+}
+
+// ghostRoots are the removed folders that still hold conversations: the ghost
+// rows. No seen check against the other sources — a pane driving the removed
+// folder is skipped above as removed, and that must not take its ghost row
+// down with it; the two merge into one project by identity.
+func ghostRoots() []rootRef {
+	var out []rootRef
+	for _, removed := range removedWorkspaceEntries() {
+		if !workspaceHasListableSessions(removed.dir) {
+			continue
+		}
+		out = append(out, rootRef{dir: removed.dir, remembered: true, removed: true})
+	}
+	return out
+}
+
+// ghostIsLive says whether a removed folder still carries everyday work: a
+// pane driving it, or a conversation that is not archived. Those rows are
+// live content, not archive, so they keep the row visible in every scope.
+func ghostIsLive(node treeWorkspace, sessions []treeSession) bool {
+	if node.Open {
+		// A pane driving the removed folder makes it live content: the row
+		// belongs in the everyday list, not only where the archive is the view.
+		return true
+	}
+	for _, s := range sessions {
+		if !s.Archived {
+			return true
+		}
+	}
+	return false
+}
+
+// pruneRemovedRecordForSessionDir retires the removal record whose sessions
+// tree holds dir, when nothing is left in it. The tree cannot be asked which
+// workspace that is: the erase that emptied the archive took the ghost row
+// down with it, so the owner is looked up among the tombstones themselves.
+// Reports whether a record retired.
+func pruneRemovedRecordForSessionDir(dir string) bool {
+	if dir = strings.TrimSpace(dir); dir == "" {
+		return false
+	}
+	for _, removed := range removedWorkspaceEntries() {
+		known, err := filepath.Abs(SessionDirFor(removed.dir))
+		if err != nil {
+			continue
+		}
+		if rel, err := filepath.Rel(known, dir); err == nil && filepath.IsLocal(rel) {
+			return pruneRemovedWorkspaceRecord(removed.dir)
+		}
+	}
+	return false
+}
+
 // ensureAutoWorkspace makes the app's own folder on demand and returns it, or ""
 // when the state root will not take it. A new session with no project behind it
 // opens there instead of being refused.
@@ -212,7 +311,7 @@ func forgetWorkspace(dir string) {
 		// The auto workspace is not a project; its row is the standing 任务
 		// group and no removal of it is recorded.
 		if root != "" && !isAutoWorkspace(dir) {
-			list.Remove(root)
+			list.Remove(root, dir)
 		}
 		list.Paths = slices.DeleteFunc(list.Paths, func(path string) bool { return projectIdentity(path) == root })
 		if projectIdentity(list.Launch) == root {

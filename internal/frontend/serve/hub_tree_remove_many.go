@@ -103,5 +103,12 @@ func (h *Hub) removeSessions(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	pruned := map[string]bool{}
+	for _, tgt := range ordered {
+		if !pruned[tgt.dir] {
+			pruned[tgt.dir] = true
+			pruneRemovedRecordForSessionDir(tgt.dir)
+		}
+	}
 	w.WriteHeader(http.StatusNoContent)
 }

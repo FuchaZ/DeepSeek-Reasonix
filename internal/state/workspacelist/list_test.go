@@ -159,13 +159,16 @@ func TestUpdateWithoutADeadlineStillGivesUp(t *testing.T) {
 
 // A removal is the user's last word about a folder: it round-trips through the
 // file, survives a duplicate, and a restore is the one thing that lifts it.
+// The folder path rides along — the ghost row needs it — and goes with the
+// removal it belongs to.
 func TestRemovalRoundTripsAndRestoreLiftsIt(t *testing.T) {
 	path := filepath.Join(testenv.TempDir(t), FileName)
 	if err := Update(context.Background(), path, false, func(l *List) error {
 		l.Paths = []string{"kept"}
-		l.Remove("gone")
-		l.Remove("gone")
-		l.Remove(" ")
+		l.Remove("gone", `D:\gone folder`)
+		l.Remove("gone", "a later spelling is ignored")
+		l.Remove(" ", "no identity")
+		l.Remove("pathless", "")
 		return nil
 	}); err != nil {
 		t.Fatal(err)
@@ -174,8 +177,14 @@ func TestRemovalRoundTripsAndRestoreLiftsIt(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(list.Removed) != 1 || list.Removed[0] != "gone" {
-		t.Fatalf("removed = %+v, want [gone]", list.Removed)
+	if len(list.Removed) != 2 || list.Removed[0] != "gone" || list.Removed[1] != "pathless" {
+		t.Fatalf("removed = %+v, want [gone pathless]", list.Removed)
+	}
+	if list.RemovedPaths["gone"] != `D:\gone folder` {
+		t.Fatalf("removedPaths = %+v, want the folder the removal saw", list.RemovedPaths)
+	}
+	if _, ok := list.RemovedPaths["pathless"]; ok {
+		t.Error("a removal without a path recorded one anyway")
 	}
 	if err := Update(context.Background(), path, false, func(l *List) error {
 		l.Restore("gone")
@@ -183,8 +192,8 @@ func TestRemovalRoundTripsAndRestoreLiftsIt(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	if list, err = Read(path); err != nil || len(list.Removed) != 0 {
-		t.Fatalf("after a restore removed = %+v (%v), want none", list.Removed, err)
+	if list, err = Read(path); err != nil || len(list.Removed) != 1 {
+		t.Fatalf("after a restore removed = %+v (%v), want [pathless]", list.Removed, err)
 	}
 }
 
@@ -193,7 +202,7 @@ func TestRemovalRoundTripsAndRestoreLiftsIt(t *testing.T) {
 func TestRemovalsStayBounded(t *testing.T) {
 	var list List
 	for i := range maxRemoved + 16 {
-		list.Remove(fmt.Sprintf("r%d", i))
+		list.Remove(fmt.Sprintf("r%d", i), "")
 	}
 	if len(list.Removed) != maxRemoved {
 		t.Fatalf("kept %d removals, want %d", len(list.Removed), maxRemoved)

@@ -19,7 +19,11 @@ type treeWorkspace struct {
 	WorkspaceRoots []string `json:"workspaceRoots,omitempty"`
 	Isolated       bool     `json:"isolated,omitempty"`
 	Missing        bool     `json:"missing,omitempty"`
-	Open           bool     `json:"open,omitempty"`
+	// Removed marks a ghost row: the user took the project off the sidebar and
+	// its conversations are archived under it. It leaves the tree when the
+	// archive is emptied, and asking for the folder again lists it whole.
+	Removed bool `json:"removed,omitempty"`
+	Open    bool `json:"open,omitempty"`
 	// Remembered marks a folder the user chose. A window always has a root — the
 	// one it happened to launch in — and a client that cannot tell the two apart
 	// shows "never picked a project" as if it were a project.

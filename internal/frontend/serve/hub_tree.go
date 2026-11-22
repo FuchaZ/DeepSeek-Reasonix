@@ -73,10 +73,14 @@ func (h *Hub) tree(w http.ResponseWriter, r *http.Request) {
 		auto := isAutoWorkspace(ref.root)
 		node := treeWorkspace{
 			Root: ref.root, Name: fileutil.RootName(ref.root),
-			DisplayName: names[ref.root], Pinned: pinned[ref.root],
+			// A ghost is not pinned: a pin leads the list, and a removed project
+			// has left the list — its stale pin must not drag the archive up.
+			DisplayName:    names[ref.root],
+			Pinned:         !ref.removed && pinned[ref.root],
 			WorkspaceRoots: ref.roots,
 			Isolated:       worktree.IsManagedPath(ref.root, config.DeliveryWorktreeDir()),
 			Remembered:     ref.remembered,
+			Removed:        ref.removed,
 			Auto:           auto,
 			Sessions:       []treeSession{},
 		}
@@ -90,6 +94,12 @@ func (h *Hub) tree(w http.ResponseWriter, r *http.Request) {
 		// The 任务 group is a standing section, so the app's own folder is listed
 		// even before anything was said in it — an unremembered project is not.
 		if !ref.remembered && !auto && !page.Said && (page.Status == nil || page.Status.CountsComplete) {
+			continue
+		}
+		// A ghost row stands where the archive is the view — the 已归档 scope,
+		// and search. The everyday list stays clean unless live work still
+		// happens in the removed folder: a pane's own row is not archive.
+		if ref.removed && window.scope != scopeArchived && window.query == "" && !ghostIsLive(node, page.Sessions) {
 			continue
 		}
 		node.Sessions, node.Total, node.Archived, node.Remaining = page.Sessions, page.Total, page.Archived, page.Remaining
@@ -440,8 +450,11 @@ func (h *Hub) addWorkspace(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, treeWorkspace{Root: dir, Name: fileutil.RootName(dir), Sessions: []treeSession{}})
 }
 
-// removeWorkspace drops a folder from the sidebar. Nothing on disk is touched —
-// the sessions stay where they are and the folder can be added back.
+// removeWorkspace drops a folder from the sidebar and archives what it held.
+//
+// Taking the row away used to leave its conversations in the list with no
+// project to belong to. They now go with it — archived, not deleted, so 归档
+// still holds them and adding the folder again brings the row back with them.
 func (h *Hub) removeWorkspace(w http.ResponseWriter, r *http.Request) {
 	var body struct {
 		Path string `json:"path"`
@@ -461,7 +474,15 @@ func (h *Hub) removeWorkspace(w http.ResponseWriter, r *http.Request) {
 	if !h.releaseOrRefuse(w, r, "workspace.running", "a conversation in this folder is running; stop it first", h.panesWhere(inFolder)) {
 		return
 	}
+	if err := h.archiveWorkspaceSessions(dir); err != nil {
+		writeErr(w, http.StatusInternalServerError, err)
+		return
+	}
 	forgetWorkspace(dir)
+	// A folder whose archive the removal just emptied keeps no ghost row, so
+	// the record it would stand for retires with the removal itself.
+	pruneRemovedWorkspaceRecord(dir)
+	h.treeChanged()
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -531,6 +552,7 @@ func (h *Hub) removeSession(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	pruneRemovedRecordForSessionDir(dir)
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -616,10 +638,12 @@ func (h *Hub) sessionTreeRoot(path string) string {
 	return ""
 }
 
-// rootRef is one sidebar folder and whether the user ever chose it.
+// rootRef is one sidebar folder, whether the user ever chose it, and whether
+// it is a ghost: a folder the user removed that still holds conversations.
 type rootRef struct {
 	dir        string
 	remembered bool
+	removed    bool
 }
 
 // roots returns the sidebar's folders: everything remembered, plus whatever a
@@ -660,6 +684,7 @@ func (h *Hub) roots() []rootRef {
 			add(auto)
 		}
 	}
+	out = append(out, ghostRoots()...)
 	return out
 }
 
