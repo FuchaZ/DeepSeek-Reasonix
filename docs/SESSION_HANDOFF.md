@@ -125,11 +125,13 @@ host 用 `REASONIX_VERSION`）。
 | 便携 zip | 同上，`--win zip -c.win.artifactName='ReasonixStudio-windows-${arch}-${version}-portable.${ext}'` | 67s |
 | 覆盖安装目录 | `Copy-Item -Recurse` 385 个文件 / 417MB | 0.7s |
 
-**安装包文件名必须带版本号**（`ReasonixStudio-windows-amd64-<版本>-installer.exe`）：
-`electron-builder.yml` 的默认 `artifactName` 没有版本，`release-fork.yml:113-114` 的
-发布工作流是靠 `-c.nsis.artifactName` / `-c.win.artifactName` 覆盖补上的——本地命令漏了
-这个覆盖就会产出无版本名的安装包（2026-11-23 又踩了一次：2.67.0 的包先是
-`ReasonixStudio-windows-amd64-installer.exe`，靠手工改名补救）。
+**安装包文件名必须带版本号**（`ReasonixStudio-windows-amd64-<版本>-installer.exe`）。
+
+- `electron-builder.yml` 的默认 `artifactName` 没有版本；发布工作流
+  （release-fork.yml:113-114）靠 `-c.nsis.artifactName` / `-c.win.artifactName`
+  覆盖补上，本地命令漏了这个覆盖就产出无版本名的安装包。
+- 2026-11-23 又踩了一次：2.67.0 的包先是 `ReasonixStudio-windows-amd64-installer.exe`，
+  靠手工改名补救。
 
 结论：**不是 NSIS 的锅**。`electron-builder.yml` 的 nsis+zip 目标从 2.62 之前就在，本地
 `--dir` 也一直是 7 秒级；安装包本身只多 3 分钟。真正能把一次构建拖到十几分钟的是：
@@ -140,11 +142,12 @@ host 用 `REASONIX_VERSION`）。
   `app-builder-lib/out/util/electronGet.js` 的注释），所以即使 158MB 的
   `electron-v45.2.3-win32-x64.zip` 已在缓存里仍要联网。
 - 本机当前 34s 后报 `unable to get local issuer certificate`；网络慢时就是 2.62
-  交接里记的「卡十分钟」。**修法（2026-11-23 实测）**：`NODE_USE_SYSTEM_CA=1`——这台
-  机器到 GitHub 的 TLS 链路带了一个 Node 自带 CA 包不认的证书链，curl 走 Windows 系统
-  证书库所以一直成功，Node 默认 CA 包必失败；让 Node 信任系统证书库后 `fetch` 即 200，
-  `build:host` 的驱动下载与 electron-builder 的工具集下载都直接走通，交接文档旧版本的
-  「手动搬驱动到 bin/」与「工具集镜像」两个规避步骤都不再需要。
+  交接里记的「卡十分钟」。
+- **修法（2026-11-23 实测）**：`NODE_USE_SYSTEM_CA=1`。这台机器到 GitHub 的 TLS
+  链路带了一个 Node 自带 CA 包不认的证书链，curl 走 Windows 系统证书库所以一直
+  成功，Node 默认 CA 包必失败；让 Node 信任系统证书库后 `fetch` 即 200。
+- `build:host` 的驱动下载与 electron-builder 的工具集下载由此直接走通，交接文档
+  旧版的「手动搬驱动到 bin/」与「工具集镜像」两个规避步骤都不再需要。
 - 2.62 的构建命令带了 `-c.electronDist=<本地 zip>`，后来的 `build:app` 没带。
 - **CUA 驱动** 见上一节，已修复。
 - `go test ./internal/frontend/serve` 的 **842s** 是测试，不是编译/打包（见第 4 节）；
