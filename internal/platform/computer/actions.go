@@ -89,6 +89,8 @@ func (s *Session) step(ctx context.Context, app App, window Window, step Step) (
 		args["amount"] = int(math.Abs(step.Amount))
 		args["direction"] = direction
 		args["by"] = "line"
+	case "drag":
+		return s.dragStep(ctx, app, window, args, step)
 	case "focus", "hold_key", "pointer_move", "pointer_drag", "pointer_position":
 		return StepResult{}, fail(CodeUnsupported, "%s has no equivalent safe CUA operation", step.Action)
 	default:
@@ -152,4 +154,26 @@ func validateStep(step Step) error {
 		return fail(CodeBadStep, "click count must be between zero and three")
 	}
 	return nil
+}
+
+// dragStep builds a background drag from two points of the latest screenshot,
+// spending the capture once for the pair; the left button is the drag's.
+func (s *Session) dragStep(ctx context.Context, app App, window Window, args map[string]any, step Step) (StepResult, error) {
+	fromX, fromY, err := s.point(app, window, step.X, step.Y)
+	if err != nil {
+		return StepResult{}, err
+	}
+	toX, toY, err := s.point(app, window, step.ToX, step.ToY)
+	if err != nil {
+		return StepResult{}, err
+	}
+	args["scope"] = "window"
+	args["from_x"], args["from_y"] = fromX, fromY
+	args["to_x"], args["to_y"] = toX, toY
+	s.state.capture = ""
+	var action DriverAction
+	if _, err := s.read(ctx, "drag", args, &action); err != nil {
+		return StepResult{}, err
+	}
+	return finishAction(action.nativeContract("drag"))
 }

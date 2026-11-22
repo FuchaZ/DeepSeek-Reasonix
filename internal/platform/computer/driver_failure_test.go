@@ -17,13 +17,14 @@ func TestDriverRefusalReasonIsQuotedAndBounded(t *testing.T) {
 }
 
 func TestDriverRefusalReasonIsCutOnACharacterBoundary(t *testing.T) {
-	// 1,000 three-byte characters: byte 2048 falls inside the 683rd one.
-	reason := strings.Repeat("测", 1000)
+	// 3,000 three-byte characters: the grapheme budget cuts mid-string, and the
+	// cut lands between characters, never inside one.
+	reason := strings.Repeat("测", 3000)
 	err := checkDriverResult(DriverResult{IsError: true, Content: []DriverContent{{Type: "text", Text: reason}}})
 	if CodeOf(err) != CodeDriverRefused {
 		t.Fatal(err)
 	}
-	if msg := err.Error(); strings.ContainsRune(msg, utf8.RuneError) || !strings.Contains(msg, strings.Repeat("测", 682)+"…") {
+	if msg := err.Error(); strings.ContainsRune(msg, utf8.RuneError) || !strings.Contains(msg, strings.Repeat("测", 2047)+"…") {
 		t.Fatalf("refusal reason was not cut cleanly: %q", msg)
 	}
 }

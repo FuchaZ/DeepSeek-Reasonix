@@ -3,6 +3,7 @@ package builtin
 import (
 	"context"
 	"encoding/json"
+	"slices"
 	"strings"
 	"testing"
 
@@ -112,10 +113,45 @@ func TestEachStepSaysWhatIsKnownOfItsEffect(t *testing.T) {
 		{computer.Effect{Class: computer.EffectSuspectedNoop, Evidence: []computer.Evidence{computer.EvidenceValueUnchanged}}, " — no effect seen (value unchanged)"},
 		{computer.Effect{Class: computer.EffectUnverifiable}, " — effect not verified"},
 		{computer.Effect{Class: computer.EffectUnverifiable, BlockedBy: modal}, ` — effect not verified, into the modal "Error" [a34]`},
+		{computer.Effect{Class: computer.EffectUnverifiable, Hint: "take a screenshot and retry while it is uncovered", NextCall: &computer.DriverNextCall{Tool: "get_window_state", Arguments: json.RawMessage(`{"pid":1,"window_id":1}`)}}, ` — effect not verified — next: take a screenshot and retry while it is uncovered (try get_window_state {"pid":1,"window_id":1})`},
 		{computer.Effect{}, ""},
 	} {
 		if got := renderEffect(c.effect); got != c.want {
 			t.Errorf("%+v renders %q, want %q", c.effect, got, c.want)
 		}
+	}
+}
+
+// A background drag stays inside the application's own grant: it never takes
+// the person's pointer, so its approval subject carries no pointer prefix.
+func TestDragPermissionStaysWithTheApplication(t *testing.T) {
+	act := computerAct{}
+	args := act.PermissionArgs(t.Context(), json.RawMessage(`{"app":"com.example.Notes","steps":[{"action":"drag","x":1,"y":2,"to_x":3,"to_y":4}]}`))
+	if !strings.Contains(string(args), `"app":"com.example.Notes"`) || strings.Contains(string(args), "pointer") {
+		t.Fatalf("drag permission args: %s", args)
+	}
+}
+
+// The advertised action catalogue names drag, so the model can reach the
+// driver's background drag.
+func TestComputerActSchemaAdvertisesDrag(t *testing.T) {
+	var schema struct {
+		Properties struct {
+			Steps struct {
+				Items struct {
+					Properties struct {
+						Action struct {
+							Enum []string `json:"enum"`
+						} `json:"action"`
+					} `json:"properties"`
+				} `json:"items"`
+			} `json:"steps"`
+		} `json:"properties"`
+	}
+	if err := json.Unmarshal(computerAct{}.Schema(), &schema); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Contains(schema.Properties.Steps.Items.Properties.Action.Enum, "drag") {
+		t.Fatalf("action enum: %v", schema.Properties.Steps.Items.Properties.Action.Enum)
 	}
 }

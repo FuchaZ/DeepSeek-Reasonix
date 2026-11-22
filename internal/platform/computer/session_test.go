@@ -621,9 +621,8 @@ func TestCUAFailedInterruptionDisablesReconnect(t *testing.T) {
 func TestCUARefusalPreservesBoundedSourceReason(t *testing.T) {
 	for _, tc := range []struct{ name, response, want string }{
 		{"text", `{"isError":true,"content":[{"type":"text","text":"set_value failed: AXValue is not settable"}]}`, "AXValue is not settable"},
-		{"hint", `{"structuredContent":{"effect":"refused","error":{"code":"background_unavailable","hint":"exact window cannot receive background input"}}}`, "exact window cannot receive background input"},
-		{"mixed", `{"structuredContent":{"effect":"refused","hint":"root hint survives","error":{"code":"target_refused"}}}`, "root hint survives"},
-		{"nested reason", `{"structuredContent":{"effect":"refused","error":{"code":"target_refused","reason":"nested reason survives"}}}`, "nested reason survives"},
+		{"hint", `{"isError":true,"structuredContent":{"effect":"refused","code":"background_unavailable","hint":"exact window cannot receive background input"}}`, "exact window cannot receive background input"},
+		{"mixed", `{"isError":true,"structuredContent":{"effect":"refused","code":"target_refused","hint":"root hint survives"}}`, "root hint survives"},
 		{"reason", `{"structuredContent":{"effect":"refused","code":"target_refused","reason":"target rejected the write"}}`, "target rejected the write"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

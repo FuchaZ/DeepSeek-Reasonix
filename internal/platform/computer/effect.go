@@ -1,6 +1,7 @@
 package computer
 
 import (
+	"encoding/json"
 	"strings"
 
 	"reasonix/internal/base/textutil"
@@ -24,6 +25,37 @@ const (
 	EvidenceValueUnchanged Evidence = "value_unchanged"
 )
 
+// DriverNextCall is the exact call the driver says moves the task forward. It
+// is always a read or a call that keeps the person's window where it is, and
+// the host renders it as guidance without ever executing it.
+type DriverNextCall struct {
+	Tool      string          `json:"tool"`
+	Arguments json.RawMessage `json:"arguments"`
+}
+
+// hintLimit bounds the driver's one-sentence next-step guidance; the driver
+// promises 240 characters.
+var hintLimit = textutil.PreviewLimit{Graphemes: 240, Lines: 1}
+
+// nextGuidance renders the driver's next-step sentence and the exact call it
+// names, bounded, as the tail a refusal or an effect shows the model. It is
+// guidance the model reads, never something the host executes.
+func nextGuidance(hint string, call *DriverNextCall) string {
+	var b strings.Builder
+	if hint != "" {
+		bounded, _ := textutil.BoundLiteral(hint, hintLimit)
+		b.WriteString(" — next: " + bounded)
+	}
+	if call != nil {
+		args, _ := textutil.BoundLiteral(strings.TrimSpace(string(call.Arguments)), textutil.PreviewLimit{Graphemes: 200, Lines: 1})
+		b.WriteString(" (try " + ShownBundle(call.Tool) + " " + args + ")")
+	}
+	return b.String()
+}
+
+// Guidance is that tail on an effect.
+func (e Effect) Guidance() string { return nextGuidance(e.Hint, e.NextCall) }
+
 // Effect is what is known of a step that went through. Class is empty for a
 // step that sends the application nothing, such as a wait.
 type Effect struct {
@@ -32,6 +64,10 @@ type Effect struct {
 	Evidence []Evidence
 	// BlockedBy is the modal the input went to instead of the window behind it.
 	BlockedBy *Modal
+	// Hint and NextCall are the driver's next-step guidance on a refusal or an
+	// unverifiable effect, rendered but never executed.
+	Hint     string
+	NextCall *DriverNextCall
 }
 
 // Modal is a window that holds an application's input until it is answered.

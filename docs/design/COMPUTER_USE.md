@@ -69,13 +69,15 @@ A refusal never grants a foreground retry.
 
 pointer_click retains the separate foreground approval subject.
 
-The adapter does not emulate focus, held keys, pointer movement/drag/position through native shims.
+Background drag runs between two points of the latest screenshot, in the window's capture frame. A covered start point or a caption drag refuses at the driver; the refusal's guidance names what to try instead, and a refusal never grants a foreground retry.
 
-These older calls return computer.unsupported and are absent from the advertised action catalogue.
+The adapter does not emulate focus, held keys or pointer position through native shims; these return computer.unsupported and stay absent from the advertised action catalogue.
 
 Paste delegates text delivery to CUA; physical-pointer restoration is not promised by this adapter.
 
 Delivery and target effect are separate.
+
+The driver's recovery hints ride the structured content of refusals and unverifiable results: one bounded next-step sentence and an exact next call. The adapter renders both as guidance and never executes the named call; the hint never stands in for the refusal's own reason.
 
 CUA confirmed+value_readback maps to Reasonix confirmed; window-change-only, partial, suspected-noop and unverifiable results retain conservative effect-unverified status and the raw delivery facts.
 

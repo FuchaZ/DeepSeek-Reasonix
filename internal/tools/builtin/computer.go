@@ -118,12 +118,12 @@ type computerAct struct{ session *computer.Session }
 func (computerAct) Name() string { return "computer_act" }
 
 func (computerAct) Description() string {
-	return "Operate an approved application through CUA Driver. launch must be one separate step using an exact installed identity from computer_read what=apps; no window selector or extra arguments. Select window when the app has multiple windows. Use refs from its latest snapshot or coordinates from its latest screenshot. Background clicks, set_value, type/paste, key and scroll never silently escalate. pointer_click explicitly takes foreground control and requires separate approval. wait is bounded. Inspect fresh state after an unverified effect; never assume an action landed. Returns a snapshot afterwards except launch, which returns the verified running identity for a separately approved read."
+	return "Operate an approved application through CUA Driver. launch must be one separate step using an exact installed identity from computer_read what=apps; no window selector or extra arguments. Select window when the app has multiple windows. Use refs from its latest snapshot or coordinates from its latest screenshot. Background clicks, set_value, type/paste, key, scroll and drag never silently escalate; drag runs between two points of the latest screenshot with the left button, and a covered start point or a window-caption drag refuses without taking the pointer. pointer_click explicitly takes foreground control and requires separate approval. wait is bounded. Inspect fresh state after an unverified effect; never assume an action landed. Returns a snapshot afterwards except launch, which returns the verified running identity for a separately approved read."
 
 }
 
 func (computerAct) Schema() json.RawMessage {
-	return json.RawMessage(`{"type":"object","properties":{"app":{"type":"string"},"window":{"type":"integer","minimum":1},"steps":{"type":"array","maxItems":64,"items":{"type":"object","properties":{"action":{"type":"string","enum":["launch","click","right_click","set_value","type","paste","key","scroll","wait","pointer_click"]},"ref":{"type":"string"},"text":{"type":"string"},"key":{"type":"string"},"x":{"type":"number"},"y":{"type":"number"},"amount":{"type":"number"},"ms":{"type":"integer"},"to_x":{"type":"number"},"to_y":{"type":"number"},"button":{"type":"string","enum":["left","right","middle"]},"times":{"type":"integer"},"seconds":{"type":"number"}},"required":["action"]}}},"required":["app","steps"]}`)
+	return json.RawMessage(`{"type":"object","properties":{"app":{"type":"string"},"window":{"type":"integer","minimum":1},"steps":{"type":"array","maxItems":64,"items":{"type":"object","properties":{"action":{"type":"string","enum":["launch","click","right_click","set_value","type","paste","key","scroll","wait","pointer_click","drag"]},"ref":{"type":"string"},"text":{"type":"string"},"key":{"type":"string"},"x":{"type":"number"},"y":{"type":"number"},"amount":{"type":"number"},"ms":{"type":"integer"},"to_x":{"type":"number"},"to_y":{"type":"number"},"button":{"type":"string","enum":["left","right","middle"]},"times":{"type":"integer"},"seconds":{"type":"number"}},"required":["action"]}}},"required":["app","steps"]}`)
 }
 
 func (computerAct) ReadOnly() bool                                   { return false }
@@ -247,6 +247,7 @@ func renderEffect(e computer.Effect) string {
 			fmt.Fprintf(&b, " delivered=%d", *e.Driver.Delivery.Count)
 		}
 	}
+	b.WriteString(e.Guidance())
 	return b.String()
 }
 
