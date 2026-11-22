@@ -4,7 +4,7 @@ import { removeHint } from "./WorkspaceConfirm";
 
 describe("removeHint", () => {
   it("says only what is true when nothing is open", () => {
-    expect(removeHint(0, 0)).toBe("不会删除任何文件");
+    expect(removeHint(0, 0)).toBe("不会删除任何文件；会话归档后在项目下仍可见");
   });
 
   it("counts the panes the removal will close", () => {
