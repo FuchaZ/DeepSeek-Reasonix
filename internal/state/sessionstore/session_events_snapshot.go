@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"slices"
 )
 
 // snapshotHeaderBytes is how much of a record's head identifies it. Marshal
@@ -42,8 +43,8 @@ func scanLastSnapshot(f *os.File, size int64) (int64, bool) {
 			return 0, false
 		}
 		chunk := buf[:n]
-		for i := len(chunk) - 1; i >= 0; i-- {
-			if chunk[i] != '\n' {
+		for i, byte := range slices.Backward(chunk) {
+			if byte != '\n' {
 				continue
 			}
 			if at := start + int64(i) + 1; isSnapshotRecordAt(f, at, size) {
@@ -84,11 +85,11 @@ func isSnapshotRecordAt(f *os.File, off, size int64) bool {
 	}
 	body := head[i:]
 	const typeKey = `"type":`
-	at := bytes.Index(body, []byte(typeKey))
-	if at < 0 {
+	_, value, found := bytes.Cut(body, []byte(typeKey))
+	if !found {
 		return false
 	}
-	value := bytes.TrimLeft(body[at+len(typeKey):], " \t")
+	value = bytes.TrimLeft(value, " \t")
 	return bytes.HasPrefix(value, []byte(`"`+sessionEventTypeReplace+`"`))
 }
 

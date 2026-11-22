@@ -104,7 +104,7 @@ var officialRates = []officialRateRow{
 	},
 	{
 		Provider: "longcat", Model: "LongCat-2.0", Currency: "USD",
-		BillingMode: BillingModePAYG, DocURL: DocLongCatPricingUSD, Notes: "launch_discount_no_end_date", CheckedOn: checkedOn,
+		BillingMode: BillingModePAYG, DocURL: DocLongCatPricingUSD, Notes: "usd_converted_cny_launch_discount", CheckedOn: checkedOn,
 		Rates: []rateGeneration{{Base: RateCard{CacheHit: 0.006, Input: 0.30, Output: 1.20, Currency: "USD"}}},
 	},
 
@@ -140,12 +140,12 @@ var officialRates = []officialRateRow{
 	// MiMo domestic PAYG; Token Plan bills the same rates as subscription_equivalent.
 	{
 		Provider: "mimo", Model: "mimo-v2.5-pro", Currency: "CNY",
-		BillingMode: BillingModePAYG, DocURL: DocMiMoPAYG, CheckedOn: checkedOn,
+		BillingMode: BillingModePAYG, DocURL: DocMiMoPAYG, Notes: "vendor_offline_2026_10_21", CheckedOn: checkedOn,
 		Rates: []rateGeneration{{Base: RateCard{CacheHit: 0.025, Input: 3, Output: 6, Currency: "CNY"}}},
 	},
 	{
 		Provider: "mimo", Model: "mimo-v2.5", Currency: "CNY",
-		BillingMode: BillingModePAYG, DocURL: DocMiMoPAYG, CheckedOn: checkedOn,
+		BillingMode: BillingModePAYG, DocURL: DocMiMoPAYG, Notes: "vendor_offline_2026_10_21", CheckedOn: checkedOn,
 		Rates: []rateGeneration{{Base: RateCard{CacheHit: 0.02, Input: 1, Output: 2, Currency: "CNY"}}},
 	},
 	// Not on the vendor's price page as of CheckedOn. Kept because removing a rate
@@ -153,17 +153,17 @@ var officialRates = []officialRateRow{
 	// rate at least reads as a number somebody can question.
 	{
 		Provider: "mimo", Model: "mimo-v2-flash", Currency: "CNY",
-		BillingMode: BillingModePAYG, DocURL: DocMiMoPAYG, Notes: "not_on_vendor_page", CheckedOn: checkedOn,
+		BillingMode: BillingModePAYG, DocURL: DocMiMoPAYG, Notes: "vendor_offline_2026_10_21", CheckedOn: checkedOn,
 		Rates: []rateGeneration{{Base: RateCard{CacheHit: 0.07, Input: 0.70, Output: 2.10, Currency: "CNY"}}},
 	},
 	{
 		Provider: "mimo", Model: "mimo-v2.5-pro", Currency: "CNY",
-		BillingMode: BillingModeSubscriptionEquivalent, DocURL: DocMiMoTokenPlan, Notes: "payg_equivalent_not_plan_bill", CheckedOn: checkedOn,
+		BillingMode: BillingModeSubscriptionEquivalent, DocURL: DocMiMoTokenPlan, Notes: "payg_equivalent_offline_2026_10_21", CheckedOn: checkedOn,
 		Rates: []rateGeneration{{Base: RateCard{CacheHit: 0.025, Input: 3, Output: 6, Currency: "CNY"}}},
 	},
 	{
 		Provider: "mimo", Model: "mimo-v2.5", Currency: "CNY",
-		BillingMode: BillingModeSubscriptionEquivalent, DocURL: DocMiMoTokenPlan, Notes: "payg_equivalent_not_plan_bill", CheckedOn: checkedOn,
+		BillingMode: BillingModeSubscriptionEquivalent, DocURL: DocMiMoTokenPlan, Notes: "payg_equivalent_offline_2026_10_21", CheckedOn: checkedOn,
 		Rates: []rateGeneration{{Base: RateCard{CacheHit: 0.02, Input: 1, Output: 2, Currency: "CNY"}}},
 	},
 	{

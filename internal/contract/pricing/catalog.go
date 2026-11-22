@@ -66,7 +66,7 @@ var chineseStatutoryHolidays = []string{
 }
 
 // checkedOn is when the tables below were last read off the vendors' pages.
-const checkedOn = "2026-08-22"
+const checkedOn = "2026-11-23"
 
 // deepseekCheckedOn is when the DeepSeek rows were last read off that vendor's
 // page. Separate from checkedOn, because confirming one vendor's prices says
