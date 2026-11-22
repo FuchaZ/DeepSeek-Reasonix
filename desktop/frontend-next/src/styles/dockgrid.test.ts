@@ -12,7 +12,7 @@ describe("the docked pane's grid", () => {
 
   it("runs the browser column down every row, from the top of the pane", () => {
     const rows = [...rule![1].split("/")[0].matchAll(/"([^"]+)"/g)].map((m) => m[1].trim().split(/\s+/));
-    expect(rows.map((r) => r[0])).toEqual(["find", "body", "compose"]);
-    expect(rows.map((r) => r[1])).toEqual(["side", "side", "side"]);
+    expect(rows.map((r) => r[0])).toEqual(["find", "body", "pilltop", "compose"]);
+    expect(rows.map((r) => r[1])).toEqual(["side", "side", "side", "side"]);
   });
 });

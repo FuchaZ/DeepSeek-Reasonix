@@ -26,7 +26,8 @@ it("draws the model menu and the usage list without the shared prefix, a typed a
   expect(rows[1].desc).toBe("group/glm-5");
   render(<ModelUsage models={routed} roles={null} main="mag/group/deepseek-v4.1-flash" busy="" protocol={{}} onMain={vi.fn()} onRole={vi.fn()} />);
   const options = [...(screen.getByRole("combobox", { name: "默认模型" }) as HTMLSelectElement).options].map((o) => o.textContent);
-  expect(options).toEqual(["deepseek-v4.1-flash", "My GLM"]);
+  // The follow row is offered above the models whatever the current answer is.
+  expect(options).toEqual(["随上次选择", "deepseek-v4.1-flash", "My GLM"]);
 });
 
 it("shows the short name on a limits row and keeps the full id in the tooltip", () => {
