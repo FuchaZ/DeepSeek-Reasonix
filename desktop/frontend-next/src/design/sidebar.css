@@ -158,3 +158,8 @@
    section's name and its count, quiet enough to skim past. */
 .rail .wstime { display: flex; align-items: baseline; gap: 5px; margin: 4px 0 0; padding: 2px 8px; color: var(--faint); font: var(--w-med) var(--fs-micro)/1.3 var(--ui); }
 .rail .wstime i { font: var(--w-reg) var(--fs-micro)/1 var(--ui); color: var(--ghost); font-style: normal; }
+
+/* A ghost row is a removed project whose archive is still shown: dimmed, its
+   tag names what happened, and nothing on it starts a conversation. */
+.rail .wsnode[data-removed] .wsrow { opacity: .55; }
+.rail .wsnode[data-removed] .wstag { color: var(--warn-ink); }

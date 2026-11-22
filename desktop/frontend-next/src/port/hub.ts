@@ -121,6 +121,10 @@ export interface TreeWorkspace {
   workspaceRoots?: string[];
   isolated?: boolean;
   missing?: boolean;
+  // True for a ghost row: the user took the project off the sidebar and its
+  // conversations are archived under it. It leaves the tree when the archive
+  // is emptied, and asking for the folder again lists it whole.
+  removed?: boolean;
   open?: boolean;
   // True when the user chose this folder. A window always has a root — the one
   // it happened to launch in — and only this tells that apart from a project.

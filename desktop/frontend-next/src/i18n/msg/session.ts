@@ -100,7 +100,7 @@ export const SESSION: Messages = {
   "session.n_unread_sessions": { zh: "{n} 个会话未读", en: "{n} unread sessions" },
   "session.naming": { zh: "命名中…", en: "Naming…" },
   "session.needs_you": { zh: "等你确认", en: "Needs you" },
-  "session.no_files_are_deleted": { zh: "不会删除任何文件", en: "No files are deleted" },
+  "session.no_files_are_deleted": { zh: "不会删除任何文件；会话归档后在项目下仍可见", en: "No files are deleted; conversations stay archived under the project" },
   "session.no_folders_yet": { zh: "尚无文件夹", en: "No folders yet" },
   "session.nothing_billed_yet": { zh: "还没有计费的请求", en: "Nothing billed yet" },
   "session.once_added_the_agent_can": { zh: "添加后，agent 将能修改并删除该文件夹里的任何文件。", en: "Once added, the agent can change and delete any file in that folder." },

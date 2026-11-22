@@ -476,6 +476,9 @@ export const ACTIONS: UIAction[] = [
   { id: "remote.enable", kind: "view", target: "entity", proof: "interaction" },
   { id: "remote.read", kind: "repeatable", target: "entity", proof: "authority-effect" },
   { id: "workspace.add", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
+  // A ghost row's way back: the same add the sidebar offers, which lifts the
+  // removal and lists the folder whole again.
+  { id: "workspace.restore", kind: "kernel-mutation", target: "entity", proof: "authority-effect" },
   { id: "hero.suggest", kind: "view", target: "none", proof: "interaction" },
   { id: "settings.changed-toggle", kind: "view", target: "none", proof: "interaction" },
   { id: "workspace.fold-all", kind: "view", target: "none", proof: "interaction" },

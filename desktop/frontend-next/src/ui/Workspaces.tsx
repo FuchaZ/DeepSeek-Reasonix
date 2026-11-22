@@ -584,7 +584,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
               ? projectBuckets?.marks.get(ws.root)
               : undefined;
             return (
-                <div className="wsnode" key={ws.root} data-current={panesOf(ws.root).includes(active) ? "" : undefined} data-missing={ws.missing ? "" : undefined}>
+                <div className="wsnode" key={ws.root} data-current={panesOf(ws.root).includes(active) ? "" : undefined} data-missing={ws.missing ? "" : undefined} data-removed={ws.removed ? "" : undefined}>
                 {section && sectionHead(section)}
                 {/* The 任务 area has no folder row of its own: the head is the label,
                     and its conversations hang directly beneath it. */}
@@ -611,7 +611,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                     data-target={ws.root}
                     data-drop={drag.over?.root === ws.root ? drag.over.edge : undefined}
                     data-dragging={drag.dragging === ws.root ? "" : undefined}
-                    draggable={ws.remembered && !needle}
+                    draggable={ws.remembered && !needle && !ws.removed}
                     onDragStart={(ev) => { drag.start(ev, ws.root); dragGhost(ev, ws.name); }}
                     onDragOver={(ev) => drag.hover(ev, ws.root)}
                     onDragLeave={() => drag.leave(ws.root)}
@@ -656,6 +656,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                         <em className="wstag">{ws.isolated ? t("common.isolated") : parentOf(ws.root)}</em>
                       </span>
                     )}
+                    {ws.removed && <span className="wsmeta"><em className="wstag">{t("common.removed_project_archive_left")}</em></span>}
                     <span className="wsacts">
                       {shut && <UnreadCount n={ws.sessions.filter((x) => x.unread).length} />}
                       <span className="rowswap">
@@ -664,7 +665,7 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                         data-action="session.new"
                         className="wsadd"
                         data-busy={busy === "new:" + ws.root ? "" : undefined}
-                        disabled={ws.missing}
+                        disabled={ws.missing || ws.removed}
                         title={t("common.start_a_new_session_in", { name: ws.name })}
                         aria-label={t("common.start_a_new_session_in", { name: ws.name })}
                         onClick={(ev) => {
@@ -730,9 +731,13 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                           </button>
                         </div>
                         <div className="session-pop-group">
-                          <button className="danger" role="menuitem" data-action="workspace.remove" onClick={() => { setConfirm(ws.root); dismissMenu(); }}>
-                            <StudioIcon name="close" /><span>{t("common.remove_from_the_list")}</span><small>{t("common.keeps_files")}</small>
-                          </button>
+                          {ws.removed
+                            ? <button role="menuitem" data-action="workspace.restore" onClick={() => { void hub.addWorkspace(ws.root).then(reload).catch(onError); dismissMenu(); }}>
+                                <StudioIcon name="reveal" /><span>{t("common.put_back_on_the_list")}</span>
+                              </button>
+                            : <button className="danger" role="menuitem" data-action="workspace.remove" onClick={() => { setConfirm(ws.root); dismissMenu(); }}>
+                                <StudioIcon name="close" /><span>{t("common.remove_from_the_list")}</span><small>{t("common.keeps_files")}</small>
+                              </button>}
                         </div>
                       </div>,
                       document.body,
