@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { Settings } from "./Settings";
@@ -13,7 +13,7 @@ import type { AgentPort, SessionStatus } from "../port/port";
 
 vi.mock("./storageTally", () => ({ STORAGE_TALLY_DELAY: 1500, cachedStorageTotal: () => 0, storageTotal: vi.fn() }));
 
-afterEach(() => { cleanup(); vi.restoreAllMocks(); localStorage.setItem(STORAGE, "zh"); boot(); });
+afterEach(() => { cleanup(); vi.restoreAllMocks(); localStorage.clear(); localStorage.setItem(STORAGE, "zh"); boot(); });
 const language = (lang: string) => { localStorage.setItem(STORAGE, lang); boot(); };
 const block = (anchor: string) => document.querySelector<HTMLElement>(`[data-setting="${anchor}"]`);
 
@@ -71,7 +71,9 @@ it("finds extension blocks by the displayed section name without mounting them",
   await act(async () => {});
   const reads = [...calls];
   await userEvent.type(find(), "Extension");
-  const hits = screen.getAllByRole<HTMLButtonElement>("option");
+  // The page behind the sheet keeps its own selects, whose options are not
+  // search hits; the hits are the search listbox's options and only those.
+  const hits = within(screen.getByRole("listbox", { name: t("settings.search_settings") })).getAllByRole<HTMLButtonElement>("option");
   expect(hits.map((hit) => hit.dataset.target)).toEqual(SETTINGS.filter((entry) => pageHome(entry.section) === "ext" && !entry.hidden).map((entry) => entry.anchor));
   expect(hits.every((hit) => hit.querySelector(".where")?.textContent?.startsWith("Extension"))).toBe(true);
   expect(calls).toEqual(reads);
@@ -81,7 +83,7 @@ it("finds extension blocks by the displayed section name without mounting them",
   expect(document.activeElement).toBe(find());
   expect(onClose).not.toHaveBeenCalled();
   await userEvent.type(find(), "not-a-setting");
-  expect(screen.queryByRole("option")).toBeNull();
+  expect(within(screen.getByRole("listbox", { name: t("settings.search_settings") })).queryByRole("option")).toBeNull();
   expect(screen.getByText(t("settings.no_matching_setting"))).toBeTruthy();
   await userEvent.clear(find());
   expect(screen.queryByRole("listbox")).toBeNull();
