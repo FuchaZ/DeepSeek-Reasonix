@@ -283,7 +283,9 @@ func (p *TrackedCommand) retryKillUntilWait(waitCh <-chan error, interval, max t
 	defer ticker.Stop()
 	for {
 		select {
-		case <-waitCh:
+		case err := <-waitCh:
+			// The wait's error belongs to the caller that started it; the reaper only stops.
+			_ = err
 			return
 		case <-ticker.C:
 			p.mu.Lock()

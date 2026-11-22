@@ -97,7 +97,7 @@ func TestEveryDesktopSettingSurvivesASave(t *testing.T) {
 	var lost []string
 	for i := range typ.NumField() {
 		field := typ.Field(i)
-		name := strings.Split(field.Tag.Get("toml"), ",")[0]
+		name, _, _ := strings.Cut(field.Tag.Get("toml"), ",")
 		if name == "" || name == "appearance" {
 			continue
 		}

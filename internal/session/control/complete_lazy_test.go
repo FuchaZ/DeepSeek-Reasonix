@@ -55,7 +55,7 @@ func TestNamingACommandReadsNoPackageOrConfig(t *testing.T) {
 	c := completionController(t)
 	var parses atomic.Int64
 	prev := config.SetInstalledPackages(func(string) []config.InstalledPackage { parses.Add(1); return nil })
-	defer config.SetInstalledPackages(prev)
+	defer func() { config.SetInstalledPackages(prev) }()
 
 	for _, line := range []string{"/", "/sk", "/sk-1"} {
 		parses.Store(0)

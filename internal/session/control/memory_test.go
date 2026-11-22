@@ -249,7 +249,7 @@ func TestQuickRememberNoticeIsTranslated(t *testing.T) {
 	c := New(Options{Memory: memory.Load(memory.Options{CWD: dir}), Sink: event.FuncSink(func(e event.Event) { events <- e })})
 	c.Submit("# prefer tabs over spaces")
 	e := <-events
-	if want := strings.SplitN(i18n.Chinese.QuickRememberDoneFmt, "%", 2)[0]; !strings.HasPrefix(e.Text, want) {
+	if want, _, _ := strings.Cut(i18n.Chinese.QuickRememberDoneFmt, "%"); !strings.HasPrefix(e.Text, want) {
 		t.Fatalf("notice = %q, want it to start %q", e.Text, want)
 	}
 }

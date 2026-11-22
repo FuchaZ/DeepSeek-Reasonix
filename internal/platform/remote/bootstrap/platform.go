@@ -87,7 +87,7 @@ func ParseVersion(out string) (string, error) {
 }
 
 func looksLikeSemver(v string) bool {
-	parts := strings.SplitN(v, "-", 2)[0]
+	parts, _, _ := strings.Cut(v, "-")
 	seg := strings.Split(parts, ".")
 	if len(seg) < 2 {
 		return false

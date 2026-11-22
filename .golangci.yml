@@ -19,6 +19,10 @@ linters:
       # extension protocol, not a refactor, so it lands on its own.
       disable:
         - omitzero
+        # AsType and the reflect rewrite arrived with golangci v2.15 and churn
+        # 169 call sites in one pass; adopting them is its own sweep.
+        - errorsastype
+        - reflecttypeassert
     errcheck:
       check-type-assertions: false
       exclude-functions:

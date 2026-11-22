@@ -22,7 +22,7 @@ func TestHotEndpointsStayInsideTheirPackageParseBudget(t *testing.T) {
 		parses.Add(1)
 		return nil
 	})
-	defer config.SetInstalledPackages(prev)
+	defer func() { config.SetInstalledPackages(prev) }()
 
 	bc := NewBroadcaster()
 	ctrl := control.New(control.Options{Runner: fakeRunner{}, Sink: bc, WorkspaceRoot: testenv.TempDir(t)})

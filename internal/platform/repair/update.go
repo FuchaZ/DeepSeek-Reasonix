@@ -3170,7 +3170,7 @@ func validateAppBundleHandoffMetadata(tx *UpdateTransaction) error {
 	if err != nil || stagingRel == "." || stagingRel == ".." || strings.HasPrefix(stagingRel, ".."+string(filepath.Separator)) {
 		return fmt.Errorf("handoff staging directory is outside the system temporary directory")
 	}
-	stagingBase := strings.Split(stagingRel, string(filepath.Separator))[0]
+	stagingBase, _, _ := strings.Cut(stagingRel, string(filepath.Separator))
 	if !strings.HasPrefix(stagingBase, "reasonix-mac-update-") {
 		return fmt.Errorf("handoff staging directory has an unexpected name")
 	}
