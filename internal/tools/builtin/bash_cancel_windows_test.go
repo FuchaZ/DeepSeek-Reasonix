@@ -27,7 +27,7 @@ func TestBashCancelKillsWindowsChildProcessTree(t *testing.T) {
 	pidFile := filepath.Join(tmp, "child.pid")
 	quotedPIDFile := strings.ReplaceAll(pidFile, "'", "''")
 	command := fmt.Sprintf(
-		"$p = Start-Process -FilePath powershell -ArgumentList '-NoProfile','-NonInteractive','-Command','Start-Sleep -Seconds 120' -PassThru; "+
+		"$p = Start-Process -FilePath powershell -ArgumentList '-NoProfile','-WindowStyle','Hidden','-NonInteractive','-Command','Start-Sleep -Seconds 120' -PassThru; "+
 			"Set-Content -LiteralPath '%s' -Value $p.Id; "+
 			"Start-Sleep -Seconds 120",
 		quotedPIDFile,
@@ -74,7 +74,7 @@ func TestBashWindowsReapsChildAfterForegroundShellExit(t *testing.T) {
 	pidFile := filepath.Join(tmp, "child.pid")
 	quotedPIDFile := strings.ReplaceAll(pidFile, "'", "''")
 	command := fmt.Sprintf(
-		"$p = Start-Process -FilePath powershell -ArgumentList '-NoProfile','-NonInteractive','-Command','Start-Sleep -Seconds 120' -PassThru; "+
+		"$p = Start-Process -FilePath powershell -ArgumentList '-NoProfile','-WindowStyle','Hidden','-NonInteractive','-Command','Start-Sleep -Seconds 120' -PassThru; "+
 			"Set-Content -LiteralPath '%s' -Value $p.Id",
 		quotedPIDFile,
 	)
