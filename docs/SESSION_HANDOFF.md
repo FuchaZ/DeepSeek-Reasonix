@@ -16,9 +16,11 @@ reviewed: 2026-11-22
   见第 4 节第 3 条。
 - frontend-next 的 7 条既有失败全修（都是测试押着旧形状，无产品 bug），见第 4 节
   第 4 条。
+- 从 torch 线移植 ghost row（第 7 节）。
 
 **当前两条套件 0 败**：serve 1483 过 / 31 skip，frontend-next 934 文件 / 6911 测试
-全过。改动全部提交在 `work/studio-session-20261121`；未纳入的是本地 pnpm 11 造成的
+全过（ghost row 移植后的复核见第 7 节）。改动全部提交在
+`work/studio-session-20261121`；未纳入的是本地 pnpm 11 造成的
 `desktop/frontend-next/pnpm-lock.yaml` 漂移，以及它生成的
 `desktop/electron/pnpm-workspace.yaml` 占位文件。
 
@@ -321,3 +323,38 @@ docs/SESSION_HANDOFF.md                                本文件的各节更新
   别和 `openPeerSessionStable` 一起删掉。
 - 不要动：设置页「会话互聊」整页（`Settings.tsx:443`）、`PeerHeldBar`、
   `SessionHoverCard`、侧栏 `PeerThreadMark`、后端 peer 能力——用户只要底栏这一处消失。
+
+## 7. 从 torch 线移植：ghost row（移除项目 → 归档可找回，2026-11-22）
+
+**来源**：torch `def7e765a`（内核归档）+ `ea3b7656c`（tombstone 记录目录、呈现层）。
+两线历史不相交，不能 cherry-pick——按树 diff 手工移植（torch 的提交说明原文有
+他们对照 Slack/Linear/VS Code 的取舍记录，值得读）。
+
+**行为**：
+- 移除项目时归档其全部会话（子代理转录除外）。
+- tombstone 记录移除时看到的目录拼写（`RemovedPaths`，旧记录按身份回退，前代版本
+  滞留的归档因此找回）。
+- 已移除文件夹只要还有可列会话就以 ghost row 出现在「已归档」范围和搜索结果里，
+  日常列表保持干净（除非该文件夹里还有活工作：开着窗格或有未归档会话）。
+- 删掉最后一条会话时 ghost row 与移除记录一起退役。
+- 「放回列表」（同 add）或重新添加文件夹即整行恢复。
+
+**落点**：
+- `internal/state/workspacelist/list.go`：`RemovedPaths` 字段，`Remove(id, path)`，
+  `Restore` 清路径，`Read` 保持两字段同形。
+- `internal/frontend/serve/workspace_archive.go`（新增）：`archiveWorkspaceSessions`
+  与 `workspaceHasListableSessions`。
+- `internal/frontend/serve/workspace_list.go`：`removedWorkspaceEntries` /
+  `pruneRemovedWorkspaceRecord` / `ghostRoots` / `ghostIsLive` /
+  `pruneRemovedRecordForSessionDir`；`forgetWorkspace` 记目录。
+- `internal/frontend/serve/hub_tree.go`：`treeWorkspace.Removed`（ghost 不吃陈旧
+  置顶）、ghost 可见性规则（仅 archived scope 与搜索，活工作例外）、`rootRef.removed`、
+  `roots()` 追加 ghost；移除时归档+退役+`treeChanged`；删除会话后按目录退役。
+- `internal/frontend/serve/hub_tree_remove_many.go`：批量删除按目录退役。
+- 前端：`port/hub.ts` `removed`（wire-parity 门禁强制）、`actions.ts`
+  `workspace.restore`、两个 i18n key、`sidebar.css` 暗淡规则、`Workspaces.tsx`
+  渲染+菜单（恢复/移除互斥）、`ghost-row.interaction.test.tsx`。
+- 内核测试：`hub_tree_removed_test.go`（新增 4 条，从 torch 按行移植）。
+
+**验证**：内核受影响域 151s 全过；4 条 ghost 测试全过；前端 ghost+remove 6 条全过；
+`Workspaces.tsx` 压回预算（1157/1158，未放宽基线）。
