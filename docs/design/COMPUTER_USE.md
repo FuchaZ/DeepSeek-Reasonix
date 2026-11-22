@@ -15,7 +15,7 @@ Model changes, reloads and workspace switches retain the host driver; closing a 
 
 The canonical embedded manifest is internal/platform/computer/cua-driver.lock.json. Go, Electron readiness and artifact installation read that contract; the packaged shell receives the same file as a resource.
 
-Reasonix Studio packages the maintained Rust CUA Driver 0.34.1 on macOS, Windows and Linux.
+Reasonix Studio packages the maintained Rust CUA Driver 0.59.0 on macOS, Windows and Linux.
 
 The release is marked prerelease upstream; its exact artifact names and SHA-256 digests are fixed in the Electron packaging lock.
 

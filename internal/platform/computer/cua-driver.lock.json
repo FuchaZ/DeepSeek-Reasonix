@@ -1,33 +1,33 @@
 {
-  "version": "0.34.1",
-  "tag": "cua-driver-rs-v0.34.1",
+  "version": "0.59.0",
+  "tag": "cua-driver-rs-v0.59.0",
   "prerelease": true,
   "repository": "trycua/cua",
   "artifacts": {
     "darwin-universal": {
-      "name": "cua-driver-rs-0.34.1-darwin-universal-binary.tar.gz",
-      "sha256": "52de49b5046df19245ad02ff9aa89ce9caf69e84988e1d0fac677611dd83e48c"
+      "name": "cua-driver-rs-0.59.0-darwin-universal-binary.tar.gz",
+      "sha256": "b0011f75fecba00d55bccd4effd274e55a4afe8f44a2250c22c26d9d512358a9"
     },
     "win32-x64": {
-      "name": "cua-driver-rs-0.34.1-windows-x86_64-binary.zip",
-      "sha256": "021bc2e5330c80a6c5e2c347c305fafbd4defe195d6282e0d20436f2f13c19bb"
+      "name": "cua-driver-rs-0.59.0-windows-x86_64-binary.zip",
+      "sha256": "b2efdbcaec80fdeb29843692e58bb5a6184f68a86cb72fef4b68c6a92e2289d3"
     },
     "win32-arm64": {
-      "name": "cua-driver-rs-0.34.1-windows-arm64-binary.zip",
-      "sha256": "21820a2ae20cb4bb998a340ff87c11007b9eb5cec8d1b8338c7b0d6dc88b01a6"
+      "name": "cua-driver-rs-0.59.0-windows-arm64-binary.zip",
+      "sha256": "b10c3b32edcc6ea95534ce1ecb14d7908a8539832d6e7bc6ebcdc274308f5a33"
     },
     "linux-x64": {
-      "name": "cua-driver-rs-0.34.1-linux-x86_64-binary.tar.gz",
-      "sha256": "a41fe2bdcbeea4501dc594c074f16b0975728e0cc7b08b90acea8564d48fafee"
+      "name": "cua-driver-rs-0.59.0-linux-x86_64-binary.tar.gz",
+      "sha256": "3b398014023979449b3c6739dcfa5d03eefa593539349ad6c4b8aa859634262c"
     },
     "linux-arm64": {
-      "name": "cua-driver-rs-0.34.1-linux-arm64-binary.tar.gz",
-      "sha256": "1c839d35401bbdea20f3e1cf50ace926ef17be6f32cea7e821b02b263c4933dc"
+      "name": "cua-driver-rs-0.59.0-linux-arm64-binary.tar.gz",
+      "sha256": "525142fe430821550752e4eee67898e9f87863511db57d70ef49db7e6ce7bd83"
     }
   },
   "host_bundle_id": "io.reasonix.studio",
   "protocol_version": "2025-06-18",
-  "contract_version": "0.8.0",
+  "contract_version": "0.9.0",
   "tools_list_schema_version": "1",
   "capability_version": "1"
 }

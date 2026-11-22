@@ -3252,9 +3252,9 @@ test("Linux clears its launcher badge without requiring Dock APIs", () => {
 
 test("CUA readiness refuses a different process, host or driver version", () => {
   const { accepts } = require("../src/cua");
-  const result = { pid: 123, embedded: true, host_bundle_id: "io.reasonix.studio", driver_version: "0.34.1", contract_version: "0.8.0", tools_list_schema_version: "1", capability_version: "1", mcp_protocol_version: "2025-06-18" };
+  const result = { pid: 123, embedded: true, host_bundle_id: "io.reasonix.studio", driver_version: "0.59.0", contract_version: "0.9.0", tools_list_schema_version: "1", capability_version: "1", mcp_protocol_version: "2025-06-18" };
   assert.equal(accepts({ ok: true, result }, 123, cuaContract), true);
-  for (const [key, value] of Object.entries({ pid: 124, embedded: false, host_bundle_id: "other", driver_version: "0.35.0", contract_version: "0.9.0", mcp_protocol_version: "2026-07-28" })) {
+  for (const [key, value] of Object.entries({ pid: 124, embedded: false, host_bundle_id: "other", driver_version: "0.60.0", contract_version: "0.10.0", mcp_protocol_version: "2026-07-28" })) {
     assert.equal(accepts({ ok: true, result: { ...result, [key]: value } }, 123, cuaContract), false);
   }
   assert.equal(accepts({ ok: false, result }, 123), false);

@@ -47,7 +47,7 @@ func (s *Session) observe(ctx context.Context, bundle string, ids []int, capture
 		return Snapshot{}, "", err
 	}
 	var data driverSnapshot
-	result, err := s.read(ctx, "get_window_state", map[string]any{"pid": app.PID, "window_id": window.ID, "max_elements": 500, "max_depth": 25, "max_image_dimension": 0, "include_screenshot": capture, "include_accessibility_tree": !capture}, &data)
+	result, err := s.read(ctx, "get_window_state", map[string]any{"pid": app.PID, "window_id": window.ID, "max_elements": 500, "max_depth": 25, "max_image_dimension": 0, "include_screenshot": capture, "include_accessibility_tree": !capture, "tree_format": "elements"}, &data)
 	if err != nil {
 		return Snapshot{}, "", err
 	}
