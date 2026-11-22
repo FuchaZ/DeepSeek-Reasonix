@@ -189,7 +189,10 @@ it.each(["collapsed", "off"])("reaches usage, account, and settings with the rai
   const railShown = mode === "collapsed";
   if (railShown) await toggleSidebar();
   const entries = railShown ? navEl()! : document.querySelector<HTMLElement>(".rail")!;
-  for (const [label, section, action] of [["用量", "storage"], ["设置", "session", "chrome.settings"]]) {
+  // 用量 opens the usage page on its own — a destination, which by design is
+  // not a page the sheet comes back to — so the plain 设置 open is a first
+  // visit and lands on 常用.
+  for (const [label, section, action] of [["用量", "storage"], ["设置", "common", "chrome.settings"]]) {
     const button = within(entries).getByRole("button", { name: new RegExp(`^${label}`) });
     if (action) expect(entries.querySelector(`[data-action="${action}"]`)).toBe(button);
     await userEvent.click(button);
@@ -247,8 +250,10 @@ it("the rail starts a session and opens the palette, the same two the sidebar le
   await userEvent.click(within(navEl()!).getByRole("button", { name: /^搜索会话与操作/ }));
   expect(await screen.findByRole("dialog", { name: "搜索与快捷操作" })).toBeTruthy();
   await userEvent.keyboard("{Escape}");
+  // A plain open with no page remembered lands on 常用, the first visit's page.
+  localStorage.removeItem("rx-settings-page");
   await userEvent.click(within(navEl()!).getByRole("button", { name: /^设置/ }));
-  expect((await screen.findByRole("tabpanel")).getAttribute("data-sec")).toBe("session");
+  expect((await screen.findByRole("tabpanel")).getAttribute("data-sec")).toBe("common");
 });
 
 it("keeps desktop navigation usable after closing settings without a top toggle", async () => {
