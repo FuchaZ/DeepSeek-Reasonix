@@ -12,7 +12,7 @@ import type { Checkpoint, ContextBreakdown, JobEntry, McpEntry, SessionStatus, W
 import type { TrajectoryRead } from "../port/wire";
 import { chipLabel, initialState, quoteAmount, reduce } from "../state/session";
 import type { CurrencyAmount } from "../state/session";
-import { pairCheckpoints } from "../state/checkpoints";
+import { pairCheckpoints, samePairing } from "../state/checkpoints";
 import { useReplyActions } from "./reply";
 import { useGateActions } from "./gates";
 import { useQueueActions } from "./queueactions";
@@ -84,6 +84,7 @@ import { RootMissingBanner } from "./RootMissingBanner";
 import { useConversationFiles } from "./useConversationFiles";
 import { NewAnswerAnchor } from "./NewAnswerLine";
 import { useFrozenNewAnswerAnchor } from "./newAnswerMark";
+import { sameJson } from "./samejson";
 import { onNewAnswerMarkerChange, sessionKey, showsNewAnswerMarker, useUnreadSince } from "../state/newAnswers";
 
 export type { PaneReport };
@@ -125,7 +126,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   const pages = useBrowserTabs(port, s.browserTabsMoved);
   const revealBrowser = useCallback(() => onManualBrowser?.(true), [onManualBrowser]);
   useRevealAgentPages(pages, active && !rt.host, revealBrowser);
-  useRevealBrowserOpen(s.items, active && !rt.host, revealBrowser);
+  useRevealBrowserOpen(s.items, s.revision, active && !rt.host, revealBrowser);
   const [surfaces, setSurfaces] = useState(0);
   // Analysis owns the whole working canvas. A docked browser and the composer
   // are useful while talking to the agent, but both compete with the timeline
@@ -136,7 +137,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   const body = useRef<HTMLDivElement>(null);
   const running = s.running || !!status?.running; // A paired device can join after turn_started.
   const marker = useSyncExternalStore(onNewAnswerMarkerChange, showsNewAnswerMarker, showsNewAnswerMarker);
-  const newAnswerAt = useFrozenNewAnswerAnchor(s.items, useUnreadSince(rt.sessionPath ? sessionKey(rt.host, rt.sessionPath) : undefined), running);
+  const newAnswerAt = useFrozenNewAnswerAnchor(s.items, s.revision, useUnreadSince(rt.sessionPath ? sessionKey(rt.host, rt.sessionPath) : undefined), running);
   const fail = useCallback((e: unknown, from?: string) => {
     const shown = reason(e);
     noteFault(e, shown);
@@ -154,7 +155,10 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   const openRun = agentRuns.open;
   const openJob = agentRuns.openJob;
   const conversationFiles = useConversationFiles(port, status?.workspaceRoot ?? rt.root, !!rt.host, visible && tab === "flow", revealBrowser, notify);
-  const compact = useCompactNow(port, running || s.items.some((item) => item.t === "compaction" && !item.done), notify);
+  // Compaction cards are minted and settled only by events that bump the revision.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const compacting = useMemo(() => s.items.some((item) => item.t === "compaction" && !item.done), [s.revision]);
+  const compact = useCompactNow(port, running || compacting, notify);
   // Elapsed is a clock reading and belongs on the tick. Throughput is not: it
   // follows the deltas themselves, and expires rather than being re-derived.
   const tps = useRate(s.outWindow, running);
@@ -197,7 +201,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
     // payload that cannot say leaves the wire's own running standing.
     if (next.running === false) pacer.flush();
     if (next.running !== undefined) dispatch({ kind: "__running", running: next.running });
-    setSessionRead((prev) => (prev.kind === "settled" && prev.status && JSON.stringify(prev.status) === JSON.stringify(next)
+    setSessionRead((prev) => (prev.kind === "settled" && prev.status && sameJson(prev.status, next)
       ? prev : { kind: "settled", status: next }));
   }, [pacer]);
 
@@ -329,7 +333,15 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   // a long session used to slow down. eslint would want `s.items` in the deps;
   // `s.revision` is the narrower truth. Same for the rail's two panels below.
   /* eslint-disable react-hooks/exhaustive-deps */
-  const paired = useMemo(() => pairCheckpoints(s.items, checkpoints), [s.revision, checkpoints]);
+  const pairedPrev = useRef(new Map<string, Checkpoint>());
+  // pairCheckpoints mints a Map per revision; a pairing that did not change keeps
+  // the old Map so the memoized blocks below it keep their props.
+  const paired = useMemo(() => {
+    const next = pairCheckpoints(s.items, checkpoints);
+    if (samePairing(pairedPrev.current, next)) return pairedPrev.current;
+    pairedPrev.current = next;
+    return next;
+  }, [s.revision, checkpoints]);
   const rail = useMemo(() => railOf(s.items, s.executions, s.subagentPhase), [s.revision, s.executions, s.subagentPhase]);
 
   const [clearedJobs, setClearedJobs] = useState<ReadonlySet<string>>(() => new Set());
@@ -383,7 +395,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   useEffect(() => { void loadChangedFilesPref(port); }, [port]);
   useEffect(() => { void loadFoldWorkPref(port); }, [port]);
   const foldWork = useFoldsTurnWork(port);
-  const brought = useBroughtResults(s.items);
+  const brought = useBroughtResults(s.items, s.revision);
   const refreshTree = useCallback((git?: WorkspaceGit) => {
     void port.changes().then(setTree).catch(() => setTree(null));
     if (git) setGit(git);
@@ -400,7 +412,8 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   // A fold replaces the history wholesale after its own usage has already been
   // counted, so round trips alone would leave the gauge showing the window from
   // before the compaction — the one moment it moves most.
-  const folds = s.items.reduce((n, i) => n + (i.t === "compaction" && i.done ? 1 : 0), 0);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const folds = useMemo(() => s.items.reduce((n, i) => n + (i.t === "compaction" && i.done ? 1 : 0), 0), [s.revision]);
   const roundTrips = s.metrics.hit + s.metrics.miss;
   useEffect(() => {
     if (!ready && !roundTrips && !folds) return;
@@ -424,10 +437,9 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   const [inserted, setInserted] = useState<{ n: number; text: string; session?: { id: string; title: string } }>({ n: 0, text: "" });
   // Guidance said from this window stands in the transcript as its own bubble
   // until the turn reads it, so the strip leaves it out.
-  const steerShown = useMemo(
-    () => new Set(s.items.flatMap((i) => (i.t === "user" && i.pending && i.queued === "steer" && i.itemId ? [i.itemId] : []))),
-    [s.items],
-  );
+  // Steer and pending rows are queued by events that bump the revision.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const steerShown = useMemo(() => new Set(s.items.flatMap((i) => (i.t === "user" && i.pending && i.queued === "steer" && i.itemId ? [i.itemId] : []))), [s.revision]);
   const { queue, restored, onRestoreText, onQueueRetry, onQueuePause, onQueueToSteer, onQueueSendNow, onQueueCancel } = useQueueActions({
     port,
     dispatch,
@@ -474,7 +486,9 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   // Chinese literals that the reducer had written — a translation key deciding
   // whether the run reads as moving.
   const blocked = hasPendingDecision(status);
-  const planGate = useMemo(() => latestPlanGate(s.items), [s.items]);
+  // Plan cards and their verdicts arrive by events that bump the revision.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const planGate = useMemo(() => latestPlanGate(s.items), [s.revision]);
   const [planSeen, setPlanSeen] = useState(false);
   const [landAt, setLandAt] = useState<{ item: string; n: number } | { call: string; n: number } | null>(null);
   const planLive = useMemo<PlanLive>(() => ({ plan: s.plan, running, blocked, latest: planGate?.id, onSeen: setPlanSeen }), [s.plan, running, blocked, planGate?.id]);

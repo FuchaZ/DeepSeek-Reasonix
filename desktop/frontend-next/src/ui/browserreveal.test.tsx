@@ -46,18 +46,18 @@ describe("an agent opening a page", () => {
 
   it("opens the column while the call runs, once per call, even into a tab already open", () => {
     const reveal = vi.fn();
-    const { rerender } = renderHook(({ items }) => useRevealBrowserOpen(items, true, reveal), {
-      initialProps: { items: [] as Item[] },
+    const { rerender } = renderHook(({ items, revision }) => useRevealBrowserOpen(items, revision, true, reveal), {
+      initialProps: { items: [] as Item[], revision: 0 },
     });
-    rerender({ items: [call("c1", true)] });
-    rerender({ items: [call("c1", false)] });
+    rerender({ items: [call("c1", true)], revision: 1 });
+    rerender({ items: [call("c1", false)], revision: 2 });
     expect(reveal).toHaveBeenCalledTimes(1);
   });
 
   it("ignores history, other tools, and a pane nobody is looking at", () => {
     const reveal = vi.fn();
-    renderHook(() => useRevealBrowserOpen([call("h1", false), call("b1", true, "bash")], true, reveal));
-    renderHook(() => useRevealBrowserOpen([call("c2", true)], false, reveal));
+    renderHook(() => useRevealBrowserOpen([call("h1", false), call("b1", true, "bash")], 0, true, reveal));
+    renderHook(() => useRevealBrowserOpen([call("c2", true)], 0, false, reveal));
     expect(reveal).not.toHaveBeenCalled();
   });
 });

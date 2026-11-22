@@ -24,3 +24,15 @@ export function pairCheckpoints(items: Item[], checkpoints: Checkpoint[]): Map<s
   }
   return pairs;
 }
+
+// Kernel checkpoint objects keep their identity while unchanged, so an
+// identity join is the whole equality: a rebuilt Map over the same items and
+// the same checkpoint objects is the same pairing and must not hand a fresh
+// object to every memoized block below it.
+export function samePairing(prev: Map<string, Checkpoint>, next: Map<string, Checkpoint>): boolean {
+  if (prev.size !== next.size) return false;
+  for (const [key, value] of next) {
+    if (prev.get(key) !== value) return false;
+  }
+  return true;
+}

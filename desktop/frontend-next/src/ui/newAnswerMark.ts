@@ -21,8 +21,11 @@ export function newAnswerAnchor(items: Item[], since: number): string | null {
 /** useFrozenNewAnswerAnchor holds the line where it was once a turn has run in
  *  this window: a message sent after looking must not pull it down to itself.
  *  The held value is idempotent for a given render, so a repeated render is safe. */
-export function useFrozenNewAnswerAnchor(items: Item[], since: number | undefined, running: boolean): string | null {
-  const live = useMemo(() => (since === undefined ? null : newAnswerAnchor(items, since)), [items, since]);
+export function useFrozenNewAnswerAnchor(items: Item[], revision: number, since: number | undefined, running: boolean): string | null {
+  // The streamed answer's text is read only while no turn holds the line frozen;
+  // every other card this scans changes only by events that bump the revision.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const live = useMemo(() => (since === undefined ? null : newAnswerAnchor(items, since)), [revision, since]);
   const held = useRef<{ since: number | undefined; id: string | null; frozen: boolean }>({ since: undefined, id: null, frozen: false });
   const h = held.current;
   if (h.since !== since) {

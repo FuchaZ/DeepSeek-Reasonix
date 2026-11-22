@@ -45,7 +45,8 @@ import { LiveWork, useStartsOpen } from "../state/foldpref";
 import { glide, landingBox, renderedBox, useFindLanding, useFindPaint } from "./findland";
 import { ScrollJump } from "./ScrollJump";
 import { landing as landingOf, type Direction } from "./jumpreach";
-import { chunkText, heldBlocks, type Held } from "./chunk_text";
+import { chunkText, type Held } from "./chunk_text";
+import { useHeldSelection } from "./heldselection";
 
 interface Props {
   historyPaging?: HistoryPaging;
@@ -101,13 +102,7 @@ interface Props {
 }
 
 export function Transcript({ items: every, port, historyPaging, entering, onEntered, brought, revision, waiting, scroll, hidden, focus, find, query, onApprove, onFullAccess, onPlan, onAnswer, onForget, onSettings, onExtInvoke, onExtSubmit, reply, onResend, onWithdraw, takeovers = {}, checkpoints, onPrepareRewind, onCommitRewind, onPrepareFileRevert, onCommitFileRevert, onSuggest, foldWork = false, turnRunning = false, scope = "" }: Props) {
-  // A block the selection touches must not leave the DOM. Unmounting the node a
-  // selection is anchored to makes the browser remap that selection onto
-  // whatever is still mounted — which reads as "I selected up there and the
-  // bottom got selected too". A block the selection merely passes through, with
-  // neither end inside it, is held as plain text from the data: mounting its
-  // cards in one synchronous render is what made a long drag freeze.
-  const [held, setHeld] = useState<Map<number, Held>>(new Map());
+  const held = useHeldSelection(scroll);
   const { items, bar: earlierBar } = useEarlierFold(every);
 
   // Stick to the bottom only while the reader is already there; scrolling up
@@ -145,23 +140,6 @@ export function Transcript({ items: every, port, historyPaging, entering, onEnte
   }, [scroll]);
 
   useFindPaint(flow, hidden, query ?? "", find?.id ?? null, find?.nth ?? 0, find?.mode);
-
-  useEffect(() => {
-    const onSelect = () => {
-      const sel = document.getSelection();
-      const root = scroll.current;
-      if (!root || !sel || sel.isCollapsed || sel.rangeCount === 0) {
-        setHeld((prev) => (prev.size ? new Map() : prev));
-        return;
-      }
-      const range = sel.getRangeAt(0);
-      if (!root.contains(range.commonAncestorContainer)) return;
-      const next = heldBlocks(range, root.querySelectorAll(".chunk"));
-      setHeld((prev) => (prev.size === next.size && [...next].every(([i, how]) => prev.get(i) === how) ? prev : next));
-    };
-    document.addEventListener("selectionchange", onSelect);
-    return () => document.removeEventListener("selectionchange", onSelect);
-  }, [scroll]);
 
   // Following is about intent. Two things carry it, and neither alone is
   // enough. The input devices are unambiguous — a wheel, a key, a drag on the
@@ -458,19 +436,33 @@ export function Transcript({ items: every, port, historyPaging, entering, onEnte
   useEffect(() => {
     if (entering.length > 0) onEntered(entering);
   }, [entering, onEntered]);
-  const owed = useMemo(() => new Set(entering), [entering]);
   const kept = useRef<Set<string>>(new Set());
+  const owedRef = useRef<Set<string>>(new Set());
+  // The entrance debt rides a new array identity per event, so the Set it
+  // becomes must not: a fresh Set breaks every block's memo for a render where
+  // nothing new owes its entrance. Same members, same Set — the echoes' rule.
+  const owed = useMemo(() => {
+    const next = new Set(entering);
+    if (!sameMembers(owedRef.current, next)) owedRef.current = next;
+    return owedRef.current;
+  }, [entering]);
   const echoes = useMemo(() => {
     const next = repeatedSpeakers(items);
     if (!sameMembers(kept.current, next)) kept.current = next;
     return kept.current;
-  }, [items]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [revision]);
 
   const bring = brought?.bring;
   const onBring = useMemo(() => (bring ? (id: string) => { bring(id); resume(); } : undefined), [bring, resume]);
   const rowProps = { onBring, owed, echoes, port, onApprove, onFullAccess, onPlan, onAnswer, onForget, onSettings, onExtInvoke, takeovers, onExtSubmit, onPrepareRewind, onCommitRewind, onPrepareFileRevert, onCommitFileRevert, reply, onResend, onWithdraw };
 
-  const marks = railMarks(blocks, (id) => checkpoints.get(id)?.files ?? 0);
+  const marks = useMemo(() => railMarks(blocks, (id) => checkpoints.get(id)?.files ?? 0), [blocks, checkpoints]);
+  // Steer rows are added by a send, never by a streamed chunk, so the revision
+  // is the narrower truth; the walk itself runs on the whole record.
+  /* eslint-disable react-hooks/exhaustive-deps */
+  const steer = useMemo(() => every.filter((it) => it.t === "user" && it.pending && it.queued === "steer"), [revision]);
+  /* eslint-enable react-hooks/exhaustive-deps */
 
   return (
     <div
@@ -505,7 +497,7 @@ export function Transcript({ items: every, port, historyPaging, entering, onEnte
           />
         ))}
         {live && <Row it={live} {...rowProps} cp={checkpoints.get(live.id)} />}
-        {every.filter((it) => it.t === "user" && it.pending && it.queued === "steer").map((it) => <Row key={it.id} it={it} {...rowProps} />)}
+        {steer.map((it) => <Row key={it.id} it={it} {...rowProps} />)}
         {brought && <BroughtResults items={items} ids={brought.ids} onDismiss={brought.dismiss} takeovers={takeovers} onExtInvoke={onExtInvoke} onPrepareFileRevert={onPrepareFileRevert} onCommitFileRevert={onCommitFileRevert} />}
         {waiting.ttftSince && <Await since={waiting.ttftSince} retry={waiting.retry} />}
         <div ref={end} className="flow-end" aria-hidden="true" />

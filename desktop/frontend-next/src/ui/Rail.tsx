@@ -186,18 +186,30 @@ export function Rail({ marks, total, scroll, flow, onJump, bound, scope, earlier
     return () => cancelAnimationFrame(raf);
   }, [measure]);
 
+  const measureRef = useRef(measure);
+  measureRef.current = measure;
+
   useEffect(() => {
     const root = scroll.current;
     const inner = flow.current;
     if (!root || !inner) return;
     // One measurement per frame, not one per block that resized while mounting.
     let raf = 0;
+    // Streaming and the column fold resize the flow every frame, and measuring
+    // at that rate walks every mounted chunk for its rect. The drawn fractions
+    // tolerate a beat of staleness — a jump reads the mark's identity, not the
+    // drawn tick — so the observer paces itself, with a trailing step so the
+    // last resize still lands.
+    let last = 0;
+    let paced: ReturnType<typeof setTimeout> | undefined;
     const ro = new ResizeObserver(() => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        raf = 0;
-        measure();
-      });
+      if (paced !== undefined) return;
+      const wait = Math.max(0, 150 - (performance.now() - last));
+      paced = setTimeout(() => {
+        paced = undefined;
+        last = performance.now();
+        measureRef.current();
+      }, wait);
     });
     ro.observe(inner);
     ro.observe(root);
@@ -209,10 +221,11 @@ export function Rail({ marks, total, scroll, flow, onJump, bound, scope, earlier
     return () => {
       if (raf) cancelAnimationFrame(raf);
       if (moved) cancelAnimationFrame(moved);
+      if (paced !== undefined) clearTimeout(paced);
       ro.disconnect();
       root.removeEventListener("scroll", onScroll);
     };
-  }, [scroll, flow, measure, follow]);
+  }, [scroll, flow, follow]);
 
   // Until the first measurement every mark is drawn on its own, unplaced, so
   // the marks exist to be named and focused from the first frame.

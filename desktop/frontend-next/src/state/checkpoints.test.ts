@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { pairCheckpoints } from "./checkpoints";
+import { pairCheckpoints, samePairing } from "./checkpoints";
 import { fromHistory, initialState, reduce, type Item, type SessionEvent, type SessionState } from "./session";
 import type { Checkpoint, HistoryMessage } from "../port/port";
 
@@ -98,5 +98,30 @@ describe("pairing a row with the snapshot taken for it", () => {
     const st = run([sent("row-1", "第一句"), started(1, 1), typed("row-2", "顺便")]);
     expect(pairCheckpoints(st.items, [cp(0, "第一句")]).size).toBe(0);
     expect(pairCheckpoints(st.items, [cp(0, "第一句", 1)]).size).toBe(1);
+  });
+});
+
+describe("recognizing an unchanged pairing", () => {
+  const cp = (turn: number, msgIndex: number): Checkpoint => ({ turn, prompt: "", files: 0, msgIndex });
+
+  it("accepts a rebuilt map over the same checkpoint objects", () => {
+    const a = cp(0, 1);
+    const b = cp(1, 5);
+    expect(samePairing(new Map([["u1", a], ["u2", b]]), new Map([["u1", a], ["u2", b]]))).toBe(true);
+  });
+
+  it("rejects a swapped-in checkpoint object", () => {
+    const a = cp(0, 1);
+    expect(samePairing(new Map([["u1", a]]), new Map([["u1", { ...a }]]))).toBe(false);
+  });
+
+  it("rejects a changed size", () => {
+    expect(samePairing(new Map([["u1", cp(0, 1)]]), new Map())).toBe(false);
+    expect(samePairing(new Map(), new Map([["u1", cp(0, 1)]]))).toBe(false);
+  });
+
+  it("rejects a renamed row", () => {
+    const a = cp(0, 1);
+    expect(samePairing(new Map([["u1", a]]), new Map([["u2", a]]))).toBe(false);
   });
 });

@@ -29,14 +29,18 @@ const OPENS_A_PAGE = "browser_open";
 /** Opens the browser column when the agent starts opening a page in the pane
  *  being looked at. Only a call seen running counts, so a transcript read back
  *  from history never opens it. */
-export function useRevealBrowserOpen(items: readonly Item[], active: boolean, reveal: () => void) {
+export function useRevealBrowserOpen(items: readonly Item[], revision: number, active: boolean, reveal: () => void) {
   const seen = useRef(new Set<string>());
+  const latest = useRef(items);
+  latest.current = items;
+  // A running tool card is minted or settled only by an event that bumps the
+  // revision, so the scan runs per revision and reads the newest items here.
   useEffect(() => {
-    for (const it of items) {
+    for (const it of latest.current) {
       if (it.t !== "tool" || !it.running) continue;
       if ((it.tool.resolvedName || it.tool.name) !== OPENS_A_PAGE || seen.current.has(it.id)) continue;
       seen.current.add(it.id);
       if (active) reveal();
     }
-  }, [items, active, reveal]);
+  }, [revision, active, reveal]);
 }

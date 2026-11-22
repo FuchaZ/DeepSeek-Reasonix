@@ -39,21 +39,22 @@ describe("holding the line while the person talks on", () => {
   const after = [...before, user("u3", 500), say("s3")];
 
   it("does not follow the person's own new message once a turn is running", () => {
-    const { result, rerender } = renderHook((p: { items: Item[]; running: boolean }) => useFrozenNewAnswerAnchor(p.items, 200, p.running), { initialProps: { items: before, running: false } });
+    const { result, rerender } = renderHook((p: { items: Item[]; revision: number; running: boolean }) => useFrozenNewAnswerAnchor(p.items, p.revision, 200, p.running), { initialProps: { items: before, revision: 0, running: false } });
     expect(result.current).toBe("s2");
-    act(() => rerender({ items: after, running: true }));
-    act(() => rerender({ items: after, running: false }));
+    act(() => rerender({ items: [...before, user("u3", 500)], revision: 1, running: true }));
+    act(() => rerender({ items: after, revision: 1, running: true }));
+    act(() => rerender({ items: after, revision: 1, running: false }));
     expect(result.current).toBe("s2");
   });
 
   it("moves when the person's own message is not holding it: nothing was running", () => {
-    const { result, rerender } = renderHook((p: { items: Item[]; running: boolean }) => useFrozenNewAnswerAnchor(p.items, 200, p.running), { initialProps: { items: before, running: false } });
-    rerender({ items: after, running: false });
+    const { result, rerender } = renderHook((p: { items: Item[]; revision: number; running: boolean }) => useFrozenNewAnswerAnchor(p.items, p.revision, 200, p.running), { initialProps: { items: before, revision: 0, running: false } });
+    rerender({ items: after, revision: 1, running: false });
     expect(result.current).toBe("u3");
   });
 
   it("takes the next unread span's start, not the old one", () => {
-    const { result, rerender } = renderHook((p: { since: number | undefined; running: boolean }) => useFrozenNewAnswerAnchor(after, p.since, p.running), { initialProps: { since: 100 as number | undefined, running: true } });
+    const { result, rerender } = renderHook((p: { since: number | undefined; running: boolean }) => useFrozenNewAnswerAnchor(after, 0, p.since, p.running), { initialProps: { since: 100 as number | undefined, running: true } });
     act(() => rerender({ since: 100, running: false }));
     expect(result.current).toBe("u2");
     act(() => rerender({ since: 400, running: false }));
