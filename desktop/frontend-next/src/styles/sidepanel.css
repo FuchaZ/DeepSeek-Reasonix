@@ -67,4 +67,4 @@
 .sidepanel textarea { height: 32px; min-height: 32px; padding: 5px 10px; border-radius: var(--r-sm); font: var(--w-reg) var(--fs-ui)/1.5 var(--ui); }
 .sidesend { height: 32px; padding: 0 14px; border-color: var(--border); border-radius: var(--r-sm); background: var(--raised); color: var(--text); font: var(--w-reg) var(--fs-ui)/1 var(--ui); }
 .sidesend:not(:disabled) { border-color: var(--accent); background: var(--accent); color: var(--accent-fg); }
-@container (max-width: 320px) { .sidepanel > header .sidebadge { display: none; } }
+@container (max-width: 430px) { .sidepanel > header .sidebadge { display: none; } }

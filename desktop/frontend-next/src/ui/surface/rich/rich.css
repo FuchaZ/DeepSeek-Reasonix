@@ -39,6 +39,8 @@
 .rich-product .mantine-Title-root { overflow-wrap: anywhere; }
 .rich-heading > :first-child { min-width: 0; }
 .rich-heading button { flex-shrink: 0; }
+.rich-fact-lb { flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rich-fact-v { flex: 1 1 auto; min-width: 0; overflow-wrap: anywhere; }
 
 .rich-map-overview { position: absolute; left: 12px; bottom: 28px; z-index: 1; box-shadow: 0 2px 8px #0002; }
 

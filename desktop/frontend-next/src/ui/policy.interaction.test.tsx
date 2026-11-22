@@ -53,11 +53,11 @@ describe("execution permission changes", () => {
 
   it("keeps the committed value and explains a refusal", async () => {
     const call = deferred<void>();
-    const { open, option, container, onChanged } = draw({ setApprovalMode: () => call.promise });
+    const { open, option, onChanged } = draw({ setApprovalMode: () => call.promise });
     await open();
     await userEvent.click(option("全部放行"));
     call.fail(new HttpError(409, "a turn is running", { code: "busy.switch_model" }));
-    await waitFor(() => expect(container.querySelector('[role="alert"]')).toBeTruthy());
+    await waitFor(() => expect(screen.getByRole("alert")).toBeTruthy());
     expect(option("询问").getAttribute("aria-pressed")).toBe("true");
     expect(onChanged).not.toHaveBeenCalled();
   });

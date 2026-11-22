@@ -38,7 +38,7 @@ export default function Comparison({ node, value, disabled, change }: RichInputP
       <Stack h="100%" gap="md"><OptionImage image={o.image} fit="contain" /><MantineGroup justify="space-between">{o.group && <Badge color="gray" variant="light">{o.group}</Badge>}{selected.includes(o.value) && <Badge color="teal">{t("chat.selected")}</Badge>}</MantineGroup><Title order={4} size="xl">{o.label}</Title>
         {o.price !== undefined && <Text className="rich-product-price" fw={600}><Text component="span" size="xs" c="dimmed">{o.currency}</Text> {o.price.toLocaleString()}</Text>}
         {o.description && <Text c="dimmed" size="sm">{o.description}</Text>}
-        <Stack gap="xs" style={{ flex: 1 }}>{o.facts?.map(f => <MantineGroup key={f.label} justify="space-between" align="flex-start" wrap="nowrap"><Text c="dimmed" size="sm">{f.label}</Text><Text size="sm" ta="right">{f.value}</Text></MantineGroup>)}</Stack>
+        <Stack gap="xs" style={{ flex: 1 }}>{o.facts?.map(f => <MantineGroup key={f.label} justify="space-between" align="flex-start" wrap="nowrap"><Text className="rich-fact-lb" c="dimmed" size="sm">{f.label}</Text><Text className="rich-fact-v" size="sm" ta="right">{f.value}</Text></MantineGroup>)}</Stack>
         {o.preview && <Text size="sm">{o.preview}</Text>}
         <Button color="teal" variant={selected.includes(o.value) ? "light" : "filled"} disabled={disabled} aria-pressed={selected.includes(o.value)} aria-label={t("chat.select_name", { name: o.label })} data-action="surface.edit" data-target={node.key} onClick={() => select(o.value)}>{selected.includes(o.value) ? t("chat.selected") : t("chat.select")}</Button>
       </Stack>

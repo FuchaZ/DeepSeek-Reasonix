@@ -277,6 +277,7 @@ body { background: var(--page); }
 .onb {
   position: relative;
   width: auto;
+  min-width: 0;
   padding: 36px 42px 34px;
   color: var(--text);
 }
@@ -1759,6 +1760,7 @@ button, input, textarea { font-size: var(--fs-ui); }
   z-index: 70;
   width: 260px; max-height: calc(100vh / var(--zoom, 1) - 24px); overflow-y: auto;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   padding: 6px;
   border: 1px solid var(--border);
   border-radius: var(--r-md);
@@ -1800,9 +1802,9 @@ button, input, textarea { font-size: var(--fs-ui); }
 .session-pop-group > button:disabled { opacity: .55; cursor: wait; }
 .session-pop-divider { height: 1px; margin: 5px 7px; background: var(--hair); }
 .session-pop-group > button > span > .session-pop-why { display: block; margin: 2px 0 0; color: var(--faint); font: var(--w-reg) var(--fs-meta)/1.4 var(--ui); }
-.session-pop-export { display: flex; align-items: center; gap: 9px; padding: 8px 9px; min-height: 35px; box-sizing: border-box; }
+.session-pop-export { display: flex; align-items: center; gap: 9px; padding: 8px 9px; min-height: 35px; min-width: 0; box-sizing: border-box; }
 .session-pop-export > .studio-icon { width: 16px; height: 16px; flex: 0 0 16px; color: var(--faint); }
-.session-pop-export > span { flex: 1; white-space: nowrap; color: var(--text); font: var(--w-reg) var(--fs-ui)/1.2 var(--ui); }
+.session-pop-export > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); font: var(--w-reg) var(--fs-ui)/1.2 var(--ui); }
 .session-pop-export > button { flex: none; height: 22px; padding: 0 8px; border: 0; border-radius: var(--r-pill); background: var(--overlay); color: var(--muted); font: var(--w-reg) var(--fs-meta) var(--ui); cursor: pointer; }
 .session-pop-export > button:hover:not(:disabled), .session-pop-export > button:focus-visible { background: var(--border); color: var(--text); outline: none; }
 .session-pop-export > button:disabled { opacity: .55; cursor: wait; }
@@ -1982,8 +1984,6 @@ button, input, textarea { font-size: var(--fs-ui); }
   .studio-speed-anchor { display: none; }
   .studio-meterrail .studio-context-anchor,
   .studio-meterrail .studio-deck-anchor { position: static; }
-  .turntools .policy { position: static; }
-  .turntools .polmenu { right: 0; width: auto; min-width: 0; max-width: none; }
 }
 
 @container conversation (max-width: 360px) {
@@ -2089,12 +2089,6 @@ button, input, textarea { font-size: var(--fs-ui); }
   width: 310px;
   max-width: calc(100vw - 24px);
   padding: 8px;
-  /* This card belongs to the permission trigger, not the generic anchored
-     picker geometry. Opening to the right keeps it inside the conversation
-     column instead of tucking its left edge underneath the workspace rail. */
-  position-anchor: auto;
-  position-try-fallbacks: none;
-  inset: auto auto calc(100% + 9px) 0;
 }
 .studio-policy-head { height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 7px 7px; border-bottom: 1px solid var(--border); }
 .studio-policy-head b { color: var(--text); font: var(--w-med) var(--fs-micro)/1 var(--ui); }

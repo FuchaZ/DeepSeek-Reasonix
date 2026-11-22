@@ -7,13 +7,13 @@
     "commented-code": 0,
     "complexity": 662,
     "css-important": 127,
-    "css-size": 8853,
+    "css-size": 8847,
     "doc-language": 0,
     "doc-owner": 27,
-    "doc-prose": 1427,
+    "doc-prose": 1426,
     "error-text": 9,
     "essay": 2533,
-    "file-size": 18427,
+    "file-size": 18426,
     "flat-view": 0,
     "frontend-parity": 13,
     "function-size": 2343,
@@ -71,7 +71,7 @@
     },
     "desktop/frontend-next/src/styles/LAYOUT.md": {
       "doc-owner": 1,
-      "doc-prose": 112
+      "doc-prose": 111
     },
     "desktop/frontend-next/src/styles/TOKENS.md": {
       "doc-owner": 1,
@@ -83,10 +83,10 @@
     },
     "desktop/frontend-next/src/styles/studio.css": {
       "css-important": 103,
-      "css-size": 3618
+      "css-size": 3612
     },
     "desktop/frontend-next/src/ui/Workspaces.tsx": {
-      "file-size": 358
+      "file-size": 357
     },
     "desktop/internal/winuninstall/registry_windows.go": {
       "essay": 1

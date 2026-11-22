@@ -4,9 +4,10 @@
 @keyframes onb-step-in { from { opacity: 0; transform: translateX(40px); } }
 @keyframes onb-step-back { from { opacity: 0; transform: translateX(-40px); } }
 
-.onb-steps { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+.onb-steps { display: flex; align-items: center; gap: 12px; min-width: 0; margin-bottom: 8px; }
 .onb-steps ol { display: flex; flex: 1; align-items: center; gap: 10px; min-width: 0; margin: 0; padding: 0; list-style: none; }
 .onb-steps li { display: flex; align-items: center; gap: 6px; min-width: 0; color: var(--faint); font: var(--w-med) var(--fs-meta) var(--ui); white-space: nowrap; }
+.onb-steps li span { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .onb-steps li + li::before { content: ""; flex: none; width: 18px; height: 1px; margin-inline-end: 4px; background: var(--border); }
 .onb-steps li i { display: grid; place-items: center; flex: none; width: 20px; height: 20px; border: 1px solid var(--border); border-radius: 50%; font: normal var(--w-semi) var(--fs-micro)/1 var(--ui); }
 .onb-steps li[data-state="current"] { color: var(--text); }

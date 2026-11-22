@@ -187,10 +187,12 @@ the picker and keyboard navigation.
 - One transition in and out rather than keyframes for entry and nothing for
   exit; `display` rides `allow-discrete`.
 - A Picker's menu renders into the body, so `left`/`top` are measured and written
-  inline and nothing above it in the tree can clip it. `.modemenu` is the
-  composer's policy menu, which is not a Picker and stays in place. Its
-  `anchor()` fallback is load-bearing: `anchor-name` hangs on
-  `[aria-expanded="true"]`, which flips the instant the menu is asked for.
+  inline and nothing above it in the tree can clip it. The composer's policy menu
+  is not a Picker either, and it now renders into the body through the same
+  placement (`beside` + pin).
+- An in-place policy menu is trapped at the shelf row's rank and loses to the
+  meter rail, and on a short window its flip fallback could not engage — the
+  menu clipped out of the window top instead.
 - Every menu answers one question — which one is it right now — so it gets the
   rail's answer: a fill and a marker. `[data-lead]` is what Enter takes while the
   field still holds focus, drawn at hover's weight deliberately: it is a standing
@@ -854,6 +856,11 @@ what exists.
   760px of that container, so interface zoom changes its columns and spacing.
 - The fold follows available CSS width, not the unscaled viewport measured by
   a media query. Form controls must fit inside the shell's clipping boundary.
+- The steps row's nowrap labels pushed the whole card past the shell at narrow
+  widths: `min-width: 0` on the card's grid item and on the row is what lets it
+  shrink.
+- Each step's label span ellipsizes inside its step instead of painting over its
+  neighbours; the circles and separators hold their width.
 - `perf/onboarding.mjs` checks card bounds, the 760/761px boundary, saved zoom
   and resizing, alongside scrolling, focus clearance and completing setup.
 - The connect card grows inside the opening scene rather than starting a second
