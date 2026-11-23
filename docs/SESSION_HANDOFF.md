@@ -537,3 +537,126 @@ cd ../electron && node packaging/build-host.js   # kernel ← 最容易漏
    用户一句"你拿不到我批准的状态"才指到根因。
 3. **前置检查与它所管的审批卡不能互相依赖**——那是个死循环，而且被内存残留掩盖，
    只有重启才暴露。
+
+## 10. 人自己派发任务 + 工具描述纠错（2026-11-24，`1201fa9d7`）
+
+**基线**：`7b57ac4d6` → `1201fa9d7`，1 个提交，23 文件。发版 **2.68.0**。
+
+### 10.1 P3-b：直接把任务交给另一个项目
+
+此前只有模型能发起 dispatch，人手里已经想好的任务还得写成请求让模型转交。
+现在设置页「会话互聊」多一块「直接派一个任务」：选项目、写任务、可选填角色，
+按下即发出。
+
+三层齐全，缺一层都跑不通：
+
+| 层 | 落点 |
+| --- | --- |
+| HTTP | `serve/peers.go` 新增 `POST /dispatch` + `startDispatch`；`refuseDispatch` 是工具侧 `peerErrorCode()` 的 HTTP 孪生，11 个 dispatch 码各自带码 |
+| 接口 | `control/port.go` 的 `PeerMail` 加 `DispatchToProject`，`SessionAPI` 自动继承 |
+| 前端 | `port.ts` 契约 + `sse_boundary.ts` 真实实现 + `mock_boundary.ts` 桩；`ui/PeerDispatch.tsx` 挂进 `PeersSection` 的新 Group |
+
+**审批语义（用户拍板）**：人发起免卡。按下控件就是他本人对那张卡的答复，
+所以不再出卡；此后一切照旧——项目解析、信任问答、`cross_project`、
+两个 ceiling 全部仍然生效。卡只挂在工具路径上（`subjectSensitiveTools`），
+REST 走 `s.Controller().DispatchToProject`，天然绕过卡而保留其余全部检查。
+
+### 10.2 工具描述与实现相反（本轮最要紧的一处）
+
+`peers_dispatch.go:21` 对模型宣称：
+
+> *"Without a role, one task per project is the rule, and **this session's own
+> project is refused**."*
+
+而 `serve/dispatch.go:137-139` 的实现和 `TestADispatchToTheSendersOwnProjectOpensASession`
+都表明同项目**允许**，由审批卡把关。`843ce4498` 取消前置检查时只改了
+`dispatch.go` 和测试，**漏掉了这句模型可见的描述**。
+
+后果不是文案问题：模型读到这条规则就**不会去尝试**同项目 dispatch，
+一个已经实现好的能力对它隐形。
+
+已改为 *"this session's own project is allowed like any other, with the
+dispatch card as the yes"*，并按
+`REASONIX_UPDATE_GOLDEN=1 go test ./internal/assembly/boot/ -run Golden`
+重生成三个 golden。diff 复核：只有该句 + `ToolsHash`/`PrefixHash`，
+`ToolSchemaTokens` 5372 → 5383（+11）。
+
+### 10.3 门禁挡下的三件事
+
+1. **`port.ts` 原本正好 800 行**，正是 `maxFileLines` 上限；加 3 行即超。
+   按仓库规矩「不放宽基线」压回 800：合并两行相邻的短 `export type`、
+   删掉与方法实现重复的那行注释。`repolint` 的 message 会直接说
+   `file-size is 3 over its 0 budget`。
+2. **`TestEveryRefusalCodeIsTranslated`** 拦下 11 个新 dispatch 码——每个 refusal
+   码都必须在前端 `kernel.ts` 有译名，这是 `refusal-path` 的另一半。
+3. **一个真 bug，只有浏览器实测才看得见**：`PeerDispatch` 最初自己调
+   `usePeersSettings(port)`，与 `PeersSection` 各持一份状态，打开开关后表单不出现。
+   改成按 `settings` 传入 store（照 `PeerProjects` 的做法）。单测里 mock 了
+   settings 所以抓不到——这条记进 10.5。
+
+### 10.4 顺带修掉的两处
+
+- **census 上限 215 → 214**：实测未命名输入 214，注释原文要求
+  *"lower it the moment any drop"*。这 214 个是遍布全产品的旧形式遗留
+  （`Remotes.tsx` 14、`Workspaces.tsx` 9、`PaneTabs.tsx` 9…），
+  注释说明 213→215 那次是**仪器修正**（认证 primitive 回调把 Picker 调用点
+  纳入统计），不是债务增加。
+- **两处注释漂移**：`internal/contract/tool/peer.go` 与
+  `internal/session/control/peer_dispatch.go` 原写 "another of the user's
+  projects"，改为 "one of the user's projects, its own included"。
+
+### 10.5 `check-fast` 的两处修正
+
+- `--print-plan` 原印 `frontend typecheck over: <文件列表>`，而真实执行的是
+  `pnpm typecheck`（`tsc --noEmit` **全树**）。现在印
+  `frontend typecheck (whole project) — N frontend file(s) changed`，
+  说清运行范围与触发原因的区别。
+- `check-fast.test.mjs` 里「按 feature 选测试」那条**自提交起就只在脏工作树
+  成立**（`--base HEAD` + 假设 peer 文件本次有改动），一提交必然失效。
+  改用历史基线 `f56990695~1`，干净树上也能验证同一条规则。
+
+### 10.6 验证
+
+- `check-fast` 端到端绿：`repolint: clean (2332 baselined findings)`、
+  `contract/tool` / `frontend/serve` / `session/control`（23.6s）/
+  `tools/builtin` 全 ok、`pnpm typecheck` 通过。
+- 前端 42 条：派发交互 7、设置页 4、census 21、设置目录 10。
+- 浏览器实测（dev + MockPort）：打开两个开关后表单渲染出项目下拉 / 任务 /
+  角色 / 「派过去」；填内容按钮激活；点击返回
+  「已经派到「DeepSeek-Reasonix」的「reviewer」角色」并清空输入。
+
+### 10.7 打包 2.68.0（含一个新坑）
+
+按 §3.1 三步走，版本两处都核过：`app.asar` 内 `package.json` = **2.68.0**，
+`reasonix-studio-host.exe` 二进制命中 3 处 2.68.0。
+
+**新坑**：NSIS 第一次失败，`reasonix-studio-electron-2.68.0-x64.nsis.7z`
+报 `Cannot open the file as [7z] archive` / `Is not archive`。
+
+原因是先在前台跑了一次 electron-builder，撞上宿主 2 分钟上限被杀，
+**留下半成品 `.nsis.7z`**，后台那次接着在损坏文件上继续。
+**删掉 `.nsis.7z` 重跑即可**。教训与 §3.1 的「只跑 electron-builder
+不重建 host」同类：中间产物被中断后不会自愈。
+
+**文件名**：`-c.nsis.artifactName` 先产出 `...-x64-...`，随后
+`afterAllArtifactBuild: canonical-artifact-names.js` 重命名成 `...-amd64-...`。
+所以最终名里的 `amd64` 是 hook 给的，与 §9.6 记录一致：
+
+```
+dist/ReasonixStudio-windows-amd64-2.68.0-installer.exe  140,965,951 B
+sha256 33d69457916c03ff626edfb2c6181a9f95e10893e5c8aeaa6abaf2066ebb1400
+```
+
+PE32 / NSIS self-extracting，未签名（首次运行按系统提示放行）。
+
+### 10.8 剩余
+
+- **P3-a** 审计导出：`peermail.AuditRecord` 字段齐全（`At/Receiver/Sender/ID/
+  Decision/Reason/Consent/Bytes/SHA256`）、`AuditSince()` 已存在，但只被
+  `peer_threads.go` 与 `peer_mail_send.go` 内部调用，**没有 HTTP 出口**。
+  补一个 `GET /peers/audit` + 只读表格即可。
+- **P3-c** dispatch 指定 profile：`OpenRequest` 现只有 `Model`。
+- **P3-d** 外部 agent：ACP 目前只有 agent 方向（`reasonix acp` 被编辑器启动），
+  client 方向全树没有。
+- **§8 折叠卡顿 B1/B2**：待用户拍板方案。
+- **`Workspaces.tsx` 1157 行**抽取：仍是 UI 每次改动最费劲处。
