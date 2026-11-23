@@ -482,6 +482,8 @@ export const CHAT: Messages = {
   "chat.this_command_runs_another_command": { zh: "这条命令里嵌套或间接地执行了别的命令。自动放行和宽泛的允许规则都无法确认真正会跑的是什么；要么批准这一条，要么切到全部放行。", en: "This command runs another command through nesting or indirection. Auto and broad allow rules cannot tell what would actually run; approve this one, or switch to full access." },
   "chat.this_commands_own_timeout_is": { zh: "这条命令自带的超时上限 {n} 秒", en: "this command's own timeout is {n}s" },
   "chat.this_file_cannot_be_restored": { zh: "该文件无法从检查点还原", en: "This file cannot be restored from a checkpoint" },
+  "chat.this_sends_a_message_to_another": { zh: "这一步以你的名义给另一个会话发消息；收件会话和消息全文都在这张卡上。自动放行、全部放行和记住的回答都不代你决定；要么批准这一条，要么拒绝。", en: "This sends a message to another of your sessions on your behalf; the receiver and every word of it are on this card. Auto, full access and remembered answers do not answer it; approve this one call or decline." },
+  "chat.this_opens_a_session_in_another": { zh: "这一步会打开你在另一个项目里的会话，并把任务交给它；项目和整段任务都在这张卡上。自动放行、全部放行和记住的回答都不代你决定；要么批准这一条，要么拒绝。", en: "This opens a session in another of your projects and hands it a task; the project and the whole task are on this card. Auto, full access and remembered answers do not answer it; approve this one call or decline." },
   "chat.this_file_could_not_be": { zh: "无法解析这个文件，可以用系统应用打开", en: "This file could not be read. Open it in the system app instead." },
   "chat.this_file_exceeds_the_preview": { zh: "文件超过预览大小限制", en: "This file exceeds the preview size limit." },
   "chat.this_file_has_changed_again": { zh: "该文件在检查点之后再次被修改。", en: "This file has changed again since the checkpoint." },

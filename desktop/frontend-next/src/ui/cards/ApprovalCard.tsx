@@ -31,6 +31,8 @@ const EXPLICIT_APPROVAL: Record<string, string> = {
   computer_front: "chat.this_operates_another_application_on",
   origin_text: "chat.text_in_this_call_is",
   computer_pointer: "chat.this_step_takes_the_pointer",
+  peer_message: "chat.this_sends_a_message_to_another",
+  dispatch_task: "chat.this_opens_a_session_in_another",
 };
 
 const TASK_PREVIEW = 280;
