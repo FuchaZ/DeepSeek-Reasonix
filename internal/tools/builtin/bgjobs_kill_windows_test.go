@@ -30,7 +30,7 @@ func TestKilledBackgroundJobWithAChildLeavesTheRunningList(t *testing.T) {
 	pidFile := filepath.Join(tmp, "child.pid")
 	quoted := strings.ReplaceAll(pidFile, "'", "''")
 	command := fmt.Sprintf(
-		"$p = Start-Process -FilePath powershell -ArgumentList '-NoProfile','-NonInteractive','-Command','Start-Sleep -Seconds 300' -PassThru; "+
+		"$p = Start-Process -FilePath powershell -ArgumentList '-NoProfile','-WindowStyle','Hidden','-NonInteractive','-Command','Start-Sleep -Seconds 300' -PassThru; "+
 			"Set-Content -LiteralPath '%s' -Value $p.Id; Start-Sleep -Seconds 300", quoted)
 	m := jobs.NewManager(event.Discard)
 	defer m.Close()
