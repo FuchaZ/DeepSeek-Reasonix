@@ -8,7 +8,6 @@ import (
 
 	"reasonix/internal/contract/config"
 	"reasonix/internal/contract/tool"
-	"reasonix/internal/safety/permission"
 	"reasonix/internal/state/peermail"
 )
 
@@ -246,28 +245,6 @@ func (c *Controller) PeerKey() string {
 func (c *Controller) TrustOfWorkspace(root string) config.WorkspaceTrust {
 	trust, _ := config.NewProjectGrantStore(c.posture.Home).Trust(root)
 	return trust
-}
-
-// DispatchIntoSelfAllowed reports whether the person has already allowed a
-// dispatch into this session's own project. The same yes the permission card
-// writes counts: a rule in a config file, or an allow given to this session on a
-// prompt. So a person who chose "always allow" there does not have to find a
-// second switch for the same intent.
-func (c *Controller) DispatchIntoSelfAllowed() bool {
-	const tool = "dispatch_to_project"
-	rules := c.PermissionRules()
-	lists := [][]string{rules.Allow, rules.Granted}
-	if rules.Effective != nil {
-		lists = append(lists, rules.Effective.Allow)
-	}
-	// DecideSubject with an empty mode asks "is there an allow rule for this
-	// tool?", which is the question; Deny still wins, as it does everywhere.
-	for _, allow := range lists {
-		if permission.New("deny", allow, nil, rules.Deny).DecideSubject(tool, false, "") == permission.Allow {
-			return true
-		}
-	}
-	return false
 }
 
 // DispatchToProject hands a task to a session in another of the user's projects.

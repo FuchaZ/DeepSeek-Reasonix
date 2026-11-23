@@ -135,10 +135,7 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text, role
 		return control.DispatchResult{}, control.ErrDispatchNotLocal
 	}
 	// This session's own project opens a second session; the person's answer on
-	// the dispatch card is what allows it, the same way it allows a task into
-	// any other project. The old rule asked for an allow rule up front, and the
-	// only place that rule could come from was that same card — a fresh session
-	// could never reach it.
+	// the dispatch card allows it, the same as for any other project.
 	own := sameFolder(root, sender.WorkspaceRoot())
 	// Across projects the user's outgoing answer rules: "never" refuses every
 	// dispatch into another project, and "paired" lets through only what this

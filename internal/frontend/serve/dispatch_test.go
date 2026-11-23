@@ -464,9 +464,7 @@ func TestADeclinedProjectIsRefusedBeforeAnyPaneOpens(t *testing.T) {
 // Until the person allows dispatch_to_project, a dispatch into this session's
 // own project opens nothing.
 // A dispatch into the sender's own project is allowed like any other: the
-// person's answer on the dispatch card is the yes, and an allow rule up front
-// was a second door to the same room — one a fresh session could not open,
-// because the only place that rule came from was the card it gated.
+// person's answer on the dispatch card is the yes.
 func TestADispatchToTheSendersOwnProjectOpensASession(t *testing.T) {
 	f := newDispatchFixture(t, dispatchOn)
 	a := f.project("alpha", true)
