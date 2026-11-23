@@ -282,6 +282,7 @@ export const ACTIONS: UIAction[] = [
   { id: "decision.more", kind: "view", target: "none", proof: "interaction" },
   { id: "composer.more-tools", kind: "view", target: "none", proof: "interaction" },
   { id: "ext.scope", kind: "view", target: "none", proof: "interaction" },
+  { id: "ext.scope-pick", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
   { id: "ext.scope-back", kind: "navigation", target: "none", proof: "interaction" },
   { id: "session.import-native-choose", kind: "view", target: "none", proof: "interaction" },
   { id: "queue.to-steer", kind: "kernel-mutation", target: "entity", proof: "interaction" },
