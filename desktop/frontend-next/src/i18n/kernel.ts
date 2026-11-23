@@ -95,6 +95,7 @@ const SAID: Record<string, string> = {
   "workspace.has_open_panes": "kernel.this_folder_still_has_n",
   "workspace.file_invalid": "kernel.the_file_save_request_is",
   "workspace.file_changed": "kernel.the_file_changed_after_it",
+  "workspace.file_exists": "kernel.the_file_is_already_there",
   "git.history_failed": "kernel.could_not_read_this_repositorys",
   "git.commit_bad_id": "kernel.that_is_not_a_commit",
   "git.commit_unknown": "kernel.this_repository_has_no_such",

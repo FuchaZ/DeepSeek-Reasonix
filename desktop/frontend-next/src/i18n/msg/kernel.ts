@@ -465,6 +465,7 @@ export const KERNEL: Messages = {
   "kernel.the_file_changed_while_being": { zh: "读取期间文件发生变化，请刷新", en: "The file changed while being read. Refresh to try again." },
   "kernel.the_file_changes_display_setting": { zh: "文件改动显示设置未能保存：{detail}", en: "The file-changes display setting was not saved: {detail}" },
   "kernel.the_file_could_not_be": { zh: "没能用系统默认程序打开这个文件：{error}", en: "The file could not be opened with the system default program: {error}" },
+  "kernel.the_file_is_already_there": { zh: "文件已存在，无法按新建保存", en: "The file is already there and cannot be saved as a new file" },
   "kernel.the_file_is_not_editable": { zh: "该文件不是可编辑文本或超过大小限制", en: "The file is not editable text or exceeds the size limit" },
   "kernel.the_file_is_not_valid": { zh: "文件不是有效的 UTF-8 文本", en: "The file is not valid UTF-8 text." },
   "kernel.the_file_operation_failed_try": { zh: "文件操作失败，请重试", en: "The file operation failed; try again" },
