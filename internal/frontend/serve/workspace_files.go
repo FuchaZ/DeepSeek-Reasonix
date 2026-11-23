@@ -140,14 +140,32 @@ func (s *Server) workspaceFileWrite(w http.ResponseWriter, r *http.Request) {
 	defer root.Close()
 	current, err := root.ReadFile(path)
 	if err != nil {
-		refuseOpen(w, err)
+		if !errors.Is(err, fs.ErrNotExist) || in.Revision != "" {
+			refuseOpen(w, err)
+			return
+		}
+	} else if in.Revision == "" {
+		refuse(w, http.StatusConflict, "workspace.file_exists", "the file is already there", nil)
 		return
-	}
-	if fileRevision(current) != in.Revision {
+	} else if fileRevision(current) != in.Revision {
 		refuse(w, http.StatusConflict, "workspace.file_changed", "the file changed after it was opened", nil)
 		return
 	}
-	file, err := root.OpenFile(path, os.O_WRONLY|os.O_TRUNC, 0)
+	// An empty revision is the caller saying the file is not there yet: it is
+	// created beside its parents, and only if nothing took the name first.
+	flags := os.O_WRONLY | os.O_TRUNC
+	if err != nil {
+		if err := root.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			refuse(w, http.StatusInternalServerError, "workspace.file_failed", err.Error(), nil)
+			return
+		}
+		flags = os.O_WRONLY | os.O_CREATE | os.O_EXCL
+	}
+	file, err := root.OpenFile(path, flags, 0o644)
+	if err != nil && errors.Is(err, fs.ErrExist) {
+		refuse(w, http.StatusConflict, "workspace.file_exists", "the file is already there", nil)
+		return
+	}
 	if err == nil {
 		_, err = file.WriteString(in.Content)
 		closeErr := file.Close()
