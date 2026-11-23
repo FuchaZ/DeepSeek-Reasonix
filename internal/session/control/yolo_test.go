@@ -1234,3 +1234,30 @@ func TestSetToolApprovalModeReportsDrainedIDs(t *testing.T) {
 		t.Fatalf("plan approval %s should still be pending", planID)
 	}
 }
+
+// A dispatch and a peer message are fresh decisions by design: full access is
+// the person's yes to tool calls, not to writing into another session on their
+// behalf. The switch must leave both cards pending, because a window that hid
+// one would leave the turn waiting for an answer nobody can give.
+func TestFullAccessLeavesThePeerCardsPending(t *testing.T) {
+	c := New(Options{})
+	dispatchID, dispatchReply := c.approval.registerDecision(permission.DispatchToProject, "b", "", true, false)
+	peerID, peerReply := c.approval.registerDecision(permission.SendPeerMessage, "s-1", "", true, false)
+
+	drained := c.SetToolApprovalMode(ToolApprovalYolo)
+	for _, id := range drained {
+		if id == dispatchID || id == peerID {
+			t.Fatalf("full access drained %s, which nobody answered", id)
+		}
+	}
+	for name, reply := range map[string]chan approvalReply{"dispatch": dispatchReply, "peer": peerReply} {
+		select {
+		case <-reply:
+			t.Fatalf("%s card was answered by the posture switch", name)
+		default:
+		}
+	}
+	if !c.approval.hasPending() {
+		t.Fatal("both cards should still be pending")
+	}
+}
