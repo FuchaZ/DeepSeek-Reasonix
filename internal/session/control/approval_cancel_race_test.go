@@ -17,7 +17,7 @@ func TestADecisionThatArrivesWithTheCancellationIsNotThrownAway(t *testing.T) {
 	c, _, _ := newInboxDispatchController(t)
 
 	// A prompt that no auto/yolo rule answers, so it really waits.
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	type reply struct {
 		allow   bool
 		session bool
@@ -73,7 +73,7 @@ func TestADecisionThatArrivesWithTheCancellationIsNotThrownAway(t *testing.T) {
 // behind would be replayed to a reconnecting window as still waiting.
 func TestAnAnsweredPromptDoesNotStayOnTheQueue(t *testing.T) {
 	c, _, _ := newInboxDispatchController(t)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(t.Context())
 	defer cancel()
 	done := make(chan struct{})
 	go func() {
