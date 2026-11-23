@@ -97,7 +97,7 @@ export type { PlanAction };
 interface Props {
   item: Extract<Item, { t: "approval" }>;
   onApprove: (itemId: string, id: string, v: ApprovalVerdict) => Promise<void>;
-  onFullAccess: (itemId: string) => Promise<void>;
+  onFullAccess: (itemId: string) => Promise<boolean>;
   onPlan: (itemId: string, id: string, action: PlanAction) => Promise<void>;
 }
 
@@ -124,11 +124,21 @@ export function ApprovalCard({ item, onApprove, onFullAccess, onPlan }: Props) {
       setSubmitting("");
     }
   };
+  const [fullAccessNotice, setFullAccessNotice] = useState(false);
   const useFullAccess = async () => {
     if (switchingFullAccess) return;
     setSwitchingFullAccess(true);
     try {
-      await onFullAccess(item.id);
+      // False means the posture moved but this card was left out of it: the
+      // call acts in the person's name on something else, so it still needs an
+      // answer. Saying so is the whole point — the button must not return to
+      // the label that invited the same click again.
+      const settled = await onFullAccess(item.id);
+      setConfirmFullAccess(false);
+      setFullAccessNotice(!settled);
+    } catch {
+      // The failure is reported where every other one is; the box stays open so
+      // the person can try again or go back.
     } finally {
       setSwitchingFullAccess(false);
     }
@@ -194,6 +204,11 @@ export function ApprovalCard({ item, onApprove, onFullAccess, onPlan }: Props) {
               </div>
             )}
             {!sealed && <RememberWhere options={remembering} target={item.a.id} tool={item.a.tool} />}
+            {!sealed && fullAccessNotice && (
+              <div className="apv-dt" data-scope="full_access_partial">
+                <span>{t("chat.full_access_is_on_this_one_still_needs")}</span>
+              </div>
+            )}
             {!sealed && confirmFullAccess && (
               <div className="apv-yolo-confirm" role="alertdialog" aria-label={t("chat.confirm_full_access_2")}>
                 <div><b>{t("chat.full_access_skips_future_tool")}</b><span>{t("chat.deny_rules_and_sandbox_boundaries")}</span></div>

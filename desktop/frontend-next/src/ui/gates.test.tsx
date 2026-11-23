@@ -46,7 +46,9 @@ describe("full access", () => {
     const { actions, port, dispatch, fail } = setup([]);
     const boom = new Error("busy");
     port.setApprovalMode.mockRejectedValueOnce(boom);
-    await actions.onFullAccess("i1");
+    // The failure is both reported and handed back: the card keeps its confirm
+    // box open on a rejection, so it has to know the call did not land.
+    await expect(actions.onFullAccess("i1")).rejects.toBe(boom);
     expect(fail).toHaveBeenCalledWith(boom);
     expect(dispatch).not.toHaveBeenCalled();
   });

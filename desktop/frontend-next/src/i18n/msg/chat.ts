@@ -104,6 +104,7 @@ export const CHAT: Messages = {
   "chat.completion_confirmed": { zh: "已确认完成", en: "Completion confirmed" },
   "chat.compress_a_chosen_part_of": { zh: "压缩当前对话中指定的一段，不删除可见历史；只在你明确要求时使用。", en: "Compress a chosen part of the current conversation without deleting visible history; used only when you ask." },
   "chat.confirm_full_access": { zh: "确认全部放行", en: "Confirm full access" },
+  "chat.full_access_is_on_this_one_still_needs": { zh: "已切换到全部放行。这一条仍需你决定：它要以你的名义动别的东西，模式切换不能代答。", en: "Full access is on. This one still needs you: it acts in your name on something else, and a posture switch does not answer that." },
   "chat.confirm_full_access_2": { zh: "确认切换全部放行", en: "Confirm full access" },
   "chat.conversation_only": { zh: "只回退对话", en: "Conversation only" },
   "chat.conversation_text_cannot_be_searched": { zh: "对话内容暂时搜不了，稍后再试", en: "Conversation text cannot be searched right now; try again shortly" },

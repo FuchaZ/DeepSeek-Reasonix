@@ -60,7 +60,7 @@ describe("RememberWhere for the questions that keep their answer somewhere other
 
 type Approval = Extract<Item, { t: "approval" }>;
 const draw = (a: Approval["a"], onApprove = vi.fn(async () => {})) =>
-  render(<ApprovalCard item={{ t: "approval", id: "i1", a }} onApprove={onApprove} onFullAccess={async () => {}} onPlan={async () => {}} />).container;
+  render(<ApprovalCard item={{ t: "approval", id: "i1", a }} onApprove={onApprove} onFullAccess={async () => false} onPlan={async () => {}} />).container;
 
 describe("the approval card's footer", () => {
   it("offers the session and always choices only where the kernel grants them", () => {

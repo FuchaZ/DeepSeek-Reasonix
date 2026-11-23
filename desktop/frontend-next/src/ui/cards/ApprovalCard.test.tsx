@@ -9,7 +9,7 @@ import type { Item } from "../../state/session";
 afterEach(cleanup);
 
 type Approval = Extract<Item, { t: "approval" }>;
-const noop = async () => {};
+const noop = async () => undefined as never;
 
 const draw = (a: Approval["a"]) =>
   render(<ApprovalCard item={{ t: "approval", id: "i1", a }} onApprove={noop} onFullAccess={noop} onPlan={noop} />).container;
@@ -39,7 +39,7 @@ describe("a setting the model asks to change", () => {
   const card = (tool: string, allowsSession: boolean) => (
     <ApprovalCard
       item={{ t: "approval", id: "i1", a: { id: "a1", tool, subject: "peers.dispatch", reason: "助手请求把设置 peers.dispatch 从 false 改为 true。", kind: "tool", fresh: true, allowsSession, allowsPersist: false } } as never}
-      onApprove={async () => {}} onFullAccess={async () => {}} onPlan={async () => {}}
+      onApprove={async () => {}} onFullAccess={async () => false} onPlan={async () => {}}
     />
   );
 

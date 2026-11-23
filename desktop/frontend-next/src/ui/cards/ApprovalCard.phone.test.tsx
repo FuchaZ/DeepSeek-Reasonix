@@ -20,7 +20,7 @@ const card = (over: Record<string, unknown> = {}) =>
   render(
     <ApprovalCard
       item={{ t: "approval", id: "i1", a: { id: "a1", tool: "bash", subject: "go test ./internal/retry/...", allowsSession: true, allowsPersist: true, ...over } } as never}
-      onApprove={async () => {}} onFullAccess={async () => {}} onPlan={async () => {}}
+      onApprove={async () => {}} onFullAccess={async () => false} onPlan={async () => {}}
     />,
   ).container;
 

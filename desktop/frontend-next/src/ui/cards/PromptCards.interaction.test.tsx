@@ -25,7 +25,7 @@ describe("decision cards", () => {
     } as Extract<Item, { t: "approval" }>;
     let release = () => {};
     const approve = vi.fn(() => new Promise<void>((resolve) => { release = resolve; }));
-    render(<ApprovalCard item={item} onApprove={approve} onFullAccess={vi.fn(pending)} onPlan={vi.fn(pending)} />);
+    render(<ApprovalCard item={item} onApprove={approve} onFullAccess={vi.fn(async () => { await pending(); return false; })} onPlan={vi.fn(pending)} />);
 
     await userEvent.click(screen.getByRole("button", { name: "允许这一次" }));
     expect(screen.getByText("正在提交…")).toBeTruthy();
@@ -43,7 +43,7 @@ describe("decision cards", () => {
     const approve = vi.fn()
       .mockImplementationOnce(async () => failed(new Error("kernel busy or unreachable")))
       .mockResolvedValueOnce(undefined);
-    render(<ApprovalCard item={item} onApprove={approve} onFullAccess={vi.fn(pending)} onPlan={vi.fn(pending)} />);
+    render(<ApprovalCard item={item} onApprove={approve} onFullAccess={vi.fn(async () => { await pending(); return false; })} onPlan={vi.fn(pending)} />);
 
     await userEvent.click(screen.getByRole("button", { name: "允许这一次" }));
     await waitFor(() => expect((screen.getByRole("button", { name: "允许这一次" }) as HTMLButtonElement).disabled).toBe(false));
@@ -61,7 +61,7 @@ describe("decision cards", () => {
       const item = {
         t: "approval", id: "row", a: { id: "gate", tool: "computer_act", subject: "com.apple.Notes", ...allows },
       } as Extract<Item, { t: "approval" }>;
-      const r = render(<ApprovalCard item={item} onApprove={approve} onFullAccess={vi.fn(pending)} onPlan={vi.fn(pending)} />);
+      const r = render(<ApprovalCard item={item} onApprove={approve} onFullAccess={vi.fn(async () => { await pending(); return false; })} onPlan={vi.fn(pending)} />);
       return { approve, ...r };
     };
     const names = () => screen.getAllByRole("button").map((b) => b.textContent);
@@ -84,7 +84,7 @@ describe("decision cards", () => {
   });
 
   it("puts full access behind an explicit second confirmation", async () => {
-    const fullAccess = vi.fn(pending);
+    const fullAccess = vi.fn(async () => { await pending(); return false; });
     const item = {
       t: "approval", id: "row", a: {
         id: "gate", tool: "bash", subject: "python - <<'PY'", reasonCode: "dynamic_bash", allowsSession: true,
