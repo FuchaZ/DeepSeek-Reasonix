@@ -9,7 +9,7 @@ GOEXE := $(shell go env GOEXE)
 # One pin for the Makefile and the CI lint job; see .github/workflows/ci.yml.
 GOLANGCI_VERSION := $(shell cat .golangci-version)
 
-.PHONY: build vet fmt lint lint-go lint-install lint-cross lint-update coverage-gate coverage-gate-update pricecheck acp-conformance check test studio-test sdk-test sdk-test-race hooks notes-draft cross clean studio
+.PHONY: build vet fmt lint lint-go lint-install lint-cross lint-update coverage-gate coverage-gate-update pricecheck acp-conformance check check-fast test studio-test sdk-test sdk-test-race hooks notes-draft cross clean studio
 
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/reasonix$(GOEXE) ./cmd/reasonix
@@ -52,6 +52,13 @@ lint-install:
 # evidence that the standards gate passed.
 check:
 	go run ./tools/repolint -changed
+
+# The everyday gate: gofmt and vet over the packages this change touched, then
+# repolint over the whole tree. The full test suite, the coverage gate,
+# golangci-lint and -race stay on CI (ci.yml `test` and `lint`), where they run
+# on every push. `make check` remains the pre-push gate.
+check-fast:
+	bash scripts/check-fast.sh
 
 lint-update:
 	go run ./tools/repolint -update
