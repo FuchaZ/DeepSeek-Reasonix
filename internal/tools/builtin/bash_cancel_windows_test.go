@@ -18,6 +18,44 @@ import (
 	"reasonix/internal/safety/sandbox"
 )
 
+// startDetachedNoConsole starts arguments detached with no console and no
+// inherited handles, leaving the pid in $p.Id. Start-Process allocates a console
+// (a visible Windows Terminal tab) and CreateNoWindow inherits this shell's
+// stdout, which holds WaitDelay open; CreateProcessW avoids both. 104 is
+// sizeof(STARTUPINFOW).
+func startDetachedNoConsole(arguments string) string {
+	return `Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class Detached {
+  [StructLayout(LayoutKind.Sequential, CharSet=CharSet.Unicode)]
+  public struct SI {
+    public int cb; public string lpReserved; public string lpDesktop; public string lpTitle;
+    public int dwX, dwY, dwXSize, dwYSize, dwXCountChars, dwYCountChars, dwFillAttribute, dwFlags;
+    public short wShowWindow; public short cbReserved2;
+    public IntPtr lpReserved2, hStdInput, hStdOutput, hStdError;
+  }
+  [StructLayout(LayoutKind.Sequential)] public struct PI { public IntPtr hProcess, hThread; public int pid, tid; }
+  [DllImport("kernel32.dll", SetLastError=true, CharSet=CharSet.Unicode, EntryPoint="CreateProcessW")]
+  public static extern bool CreateProcess([MarshalAs(UnmanagedType.LPWStr)] string app,
+    [MarshalAs(UnmanagedType.LPWStr)] string cmd, IntPtr pa, IntPtr ta,
+    bool inherit, uint flags, IntPtr env, [MarshalAs(UnmanagedType.LPWStr)] string cwd, ref SI si, out PI pi);
+  [DllImport("kernel32.dll", SetLastError=true)] public static extern bool CloseHandle(IntPtr h);
+}
+'@
+$si = New-Object Detached+SI
+$si.cb = 104
+$pi = New-Object Detached+PI
+$ok = [Detached]::CreateProcess([NullString]::Value, 'powershell.exe ` + arguments + `',
+  [IntPtr]::Zero, [IntPtr]::Zero, $false, 0x08000000, [IntPtr]::Zero, [NullString]::Value, [ref]$si, [ref]$pi)
+if (-not $ok) { throw "start the child: $([System.Runtime.InteropServices.Marshal]::GetLastWin32Error())" }
+[void][Detached]::CloseHandle($pi.hProcess); [void][Detached]::CloseHandle($pi.hThread)
+$p = [pscustomobject]@{ Id = $pi.pid }
+`
+}
+
+const hiddenSleeperArgs = `-NoProfile -NonInteractive -Command "Start-Sleep -Seconds %d"`
+
 func TestBashCancelKillsWindowsChildProcessTree(t *testing.T) {
 	powershell, err := exec.LookPath("powershell")
 	if err != nil {
@@ -27,7 +65,7 @@ func TestBashCancelKillsWindowsChildProcessTree(t *testing.T) {
 	pidFile := filepath.Join(tmp, "child.pid")
 	quotedPIDFile := strings.ReplaceAll(pidFile, "'", "''")
 	command := fmt.Sprintf(
-		"$p = Start-Process -FilePath powershell -ArgumentList '-NoProfile','-WindowStyle','Hidden','-NonInteractive','-Command','Start-Sleep -Seconds 120' -PassThru; "+
+		startDetachedNoConsole(fmt.Sprintf(hiddenSleeperArgs, 120))+
 			"Set-Content -LiteralPath '%s' -Value $p.Id; "+
 			"Start-Sleep -Seconds 120",
 		quotedPIDFile,
@@ -74,7 +112,7 @@ func TestBashWindowsReapsChildAfterForegroundShellExit(t *testing.T) {
 	pidFile := filepath.Join(tmp, "child.pid")
 	quotedPIDFile := strings.ReplaceAll(pidFile, "'", "''")
 	command := fmt.Sprintf(
-		"$p = Start-Process -FilePath powershell -ArgumentList '-NoProfile','-WindowStyle','Hidden','-NonInteractive','-Command','Start-Sleep -Seconds 120' -PassThru; "+
+		startDetachedNoConsole(fmt.Sprintf(hiddenSleeperArgs, 120))+
 			"Set-Content -LiteralPath '%s' -Value $p.Id",
 		quotedPIDFile,
 	)
