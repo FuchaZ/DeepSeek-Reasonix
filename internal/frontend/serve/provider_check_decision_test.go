@@ -117,10 +117,10 @@ func TestCheckProviderNamesWhyADecisionSourceFailed(t *testing.T) {
 }
 
 func TestCheckProviderDecisionSourceUnreachable(t *testing.T) {
-	srv, _ := decisionServer(t, func(http.ResponseWriter, *http.Request) {})
-	url := srv.URL
-	srv.Close()
-	got := checkSavedDecisionProvider(t, url)
+	// Port 1 on loopback is never bound by these tests, so the refusal is the
+	// connection's own. Closing a httptest server frees its port for whichever
+	// test asks next, and the check then answers for that server instead.
+	got := checkSavedDecisionProvider(t, "http://127.0.0.1:1")
 	if got["ok"] == true || got["code"] != "provider.probe.unreachable" {
 		t.Fatalf("check = %v; want provider.probe.unreachable", got)
 	}
