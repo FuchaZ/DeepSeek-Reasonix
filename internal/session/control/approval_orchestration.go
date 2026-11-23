@@ -75,7 +75,21 @@ func (c *Controller) ApproveFrom(id string, allow, session, persist bool, via *p
 		}
 	}
 	c.recordDecisionReceipt(pending, outcome, via)
+	// A session grant is the person's decision, recorded where the click lands:
+	// a turn that died between the answer and the reply must not take it, and a
+	// setting keeps its own grants per preference rather than a tool-wide one.
+	if allow && session && !keepsOwnGrants(pending.tool) {
+		if grantsSession, _ := approvalGrantsForRequest(pending.tool, pending.fresh, pending.requireHuman); grantsSession && pending.tool != planApprovalTool {
+			c.approval.grantSession(pending.tool, pending.subject)
+		}
+	}
 	pending.reply <- approvalReply{allow: allow, session: session, persist: persist} // buffered, never blocks
+}
+
+// keepsOwnGrants reports a card whose answer is recorded elsewhere, so one yes
+// cannot stand in for the next card of the same tool.
+func keepsOwnGrants(tool string) bool {
+	return tool == SettingApprovalTool || tool == SettingElevatedApprovalTool
 }
 
 // ResolvePlanDecision answers the Plan card without collapsing revise and exit
@@ -646,6 +660,14 @@ func (c *Controller) requestApprovalDecision(ctx context.Context, req approvalRe
 	case r := <-reply:
 		return r, nil
 	case <-waitCtx.Done():
+		// Both channels can be ready at once: the answer may be sitting in the
+		// buffer while this branch runs. It was decided before the turn died,
+		// so take it rather than reporting the cancel over it.
+		select {
+		case r := <-reply:
+			return r, nil
+		default:
+		}
 		c.approval.cancel(id)
 		return approvalReply{}, waitCtx.Err()
 	}
