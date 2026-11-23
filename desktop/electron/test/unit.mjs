@@ -2781,7 +2781,7 @@ test("input that carries a point is scaled with the page or refused, never sent 
 // create() cannot be watched going to sleep. The module is dropped from the
 // require cache first, because the suites above have already loaded it against
 // their own bare mock, and a cached module never loads again.
-function sleepingViews({ sleepAfterMs = 5, sweepMs = 5, maxAwake = 6, capturePage, failSpawns = 0, hang = null } = {}) {
+function sleepingViews({ sleepAfterMs = 5, freezeAfterMs, sweepMs = 5, maxAwake = 6, capturePage, failSpawns = 0, hang = null } = {}) {
   const { EventEmitter } = require("node:events");
   const created = [];
   const loads = [];
@@ -2795,6 +2795,7 @@ function sleepingViews({ sleepAfterMs = 5, sweepMs = 5, maxAwake = 6, capturePag
       // the helper's `created` array already hands back.
       this.audible = false;
       this.devTools = false;
+      this.navigationHistory = { canGoBack: () => false, canGoForward: () => false, goBack() {}, goForward() {} };
       const contents = this;
       this.debugger = {
         attach() {},
@@ -2820,8 +2821,17 @@ function sleepingViews({ sleepAfterMs = 5, sweepMs = 5, maxAwake = 6, capturePag
     loadURL(url) {
       this.url = url;
       loads.push(url);
+      this.emit("did-finish-load");
       return Promise.resolve();
     }
+    async executeJavaScript(code) {
+      this.injected = (this.injected ?? []).concat(code);
+      return (code.match(/"selector"/g) || []).length;
+    }
+    reload() {
+      this.reloads = (this.reloads ?? 0) + 1;
+    }
+    stop() {}
     getURL() {
       return this.url;
     }
@@ -2876,7 +2886,7 @@ function sleepingViews({ sleepAfterMs = 5, sweepMs = 5, maxAwake = 6, capturePag
     getContentBounds: () => ({ width: 1200, height: 800 }),
     contentView: { addChildView() {}, removeChildView() {} },
   };
-  const views = new BrowserViews({ win, kernelOrigin: "http://127.0.0.1:1", sleepAfterMs, sweepMs, maxAwake });
+  const views = new BrowserViews({ win, kernelOrigin: "http://127.0.0.1:1", sleepAfterMs, freezeAfterMs, sweepMs, maxAwake });
   views.keepKeyboard = () => {};
   const page = () => {
     const events = { closed: 0, popups: [], downloads: [] };
@@ -3214,6 +3224,153 @@ test("the shell reads the sleep threshold from the preference", () => {
   assert.equal(pageSleepAfterMs({}), Infinity, "off until the person turns it on");
   assert.equal(pageSleepAfterMs({ "rx-page-sleep": "on" }), PAGE_SLEEP_MS);
   assert.equal(pageSleepAfterMs({ "rx-page-sleep": "garbage" }), Infinity);
+});
+
+test("an idle page is frozen before it is slept, keeping its DOM", async (t) => {
+  const { views, created, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), true, "the idle page is frozen");
+  assert.equal(views.asleep(handle.targetId), null, "and still not asleep");
+  const contents = created[0].webContents;
+  assert.equal(contents.isDestroyed(), false, "its renderer keeps the DOM");
+  assert.deepEqual(contents.commands.at(-1), ["Page.setWebLifecycleState", { state: "frozen" }]);
+});
+
+test("a call to a frozen page thaws it in place, without a reload", async (t) => {
+  const { views, created, loads, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), true);
+  await handle.send("Runtime.evaluate", { expression: "1" });
+  assert.equal(views.frozen(handle.targetId), false, "the call thawed the page");
+  assert.equal(created.length, 1, "no view was rebuilt");
+  assert.equal(loads.length, 1, "and the page was not loaded again");
+  const said = created[0].webContents.commands.map(([method]) => method);
+  assert.deepEqual(said.slice(-2), ["Page.setWebLifecycleState", "Runtime.evaluate"], "the thaw lands before the call that asked for it");
+});
+
+test("a show thaws the frozen page it is asked for", async (t) => {
+  const { views, created, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), true);
+  views.show(handle.targetId, { x: 0, y: 0, width: 600, height: 400 });
+  assert.equal(views.frozen(handle.targetId), false, "the page on screen is thawed");
+  assert.deepEqual(created[0].webContents.commands.at(-1), ["Page.setWebLifecycleState", { state: "active" }]);
+});
+
+test("a control action thaws a frozen page before it lands", async (t) => {
+  const { views, created, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), true);
+  views.control(handle.targetId, "reload");
+  assert.equal(views.frozen(handle.targetId), false, "the action thawed the page");
+  await later(20);
+  assert.equal(created[0].webContents.reloads, 1, "the reload landed on the thawed page");
+});
+
+test("a frozen page graduates to sleep past the sleep threshold", async (t) => {
+  const { views, created, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), true);
+  views.entries.get(handle.targetId).lastTouch = 1;
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), false, "the frozen state is gone with the page");
+  assert.deepEqual(views.asleep(handle.targetId), { url: "https://page.test/" }, "the tombstone is what remains");
+  assert.equal(created[0].webContents.isDestroyed(), true, "the renderer was released");
+});
+
+test("the freeze never takes the page the person is looking at", async (t) => {
+  const { views, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  views.show(handle.targetId, { x: 0, y: 0, width: 600, height: 400 });
+  views.entries.get(handle.targetId).lastTouch = Date.now() - 30;
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), false, "the shown page is not frozen");
+  assert.equal(views.asleep(handle.targetId), null, "nor asleep");
+});
+
+test("a page with a call in flight is not frozen", async (t) => {
+  const { views, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000, hang: "Runtime.evaluate" });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  const asked = handle.send("Runtime.evaluate", { expression: "1" });
+  asked.catch(() => {});
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), false, "the open call holds the page unfrozen");
+});
+
+test("with the sleeping setting off, nothing freezes either", async (t) => {
+  const { views, page } = sleepingViews({ sleepAfterMs: Infinity, sweepMs: 5 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  views.entries.get(handle.targetId).lastTouch = 1;
+  await later(40);
+  assert.equal(views.frozen(handle.targetId), false, "off means the page is left alone");
+});
+
+test("annotate draws a page's marks and keeps them for the next load", async (t) => {
+  const { views, created, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  const marks = [
+    { id: "a", selector: "#title", note: "needs a rewrite" },
+    { id: "b", selector: "main > p", note: "" },
+  ];
+  assert.equal(await views.annotate(handle.targetId, marks), 2, "both marks found an element");
+  assert.deepEqual(views.marks(handle.targetId), marks, "the marks are kept on the entry");
+  const contents = created[0].webContents;
+  assert.match(contents.injected.at(-1), /needs a rewrite/, "the note went into the page");
+  const injected = contents.injected.length;
+  contents.emit("did-finish-load");
+  assert.equal(contents.injected.length, injected + 1, "a load draws the marks again");
+  assert.deepEqual(await views.annotate(handle.targetId, [{ id: "c", selector: "#x", note: "only" }]), 1, "a new layer replaces the old");
+  assert.equal(views.marks(handle.targetId).length, 1);
+});
+
+test("marks survive a sleep and are drawn again on the page it comes back as", async (t) => {
+  const { views, created, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 20 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  await views.annotate(handle.targetId, [{ id: "a", selector: "#t", note: "here" }]);
+  await later(40);
+  assert.ok(views.asleep(handle.targetId));
+  assert.equal(views.marks(handle.targetId).length, 1, "the tombstone keeps the marks");
+  await handle.send("Runtime.evaluate", { expression: "1" });
+  const risen = created[1].webContents;
+  assert.match(risen.injected.at(-1), /here/, "the wake's load drew the marks again");
+});
+
+test("annotate on a target that is gone answers with nothing landed", async (t) => {
+  const { views } = sleepingViews();
+  t.after(() => views.closeAll());
+  assert.equal(await views.annotate("no-such-target", [{ id: "a", selector: "#t", note: "x" }]), 0);
+  assert.equal(views.marks("no-such-target").length, 0);
+});
+
+test("marks the page cannot carry are dropped, not drawn", async (t) => {
+  const { views, created, page } = sleepingViews({ freezeAfterMs: 5, sleepAfterMs: 60_000 });
+  t.after(() => views.closeAll());
+  const { handle } = page();
+  const landed = await views.annotate(handle.targetId, [
+    { id: "a", selector: "#t", note: "fine" },
+    { id: "b", note: "no anchor" },
+    { selector: 7, note: "bad anchor" },
+    "junk",
+    null,
+  ]);
+  assert.equal(landed, 1);
+  assert.equal(views.marks(handle.targetId).length, 1);
+  assert.match(created[0].webContents.injected.at(-1), /fine/);
 });
 
 const { setUnreadBadge } = require("../src/badge.js");

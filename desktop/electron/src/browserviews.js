@@ -4,6 +4,7 @@ const { WebContentsView, session } = require("electron");
 const { installPaneReload } = require("./reload");
 const { guestNavigationAllowed, typed } = require("./browserguard");
 const { ARM, STOP } = require("./elementpick");
+const { MARK } = require("./annotationmark");
 const { InputWake } = require("./inputwake");
 const { KeyboardKeeper } = require("./keyboard");
 
@@ -23,6 +24,10 @@ const PAGE_RADIUS = 8;
 
 // How many pages may stay asleep at once; past this the oldest is buried.
 const SLEPT_LIMIT = 18;
+
+// How long a page may idle before its lifecycle is frozen: the DOM stays and
+// the view's last frame stands for it, so a wake is a thaw, not a reload.
+const FREEZE_AFTER_MS = 2 * 60_000;
 
 // How long a pick waits for the person. Past it the page is left as it was
 // found: a picker left armed swallows every click on the page, so the wait is
@@ -53,7 +58,7 @@ const ENABLE_SHAPE = /^[A-Za-z]+\.enable$/;
 // view on its own partition, never the session the window's credential lives in.
 // An unwatched page is parked at a one-pixel corner; an idle one sleeps whole.
 class BrowserViews {
-  constructor({ win, kernelOrigin, sleepAfterMs = 15 * 60_000, sweepMs = 60_000, maxAwake = 6 }) {
+  constructor({ win, kernelOrigin, sleepAfterMs = 15 * 60_000, freezeAfterMs, sweepMs = 60_000, maxAwake = 6 }) {
     this.win = win;
     this.kernelOrigin = kernelOrigin;
     this.entries = new Map();
@@ -69,6 +74,9 @@ class BrowserViews {
     // sweep: a slept page keeps its entry and its targetId, so the kernel's
     // handle outlives the sleep.
     this.sleepAfterMs = sleepAfterMs;
+    // The freeze tier is the sleep switch's first step: off means neither, on
+    // freezes long before it sleeps.
+    this.freezeAfterMs = freezeAfterMs ?? (Number.isFinite(sleepAfterMs) ? Math.min(FREEZE_AFTER_MS, sleepAfterMs) : Infinity);
     this.maxAwake = maxAwake;
     this.sweeper = setInterval(() => this.sweep(), sweepMs);
     // The timer holds no process open by itself: the Studio's loop is kept by
@@ -148,7 +156,9 @@ class BrowserViews {
       scale: 1,
       lastTouch: Date.now(),
       slept: null,
+      frozen: false,
       sleeping: false,
+      marks: [],
       rising: null,
       pending: new Set(),
       showing: false,
@@ -187,9 +197,9 @@ class BrowserViews {
       send: (method, params) => {
         entry.lastTouch = Date.now();
         // A slept page is woken first and the call dispatched to what it comes
-        // back as; a page still rising takes the call when it has landed, since
-        // mid-load answers the page it was.
-        const rising = entry.slept ? this.wake(entry) : entry.rising;
+        // back as; a frozen one is thawed the same way; a page still rising
+        // takes the call when it has landed, since mid-load answers the page it was.
+        const rising = entry.slept || entry.frozen ? this.wake(entry) : entry.rising;
         if (rising) return rising.then(() => this.dispatch(entry, method, params));
         return this.dispatch(entry, method, params);
       },
@@ -335,6 +345,18 @@ class BrowserViews {
     });
   }
 
+  // freezePage holds a page still without releasing it: the lifecycle stops,
+  // the DOM stays, and the view's last frame stands for the page. Everything
+  // maySleep protects — the person's eye, a dialog, an open call — stays live.
+  freezePage(entry) {
+    if (entry.frozen || entry.slept || entry.closed || entry.rising) return;
+    const contents = entry.view && entry.view.webContents;
+    if (!contents || contents.isDestroyed() || entry.pending.size) return;
+    if (!this.maySleep(entry)) return;
+    entry.frozen = true;
+    contents.debugger.sendCommand("Page.setWebLifecycleState", { state: "frozen" }).catch(() => {});
+  }
+
   // sleep puts a page away whole: its renderer is closed, and what is kept is
   // the address it was on and a picture to draw while it is gone. Nothing the
   // kernel holds changes, so its handle survives and the next call wakes it.
@@ -369,6 +391,7 @@ class BrowserViews {
     entry.attached = false;
     if (!contents.isDestroyed()) contents.close();
     entry.view = null;
+    entry.frozen = false;
     entry.at = null;
     entry.panel = null;
     entry.override = null;
@@ -390,11 +413,25 @@ class BrowserViews {
     if (tombs > SLEPT_LIMIT && oldest) oldest.close();
   }
 
-  // wake raises a slept page: the view is built again on the address it dozed
-  // off on, its viewport and the kernel's enabled domains are said again to the
-  // new session, and the promise answers only once the page has loaded.
+  // wake raises a page that is not running: a slept one is built again on the
+  // address it dozed off on, its viewport and the kernel's enabled domains are
+  // said again to the new session; a frozen one is thawed with its DOM kept.
+  // The promise answers only once the page can take commands again.
   wake(entry) {
-    if (!entry.slept) return entry.rising || Promise.resolve();
+    if (!entry.slept) {
+      if (!entry.frozen) return entry.rising || Promise.resolve();
+      if (entry.rising) return entry.rising;
+      entry.frozen = false;
+      const contents = entry.view && entry.view.webContents;
+      if (!contents || contents.isDestroyed()) return Promise.resolve();
+      entry.rising = contents.debugger
+        .sendCommand("Page.setWebLifecycleState", { state: "active" })
+        .catch(() => {})
+        .finally(() => {
+          entry.rising = null;
+        });
+      return entry.rising;
+    }
     entry.url = entry.slept.url;
     entry.slept = null;
     // The sleep has landed, so whatever death its old contents still reports
@@ -424,14 +461,19 @@ class BrowserViews {
     return true;
   }
 
-  // The sweep puts pages nobody has touched to sleep. One page's failure must
-  // not take the timer down with it: the pages after it are still paying.
+  // The sweep freezes the pages nobody has touched and sleeps those past the
+  // sleep threshold. One page's failure must not take the timer down with it:
+  // the pages after it are still paying.
   sweep() {
     const now = Date.now();
     for (const entry of this.entries.values()) {
       try {
         if (entry.slept || entry.sleeping) continue;
-        if (now - entry.lastTouch <= this.sleepAfterMs) continue;
+        const idle = now - entry.lastTouch;
+        if (idle <= this.sleepAfterMs) {
+          if (!entry.frozen && idle > this.freezeAfterMs) this.freezePage(entry);
+          continue;
+        }
         if (!this.maySleep(entry)) continue;
         this.sleep(entry).catch(() => {});
       } catch {}
@@ -441,13 +483,46 @@ class BrowserViews {
   // A preference saved while the app runs takes effect on the next sweep.
   setSleepAfterMs(ms) {
     this.sleepAfterMs = ms;
+    this.freezeAfterMs = Number.isFinite(ms) ? Math.min(FREEZE_AFTER_MS, ms) : Infinity;
   }
 
-  // What a test may read, and nothing more: whether a target is asleep, and
-  // the address it is asleep on.
+  // What a test may read, and nothing more: whether a target is asleep, the
+  // address it is asleep on, and whether one is frozen.
   asleep(targetId) {
     const entry = this.entries.get(targetId);
     return entry && entry.slept ? { url: entry.slept.url } : null;
+  }
+
+  frozen(targetId) {
+    const entry = this.entries.get(targetId);
+    return !!(entry && entry.frozen);
+  }
+
+  // What a test may read: the marks a target is carrying.
+  marks(targetId) {
+    const entry = this.entries.get(targetId);
+    return entry ? entry.marks.slice() : [];
+  }
+
+  // annotate replaces one page's annotation layer. The marks stay on the entry
+  // across sleeps and navigations, and are drawn again wherever the page ends
+  // up, so the person sees them as long as the tab lives.
+  annotate(targetId, marks) {
+    const entry = this.entries.get(targetId);
+    if (!entry) return Promise.resolve(0);
+    entry.marks = Array.isArray(marks)
+      ? marks.filter((mark) => mark && typeof mark.selector === "string" && typeof mark.note === "string")
+      : [];
+    return this.applyMarks(entry);
+  }
+
+  applyMarks(entry) {
+    const contents = entry.view && entry.view.webContents;
+    if (!contents || contents.isDestroyed()) return Promise.resolve(0);
+    return contents
+      .executeJavaScript(MARK(entry.marks), false)
+      .then((count) => (Number.isFinite(count) ? count : 0))
+      .catch(() => 0);
   }
 
   // show draws one page over the rectangle the page reserved for it, in window
@@ -474,6 +549,9 @@ class BrowserViews {
       }
       return;
     }
+    // A frozen page keeps its view and its last frame: it is thawed where it
+    // stands rather than retried like a slept one.
+    if (entry.frozen) this.wake(entry).catch(() => {});
     const at = {
       x: Math.round(rect.x),
       y: Math.round(rect.y),
@@ -634,10 +712,14 @@ class BrowserViews {
   control(targetId, action) {
     const entry = this.entries.get(targetId);
     const view = entry?.view;
-    if (!view) {
-      // A slept page has no contents to steer; waking it first is what makes
-      // the action land on the page it comes back as, instead of nowhere.
-      if (entry?.slept) this.wake(entry).then(() => this.control(targetId, action)).catch(() => {});
+    // The person's own hand on the toolbar keeps the page as warm as a call
+    // from the kernel does: without this the sweep refreezes it right after.
+    if (entry) entry.lastTouch = Date.now();
+    if (!view || entry?.frozen) {
+      // A slept page has no contents to steer and a frozen one is taking no
+      // commands; waking it first is what makes the action land on the page it
+      // comes back as, instead of nowhere.
+      if (entry?.slept || entry?.frozen) this.wake(entry).then(() => this.control(targetId, action)).catch(() => {});
       return;
     }
     const contents = view.webContents;
@@ -709,7 +791,7 @@ class BrowserViews {
     // A pick draws inside the page that is on screen; a page that is not shown
     // would pick behind the one the person is looking at.
     if (entry.targetId !== this.shown) return { cancelled: true, reason: "hidden" };
-    if (entry.slept) await this.wake(entry).catch(() => {});
+    if (entry.slept || entry.frozen) await this.wake(entry).catch(() => {});
     const contents = entry.view && entry.view.webContents;
     if (!contents || contents.isDestroyed()) return { cancelled: true, reason: "gone" };
     // A second pick on the same page replaces the first: one picker, one
@@ -862,6 +944,7 @@ class BrowserViews {
       this.leave(entry);
     });
     contents.on("did-stop-loading", () => this.settle(entry));
+    contents.on("did-finish-load", () => void this.applyMarks(entry));
     contents.on("did-fail-load", (_event, code, description, url, isMainFrame) => {
       // -3 is ERR_ABORTED: a navigation replaced by another, or stopped. A
       // typed address reports through loadTyped, which may still retry it.

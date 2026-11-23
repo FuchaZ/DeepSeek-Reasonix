@@ -69,6 +69,8 @@ contextBridge.exposeInMainWorld("reasonixHost", {
   // answer is the element they pointed at, or that they picked nothing.
   pickBrowserElement: (targetId, labels) => ipcRenderer.invoke("browser:pick", String(targetId), labels),
   cancelBrowserPick: (targetId) => ipcRenderer.invoke("browser:pick-cancel", String(targetId)),
+  // Replace one page's annotation marks and answer how many landed on an element.
+  annotateBrowserView: (targetId, marks) => ipcRenderer.invoke("browser:annotate", String(targetId), marks),
   verifyBrowserElement: (targetId, selector) => ipcRenderer.invoke("browser:verify", String(targetId), String(selector)),
   // Why a page did not load, and a login a page or proxy asks for. The password
   // goes back to this window's main process only; the kernel never sees it.

@@ -44,6 +44,7 @@ import { WorkbenchFileBar, type FileMode } from "./WorkbenchFileBar";
 import { OpenWithMenu } from "./OpenWithMenu";
 import type { HubPort } from "../port/hub";
 import { useHtmlPreview } from "./useHtmlPreview";
+import { usePageAnnotations } from "./usePageAnnotations";
 import { setShowsHiddenFiles, showsHiddenFiles } from "../state/prefs";
 import { BrowserFullToggle } from "./BrowserFullToggle";
 import { documentView, sourceView } from "./document/registry";
@@ -133,6 +134,7 @@ export function WorkbenchPanel({
   agentRequest?: AgentRequest;
 }) {
   const preview = useHtmlPreview(port, allTabs, remote);
+  const annotator = usePageAnnotations(port);
   const tabs = preview.tabs;
   const [files, setFiles] = useState<string[]>([]),
     [directories, setDirectories] = useState<string[]>([]),
@@ -632,6 +634,7 @@ export function WorkbenchPanel({
               tabs={[active.tab]}
               shown={shown && !launcher}
               showTabs={false} editPage={preview.edit}
+              annotate={annotator}
               onOpenDocument={(path) => port.openDocument(path)}
             />
           )}
@@ -681,7 +684,7 @@ export function WorkbenchPanel({
                 </Suspense>
               ) : mode === "preview" ? (
                 previewTab ? (
-                  <AgentBrowserPanel tabs={[previewTab]} shown={shown && !launcher} showTabs={false} onOpenDocument={(path) => port.openDocument(path)} editPage={preview.edit} />
+                  <AgentBrowserPanel tabs={[previewTab]} shown={shown && !launcher} showTabs={false} onOpenDocument={(path) => port.openDocument(path)} editPage={preview.edit} annotate={annotator} />
                 ) : (
                   <div className="workbench-empty">{t("common.loading")}</div>
                 )

@@ -128,6 +128,8 @@ export interface HostPort {
   /** Arm the page's picker and wait for the element pointed at, or for why none was. */
   pickBrowserElement(target: string, labels: BrowserPickLabels): Promise<BrowserPick>;
   cancelBrowserPick(target: string): void;
+  /** Replace one page's annotation layer; answers how many marks found an element. */
+  annotateBrowserView(target: string, marks: PageMark[]): Promise<number>;
 }
 
 /** Why the shell will not load a typed address: a scheme it never opens, or a
@@ -192,6 +194,13 @@ export interface PickedElement {
   style?: Partial<Record<"color" | "backgroundColor" | "fontSize" | "fontWeight", string>>;
 }
 
+/** One annotation mark the shell draws over a page. */
+export interface PageMark {
+  id: string;
+  selector: string;
+  note: string;
+}
+
 /** The words the page-side hover card draws; the window owns them. */
 export type BrowserPickLabels = Record<"color" | "background" | "font" | "frame" | "shadow", string>;
 
@@ -240,6 +249,7 @@ interface ElectronBridge {
   trustBrowserCertificate?(target: string): Promise<boolean>;
   pickBrowserElement?(target: string, labels: BrowserPickLabels): Promise<BrowserPick>;
   cancelBrowserPick?(target: string): Promise<boolean>;
+  annotateBrowserView?(target: string, marks: PageMark[]): Promise<number>;
 }
 
 const bridge = () => (window as unknown as { reasonixHost?: ElectronBridge }).reasonixHost;
@@ -387,6 +397,9 @@ class ElectronHost implements HostPort {
   cancelBrowserPick(target: string) {
     void this.api.cancelBrowserPick?.(target);
   }
+  annotateBrowserView(target: string, marks: PageMark[]): Promise<number> {
+    return this.api.annotateBrowserView?.(target, marks) ?? Promise.resolve(0);
+  }
 }
 
 class BrowserHost implements HostPort {
@@ -494,6 +507,9 @@ class BrowserHost implements HostPort {
     return Promise.resolve({ cancelled: true, reason: "gone" });
   }
   cancelBrowserPick() {}
+  annotateBrowserView(): Promise<number> {
+    return Promise.resolve(0);
+  }
 }
 
 // The phone shell injects its interface after the page loads — a WebView has no

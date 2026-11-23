@@ -10,6 +10,8 @@ import { BrowserFailure } from "./BrowserFailure";
 import { AgentPageNote } from "./AgentPageNote";
 import { readPageTabs } from "./browser_open";
 import { BrowserElementEdit } from "./BrowserElementEdit";
+import { BrowserAnnotate } from "./BrowserAnnotate";
+import { marksOf, type AnnotateCapability } from "./annotations";
 import type { PageEditor } from "./pageedit";
 
 const START = "reasonix://start";
@@ -183,7 +185,7 @@ export function localFilePath(url: string): string {
 
 type OpenDocument = (path: string) => Promise<void>;
 
-export function AgentBrowserPanel(props: { tabs: BrowserTab[]; shown: boolean; showTabs?: boolean; onOpenDocument?: OpenDocument; editPage?: PageEditor }) {
+export function AgentBrowserPanel(props: { tabs: BrowserTab[]; shown: boolean; showTabs?: boolean; onOpenDocument?: OpenDocument; editPage?: PageEditor; annotate?: AnnotateCapability }) {
   if (host().drawsBrowserViews()) return <AgentBrowserView {...props} />;
   const current = props.tabs.find((tab) => tab.active) ?? props.tabs[0];
   return <div className="bpanel">{current && <AgentPageNote tab={current} />}</div>;
@@ -196,7 +198,7 @@ const PICK_ENDED: Partial<Record<BrowserPickEnd, () => string>> = {
   gone: () => t("workbench.pick_ended_gone"),
 };
 
-function AgentBrowserView({ tabs, shown, showTabs = true, onOpenDocument, editPage }: { tabs: BrowserTab[]; shown: boolean; showTabs?: boolean; onOpenDocument?: OpenDocument; editPage?: PageEditor }) {
+function AgentBrowserView({ tabs, shown, showTabs = true, onOpenDocument, editPage, annotate }: { tabs: BrowserTab[]; shown: boolean; showTabs?: boolean; onOpenDocument?: OpenDocument; editPage?: PageEditor; annotate?: AnnotateCapability }) {
   const slot = useRef<HTMLDivElement>(null);
   const [picked, setPicked] = useState("");
   const current = tabs.find((tab) => tab.target === picked) ?? tabs.find((tab) => tab.active) ?? tabs[0];
@@ -297,6 +299,19 @@ function AgentBrowserView({ tabs, shown, showTabs = true, onOpenDocument, editPa
     setPicking(false);
     if (target) host().cancelBrowserPick(target);
   }, [target, current?.url]);
+
+  const pageUrl = current?.url ?? "";
+  const annotations = annotate?.annotations;
+  // The store is read the first time a page needs its marks; what is drawn
+  // follows the notes or the page from then on.
+  useEffect(() => {
+    if (!target || !annotate) return;
+    void annotate.ensure();
+  }, [annotate, target]);
+  useEffect(() => {
+    if (!target || !annotate) return;
+    void host().annotateBrowserView(target, marksOf(annotations ?? [], pageUrl));
+  }, [annotate, annotations, target, pageUrl]);
   const pick = () => {
     if (!target) return;
     if (picking) {
@@ -378,6 +393,15 @@ function AgentBrowserView({ tabs, shown, showTabs = true, onOpenDocument, editPa
           onClose={() => setElement(null)}
         />
       )}
+      {element && annotate && (
+        <BrowserAnnotate
+          element={element}
+          annotations={annotate.annotations.filter((one) => one.pageUrl === pageUrl)}
+          onSave={(note) => annotate.save(element, note, pageUrl)}
+          onRemove={annotate.remove}
+          onSubmit={annotate.submit}
+        />
+      )}
       {refused && (
         <p className="studio-browser-error" role="alert">
           {refused === "network_file" ? t("workbench.a_network_share_cannot_be") : t("workbench.enter_a_valid_http_or")}
@@ -399,6 +423,6 @@ function AgentBrowserView({ tabs, shown, showTabs = true, onOpenDocument, editPa
   );
 }
 
-export function BrowserPanel(props: ManualProps | { tabs: BrowserTab[]; shown: boolean; onOpenDocument?: OpenDocument; editPage?: PageEditor }) {
+export function BrowserPanel(props: ManualProps | { tabs: BrowserTab[]; shown: boolean; onOpenDocument?: OpenDocument; editPage?: PageEditor; annotate?: AnnotateCapability }) {
   return "tabs" in props ? <AgentBrowserPanel {...props} /> : <ManualBrowserPanel {...props} />;
 }

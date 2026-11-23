@@ -459,6 +459,9 @@ ipcMain.handle("browser:pick", (event, targetId, labels) =>
 ipcMain.handle("browser:pick-cancel", (event, targetId) =>
   fromWindow(event) ? (browserViews?.cancelPick(String(targetId)) ?? false) : false,
 );
+ipcMain.handle("browser:annotate", (event, targetId, marks) =>
+  fromWindow(event) ? (browserViews?.annotate(String(targetId), marks) ?? 0) : 0,
+);
 ipcMain.handle("browser:verify", (event, targetId, selector) =>
   fromWindow(event) ? (browserViews?.verify(String(targetId), String(selector)) ?? { found: false }) : { found: false },
 );
