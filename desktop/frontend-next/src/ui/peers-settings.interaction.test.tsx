@@ -169,16 +169,26 @@ describe("remembering a project when a held message is let through", () => {
 });
 
 describe("what another session may send", () => {
-  it("offers the three answers and saves the one that is picked", async () => {
+  it("offers the four answers and saves the one that is picked", async () => {
     const { port, save } = portWith(settings({ enabled: true, dispatch: true }));
     render(<Messages port={port} />);
     const group = await screen.findByRole("radiogroup", { name: /别的会话发来时|another session writes/ });
     const answers = within(group).getAllByRole("radio");
-    expect(answers.map((b) => b.getAttribute("data-value"))).toEqual(["ask", "dispatch", "always"]);
+    expect(answers.map((b) => b.getAttribute("data-value"))).toEqual(["ask", "dispatch", "always", "never"]);
     expect(answers[1]!.getAttribute("aria-checked")).toBe("true");
 
     await userEvent.click(answers[2]!);
     expect(save).toHaveBeenCalledExactlyOnceWith({ incoming: "always" });
+  });
+
+  it("saves refusing every message", async () => {
+    const { port, save } = portWith(settings({ enabled: true, dispatch: true }));
+    render(<Messages port={port} />);
+    const group = await screen.findByRole("radiogroup", { name: /别的会话发来时|another session writes/ });
+    const answers = within(group).getAllByRole("radio");
+
+    await userEvent.click(answers[3]!);
+    expect(save).toHaveBeenCalledExactlyOnceWith({ incoming: "never" });
   });
 
   it("shows which answer is in force", async () => {

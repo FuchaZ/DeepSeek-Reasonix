@@ -12,8 +12,8 @@ import (
 var (
 	// ErrPeerProjectInvalid is a release project that is not an absolute path.
 	ErrPeerProjectInvalid = errors.New("a released project must be an absolute folder path")
-	// ErrPeerIncomingInvalid is an answer that is not one of the three.
-	ErrPeerIncomingInvalid = errors.New(`incoming must be "ask", "dispatch" or "always"`)
+	// ErrPeerIncomingInvalid is an answer that is not one of the four.
+	ErrPeerIncomingInvalid = errors.New(`incoming must be "ask", "dispatch", "always" or "never"`)
 	// ErrPeerCrossProjectInvalid is an answer that is not one of the three.
 	ErrPeerCrossProjectInvalid = errors.New(`cross_project must be "always", "paired" or "never"`)
 	// ErrPeerCeilingInvalid is a dispatch ceiling below zero; 0 is how a ceiling is removed.
@@ -147,7 +147,7 @@ func (c *Controller) SavePeersSettings(patch PeersPatch) (PeersSettings, error) 
 		}
 		if patch.Incoming != nil {
 			switch *patch.Incoming {
-			case config.IncomingAsk, config.IncomingDispatch, config.IncomingAlways:
+			case config.IncomingAsk, config.IncomingDispatch, config.IncomingAlways, config.IncomingNever:
 				p.Incoming = *patch.Incoming
 			default:
 				return fmt.Errorf("%w: %q", ErrPeerIncomingInvalid, *patch.Incoming)

@@ -45,7 +45,7 @@ func defaultPeers() PeersConfig {
 	return PeersConfig{Enabled: true, Dispatch: true, MaxDispatchDepth: DefaultMaxDispatchDepth, MaxDispatchedSessions: DefaultMaxDispatchedSessions, Incoming: IncomingDispatch, CrossProject: PeersCrossProjectAlways}
 }
 
-// The three answers to "what arrives from another session of mine".
+// The four answers to "what arrives from another session of mine".
 const (
 	// IncomingAsk holds every message until the person answers its card.
 	IncomingAsk = "ask"
@@ -57,6 +57,11 @@ const (
 	// machine. It is the widest answer, and the one that lets a session they did
 	// not start put text in front of the model unattended.
 	IncomingAlways = "always"
+	// IncomingNever takes nothing. The session says so on its live record, so a
+	// sender is refused before it writes instead of after the person ignores it.
+	// Answering a session this one was paired with is still allowed: refusing
+	// mail and refusing to answer are different answers.
+	IncomingNever = "never"
 )
 
 // PeersIncoming is the configured answer, defaulted when unset or unknown.
@@ -65,14 +70,23 @@ func (c *Config) PeersIncoming() string {
 		return IncomingDispatch
 	}
 	switch c.Peers.Incoming {
-	case IncomingAsk, IncomingDispatch, IncomingAlways:
+	case IncomingAsk, IncomingDispatch, IncomingAlways, IncomingNever:
 		return c.Peers.Incoming
 	}
 	return IncomingDispatch
 }
 
+// PeersInbound is the record this session publishes for senders: the answer for
+// the three that take mail, and a refusal for the one that does not.
+func (c *Config) PeersInbound() string {
+	if c.PeersIncoming() == IncomingNever {
+		return "refuse"
+	}
+	return "hold"
+}
+
 // SetPeersIncoming records what this session takes from another of the user's
-// sessions without a card. Only the three answers are legal, and anything else
+// sessions without a card. Only the four answers are legal, and anything else
 // is refused rather than defaulted: one of them widens what arrives unattended,
 // so a value nobody meant must not quietly become it. An empty answer is the
 // default, dispatch.
@@ -84,8 +98,10 @@ func (c *Config) SetPeersIncoming(answer string) error {
 		c.Peers.Incoming = IncomingDispatch
 	case IncomingAlways:
 		c.Peers.Incoming = IncomingAlways
+	case IncomingNever:
+		c.Peers.Incoming = IncomingNever
 	default:
-		return fmt.Errorf("incoming %q: must be ask|dispatch|always", answer)
+		return fmt.Errorf("incoming %q: must be ask|dispatch|always|never", answer)
 	}
 	return nil
 }
@@ -211,7 +227,7 @@ func renderPeersSection(b *strings.Builder, c *Config) {
 		b.WriteString("open_nested = true   # open_projects adds folders inside the asking session's workspace without a card; user file only\n")
 	}
 	if p.Incoming != "" && p.Incoming != IncomingDispatch {
-		fmt.Fprintf(b, "incoming = %q   # ask | dispatch | always: what another session of yours may send without a card; user file only\n", p.Incoming)
+		fmt.Fprintf(b, "incoming = %q   # ask | dispatch | always | never: what another session of yours may send without a card; user file only\n", p.Incoming)
 	}
 	if p.CrossProject != "" && p.CrossProject != PeersCrossProjectAlways {
 		fmt.Fprintf(b, "cross_project = %q   # always | paired | never: what may be handed to a session in another of your projects; user file only\n", p.CrossProject)

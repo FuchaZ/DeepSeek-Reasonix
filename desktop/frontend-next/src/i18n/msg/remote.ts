@@ -94,6 +94,8 @@ export const REMOTE: Messages = {
   "remote.incoming_dispatch_ds": { zh: "这个会话派发过、或派发过它的会话直接交给模型，其余仍要批准。", en: "Text from a session this one dispatched to, or was dispatched by, goes straight to the model; anything else still waits." },
   "remote.incoming_always": { zh: "任何会话", en: "Any session" },
   "remote.incoming_always_ds": { zh: "本机上你的任何会话都可以直接交给模型，包括你没启动的。这是最宽的一档。", en: "Any session of yours on this machine goes straight to the model, including one you did not start. This is the widest answer." },
+  "remote.incoming_never": { zh: "一个都不收", en: "Nothing at all" },
+  "remote.incoming_never_ds": { zh: "别的会话发不进来，发送方会当场收到“对方不接收”。这个会话仍然可以回复派发给它的任务。", en: "No other session can send here; the sender is told at once that this one takes nothing. This session can still answer a task it was handed." },
   "remote.open_nested_folders_without_asking": { zh: "不询问直接打开本项目内的文件夹", en: "Open folders inside this project without asking" },
   "remote.open_nested_folders_without_asking_ds": { zh: "模型用 open_projects 把本项目目录下的子文件夹加为项目时，直接添加并标为可信，不再弹确认卡；项目之外的文件夹仍然会询问。被信任的文件夹里的配置可以运行程序，请只在你信任这个仓库时开启。", en: "When the model adds a subfolder of this project as a project with open_projects, it is added and trusted without a card; folders outside the project still ask. A trusted folder's configuration can run programs, so turn this on only for a repository you trust." },
   "remote.let_the_model_hand_a": { zh: "允许模型把任务交给别的会话", en: "Let the model hand a task to another session" },
