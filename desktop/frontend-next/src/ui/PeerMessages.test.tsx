@@ -54,6 +54,27 @@ describe("messages between sessions", () => {
     await userEvent.click(await screen.findByRole("button", { name: "拒绝" }));
     expect(resolve).toHaveBeenCalledWith("m-1", false, "none");
   });
+
+  // The card already says who wrote. What it cannot say from the message alone
+  // is what that session is for and whether it is busy now, so it reads those
+  // from the peer list the same poll refreshed.
+  it("says the sender's role and whether it is busy now", async () => {
+    const p = port({
+      enabled: true,
+      peers: [{ key: "s-1", title: "拾音", project: "alpha", purpose: "frontend", busy: true }],
+      held: [held],
+    });
+    render(<Messages port={p} />);
+    expect(await screen.findByText(/frontend/)).toBeTruthy();
+    expect(await screen.findByText(/忙/)).toBeTruthy();
+  });
+
+  it("says nothing about a sender that is not in the peer list", async () => {
+    const p = port({ enabled: true, peers: [], held: [held] });
+    render(<Messages port={p} />);
+    expect(await screen.findByText("请核对第三节")).toBeTruthy();
+    expect(screen.queryByText(/忙/)).toBeNull();
+  });
 });
 
 describe("the held-message bar above the composer", () => {

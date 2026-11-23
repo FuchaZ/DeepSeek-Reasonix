@@ -22,7 +22,7 @@ export function PeerMessages({ port, settings }: { port: AgentPort; settings: Pe
       {switches}
       <div className="box">
         {state.held.map((h) => (
-          <HeldPeerMessage key={h.id} port={port} held={h} onDone={() => void refresh()} />
+          <HeldPeerMessage key={h.id} port={port} held={h} sender={state.peers.find((p) => p.key === h.fromSession)} onDone={() => void refresh()} />
         ))}
       </div>
     </>

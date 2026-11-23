@@ -1,13 +1,14 @@
 import { useState } from "react";
 import { t } from "../i18n";
 import { reason } from "../i18n/kernel";
-import type { AgentPort, PeerHeld, PeerProject, PeerRemember } from "../port/port";
-import { heldLabel } from "./peerKeys";
+import type { AgentPort, PeerHeld, PeerProject, PeerRemember, PeerView } from "../port/port";
+import { heldLabel, peerNote } from "./peerKeys";
 
-export function HeldPeerMessage({ port, held, project, onDone, compact }: { port: AgentPort; held: PeerHeld; project?: PeerProject; onDone: () => void; compact?: boolean }) {
+export function HeldPeerMessage({ port, held, project, sender, onDone, compact }: { port: AgentPort; held: PeerHeld; project?: PeerProject; sender?: Pick<PeerView, "busy" | "purpose">; onDone: () => void; compact?: boolean }) {
   const [busy, setBusy] = useState(false);
   const [open, setOpen] = useState(!compact);
   const [error, setError] = useState("");
+  const note = peerNote(sender);
   const decide = async (approve: boolean, remember: PeerRemember = "none") => {
     setBusy(true);
     setError("");
@@ -33,6 +34,7 @@ export function HeldPeerMessage({ port, held, project, onDone, compact }: { port
           <button className="act" data-action="peers.approve" data-primary disabled={busy} onClick={() => void decide(true)}>{t("remote.approve_and_give_it_to")}</button>
         </span>
       </div>
+      {note && <div className="peernote">{t(note, { role: sender?.purpose ?? "" })}</div>}
       {project && <div className="apv-note" id={`peer-remember-${held.id}`}>{t("remote.remember_project_remembers_the_project", { name: project.name, path: project.path })}</div>}
       <pre className="peerbody" data-clamped={open ? undefined : ""}>{held.body}</pre>
       {error && <div className="why">{error}</div>}
