@@ -2,7 +2,7 @@
 owner: @FuChaZ
 backup: @esengine
 status: active
-reviewed: 2026-11-22
+reviewed: 2026-11-24
 ---
 
 # 会话交付图片预览 · 相对路径定位 · 构建提速 — 交接
@@ -27,6 +27,11 @@ reviewed: 2026-11-22
 2026-11-23 追加一轮：卡顿排查与修复（第 8 节，`156561e9c`），以及打包版本号
 教训（§3.1 命令块已更正——版本必须在 `--dir` 步注入，`--prepackaged` 补不了；
 host 用 `REASONIX_VERSION`）。
+
+2026-11-24 追加一轮（第 9 节，基线 `7a2b52db8`）：**会话互聊收尾**——Hops 防环、
+PeerView 元数据、refuse 语义三项落地，对齐 MiMo；以及**审批链路五个缺陷**的修复，
+根因是 `dispatch.same_project` 的前置检查与它所管的审批卡互相依赖（死循环，重启才
+暴露）。同轮新增 `make check-fast`。真机验证：同项目 dispatch 闭环跑通。
 
 ## 1. 交付卡片里的图片直接预览（已完成）
 
@@ -425,3 +430,110 @@ docs/SESSION_HANDOFF.md                                本文件的各节更新
   （实测 About 页 0.0.0，与上两轮改动无关）。
 - host 版本靠 `REASONIX_VERSION` 注入 ldflags。
 - §3.1 的命令块已更正，**以后打包必须带版本号**，与 CI 同序。
+
+## 9. 会话互聊收尾（PR2/PR4/PR5）+ 审批链路五轮修复（2026-11-24）
+
+**基线**：`7f3b15bb2` → `7a2b52db8`，18 个提交。详细评估见桌面
+`会话互聊-评估与交接报告.md`（第三版），本节只记与仓库相关的硬事实。
+
+### 9.1 功能三项（对齐 MiMo）
+
+| 提交 | 内容 |
+| --- | --- |
+| `f56990695` | **Hops 防环**：`peermail.MaxHops=8` 导出 + `ErrHopLimit`。语义＝**链深度**：无 `reply_to` 从 0 起，指名回信 `被答 hop+1`，超限 `peer.hop_limit`（HTTP 409）。入站 hop 随 inbox 信封 `peerExtraHops` 保留，批准后仍可续链 |
+| `80bb44982` | **PeerView 元数据**：`Busy`/`Purpose` 走 live record（读方无法调用对方 `Controller.Running()`），读取侧再归约；`list_peers` 加 `busy`/`role=` 两列 |
+| `d4404d519` | **refuse 语义**：`incoming="never"` 是第四答案 → 发布 `Inbound:"refuse"` → `ErrPeerRefused` 可达；`never` **优先于** `release_projects`；拒收 ≠ 拒答 |
+
+### 9.2 审批链路：五个缺陷（`ef48cd756` … `7a2b52db8`）
+
+这一串是因为"点全部放行后 agent 不动"排查出来的，根因逐层剥开：
+
+1. `select` 里答案与取消同时就绪时随机选一个 → 取消分支再查一次 `reply`。
+2. `grantSession` 只在工具侧调用，turn 死了授权不落库 → 移到 `Approve()`；
+   **setting 必须豁免**（它自己按偏好存授权，否则一个 yes 短路所有设置卡）。
+3. 前端无条件标记 `__decided` → 卡片假消失而内核仍在等 → 只标记 `drained` 里的卡。
+4. `postAckedJson` 丢了 `postAcked` 的 20s 超时 → 按钮永挂 → 补齐超时与类型化错误。
+5. **`dispatch.same_project` 前置检查是死循环** → 取消。
+
+**第 5 条是最隐蔽的**：
+
+```go
+// internal/frontend/serve/dispatch.go（改前）
+if own && !sender.DispatchIntoSelfAllowed() {
+    return control.DispatchResult{}, projectError(control.ErrDispatchSameProject, root)
+}
+```
+
+`DispatchIntoSelfAllowed()` 读的授权，唯一来源就是这道检查挡住的那张审批卡。
+新会话无授权 → 直接拒、卡都不弹；之前偶尔能弹是因为内存里有旧授权；重启清空后必撞。
+
+**改法**：删掉前置检查，同项目与跨项目一样先弹卡、用户点了就发。
+`DispatchIntoSelfAllowed()` 随之成为死代码，已删（`7a2b52db8`）；
+`ErrDispatchSameProject` 与 `dispatch.same_project` 的映射保留（sentinel 仍有语义）。
+
+### 9.3 「确认全部放行」的语义（`f4668e6c8`）
+
+一个决定、两件事：切到 yolo（`POST /tool-approval-mode` → `{"drained":[...]}`），
+**并且**当前这张卡走普通审批 `approve(id,"once")` 结算。
+
+内核「fresh 卡不被模式切换代为放行」的规则没有破坏——它仍是一次显式 `allow_once`。
+`SetToolApprovalMode` 现在**返回** `[]string`（drained ids），端口只此一个方法，
+避免 `frontend-parity` 因"加了方法前端没驱动"而失败。
+
+### 9.4 真机验证（2026-11-24 00:12）
+
+同项目 dispatch → 子会话 `s-68c816ec6f786468` 执行 `git rev-parse --short HEAD`
+→ 回信 `m-f24d23f1df1f5fad`（394 B）→ 因 `RS build` 在 `release_projects` 自动投递。
+审计四步完整：`released` → `sent` → `held` → `released(consent:project)`。
+子会话回信**引用了原话**，证明 `reply_to` 关联生效。
+
+### 9.5 新增门禁 `make check-fast`（`12c140d26`）
+
+**按测试名收窄，不是按包**。实测（本机 20 核 NVMe）：
+
+| 方式 | 耗时 |
+| --- | --- |
+| `session/control` 整包 | 107 s |
+| 一次改动对应的测试集合 | **5.8 s** |
+| `repolint` 全树 | 12.7 s |
+| `repolint -changed` | 20.5 s ← **比全树慢**（git 调用 + 全树解析） |
+| 预编译 repolint | 14.2 s ← **不比 `go run` 快** |
+
+选择规则：改动文件名与测试文件**同名 feature**（第一个 `_` 前的词，单复数归一）。
+一个 feature 的测试本身可能贵（`serve` 的 dispatch 测试每个起真 Hub，~40 s），
+脚本在改动超 4 个包时提示改用 `make check`。
+
+### 9.6 打包（本轮更新）
+
+```bash
+cd desktop/frontend-next && pnpm build           # 前端
+cd ../electron && node packaging/build-host.js   # kernel ← 最容易漏
+./node_modules/.bin/electron-builder --win nsis -c.electronDist=node_modules/electron/dist
+```
+
+- `pnpm build:dist` 会因 `ERR_PNPM_IGNORED_BUILDS`（electron-winstaller）失败，
+  直接调 `electron-builder` 绕过。
+- **只跑 `electron-builder` 不重建 host → 装上去的是旧 kernel**。
+- 产物名被 hook 改成 `ReasonixStudio-windows-amd64-installer.exe`（不是 x64）。
+- 跑 `pnpm` 会改写 `pnpm-lock.yaml`，提交前 `git checkout --` 还原。
+
+### 9.7 其它修复
+
+- `ec2b4e834` 弹窗根治：测试 sleeper 从 `Start-Process`（**会分配新控制台**，
+  Windows Terminal 下 `-WindowStyle Hidden` 挡不住）改为
+  `CreateProcessW(bInheritHandles=false, CREATE_NO_WINDOW)`。
+  中间试过 `Process.Start(CreateNoWindow)`，它不分配控制台但**继承父管道**，
+  导致 `WaitDelay` 超时——两者只能靠 Win32 一次满足。
+- `ff15945ae` 审批卡中文文案：`EXPLICIT_APPROVAL` 表漏了 `peer_message`/`dispatch_task`，
+  卡片回落到英文原文。
+- `69174eb49` `docs/TOOL_CONTRACT.md` 的 `browser_read` 漂移（`7cc95881d` 带入）。
+
+### 9.8 教训（写进纪律）
+
+1. **改一层时读完相邻代码的全部职责。** 本轮三次翻车都源于此：
+   换掉 `postAcked` 时丢了它的超时；给 setting 记授权时没注意它自己的一套；
+   修"卡片假消失"时没走一遍"用户点完看到什么"。
+2. **UI 问题先把交互路径完整读一遍再下结论。** 前四轮都在猜现象背后的层，
+   用户一句"你拿不到我批准的状态"才指到根因。
+3. **前置检查与它所管的审批卡不能互相依赖**——那是个死循环，而且被内存残留掩盖，
+   只有重启才暴露。
