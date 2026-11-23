@@ -158,6 +158,8 @@ func TestEverySubjectSensitiveToolActuallyAsksSomething(t *testing.T) {
 		NetworkEgress:     {"pypi.org"},
 		PaidSearch:        {"deepseek_api"},
 		MCPSignIn:         {"figma → auth.example.test"},
+		SendPeerMessage:   {"s-00000000000000aa: hello"},
+		DispatchToProject: {"notes: do the thing"},
 	}
 	for tool := range subjectSensitiveTools {
 		subjects, ok := probes[tool]
@@ -257,5 +259,73 @@ func TestSessionGrantForPaidSearchNamesTheBackend(t *testing.T) {
 	}
 	if SessionGrantMatches(rule, PaidSearch, "other_paid_backend") {
 		t.Errorf("rule %q covers another backend", rule)
+	}
+}
+
+// Telling another of the user's sessions something on their behalf is a
+// decision about the user, not a write into this workspace. The posture that
+// allows every write says nothing about speaking for the person, so the
+// question returns to them whatever the fallback says.
+func TestTellingAnotherSessionReturnsToTheUserUnderEveryMode(t *testing.T) {
+	for _, call := range []struct{ tool, args string }{
+		{SendPeerMessage, `{"to":"s-00000000000000aa","text":"hello"}`},
+		{DispatchToProject, `{"project":"notes","text":"do the thing"}`},
+	} {
+		args := json.RawMessage(call.args)
+		for _, mode := range []Decision{Ask, Allow} {
+			if got := (Policy{Mode: mode}).Decide(call.tool, false, args); got != Ask {
+				t.Errorf("%s under Mode %v decided %v, want Ask", call.tool, mode, got)
+			}
+		}
+	}
+}
+
+// And a run with nobody watching may not answer for the absent person: the
+// message goes out under their name, so a question with nobody to answer it is
+// a no.
+func TestSendingToAnotherSessionIsRefusedWhenThereIsNobodyToAsk(t *testing.T) {
+	gate := NewGate(Policy{Mode: Allow}, nil)
+	for _, call := range []struct{ tool, args string }{
+		{SendPeerMessage, `{"to":"s-00000000000000aa","text":"hello"}`},
+		{DispatchToProject, `{"project":"notes","text":"do the thing"}`},
+	} {
+		allow, reason, err := gate.Check(context.Background(), call.tool, json.RawMessage(call.args), false)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if allow {
+			t.Errorf("%s was granted with no approver attached", call.tool)
+		}
+		if strings.TrimSpace(reason) == "" {
+			t.Errorf("%s: the refusal says nothing; the run cannot tell this from a denial", call.tool)
+		}
+	}
+}
+
+// The posture keeps its meaning for what is actually about this workspace:
+// listing the other sessions is a read and still runs with nobody to ask.
+func TestPeerReadsStillRunWhenThereIsNobodyToAsk(t *testing.T) {
+	gate := NewGate(Policy{Mode: Allow}, nil)
+	allow, _, err := gate.Check(context.Background(), "list_peers", json.RawMessage(`{}`), true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !allow {
+		t.Error("listing the other sessions was refused with no approver; that is a read")
+	}
+}
+
+// "Don't ask again" answers for one message. It must not stand for the next:
+// the grant names the receiver and the words, never the tool alone.
+func TestSessionGrantForAMessageNamesTheReceiver(t *testing.T) {
+	granted := "s-00000000000000aa: hello"
+	rule := SessionGrantRuleForScope(SendPeerMessage, granted)
+	if !SessionGrantMatches(rule, SendPeerMessage, granted) {
+		t.Errorf("rule %q does not cover the message it was granted for", rule)
+	}
+	for _, other := range []string{"s-00000000000000bb: hello", "s-00000000000000aa: something else entirely"} {
+		if SessionGrantMatches(rule, SendPeerMessage, other) {
+			t.Errorf("rule %q also covers %q; one message opened every message", rule, other)
+		}
 	}
 }

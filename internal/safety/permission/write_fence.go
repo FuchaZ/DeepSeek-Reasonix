@@ -25,6 +25,16 @@ const PaidSearch = "paid_search"
 // chose that host, so only the user answers.
 const MCPSignIn = "mcp_signin"
 
+// SendPeerMessage asks whether the model may tell another of the user's
+// sessions something on the user's behalf; the subject is the receiver and
+// every word, so the person answering reads what would leave this session.
+const SendPeerMessage = "send_peer_message"
+
+// DispatchToProject asks whether the model may open a session in another of
+// the user's projects and hand it a task; the subject is the project and the
+// task. It spends the user's other project, so it is theirs to decide.
+const DispatchToProject = "dispatch_to_project"
+
 // subjectSensitiveTools maps each tool whose authorization reads its subject to
 // the question it asks of that subject. Membership is one declaration carrying
 // three consequences, so none can arrive without the others: the decision
@@ -36,6 +46,8 @@ var subjectSensitiveTools = map[string]func(subject string) bool{
 	PaidSearch:        func(string) bool { return true },
 	MCPSignIn:         func(string) bool { return true },
 	installSourceTool: func(s string) bool { return strings.HasPrefix(s, selfExtendHumanRisk) },
+	SendPeerMessage:   func(string) bool { return true },
+	DispatchToProject: func(string) bool { return true },
 }
 
 // subjectScopedGrant reports a tool a session grant may not cover by name alone.

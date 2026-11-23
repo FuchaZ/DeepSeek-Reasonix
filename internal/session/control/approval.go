@@ -652,7 +652,7 @@ func ParseToolApprovalMode(mode string) (string, bool) {
 // narrow operation in interactive or headless mode.
 func RequiresFreshHumanApprovalTool(tool string) bool {
 	switch tool {
-	case planApprovalTool, memoryRememberTool, memoryForgetTool, permission.ConfirmTool, permission.OriginConfirmTool, SandboxEscapeApprovalTool, ManagedConfigWriteApprovalTool, NetworkEgressApprovalTool, PaidSearchApprovalTool, MCPSignInApprovalTool, MCPScopeUpgradeApprovalTool, SettingApprovalTool, SettingElevatedApprovalTool:
+	case planApprovalTool, memoryRememberTool, memoryForgetTool, permission.ConfirmTool, permission.OriginConfirmTool, SandboxEscapeApprovalTool, ManagedConfigWriteApprovalTool, NetworkEgressApprovalTool, PaidSearchApprovalTool, MCPSignInApprovalTool, MCPScopeUpgradeApprovalTool, SettingApprovalTool, SettingElevatedApprovalTool, permission.SendPeerMessage, permission.DispatchToProject:
 		return true
 	default:
 		return false
