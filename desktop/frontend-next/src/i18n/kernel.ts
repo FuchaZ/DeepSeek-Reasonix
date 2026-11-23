@@ -591,6 +591,7 @@ const SAID: Record<string, string> = {
   "peer.rate_limited": "kernel.sending_too_fast_try_again",
   "peer.empty": "kernel.write_the_message_first",
   "peer.too_large": "kernel.that_message_is_too_long",
+  "peer.hop_limit": "kernel.the_chain_of_replies_is_as",
   "peer.not_held": "kernel.that_message_was_already_decided",
   "peer.send_failed": "kernel.the_message_between_sessions_did",
   "peer.invalid_project": "kernel.a_released_project_must_be",

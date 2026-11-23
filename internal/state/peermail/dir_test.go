@@ -78,7 +78,7 @@ func TestSizeHopsAndEmptyBodiesAreRefusedWithTheirOwnIdentity(t *testing.T) {
 		t.Fatalf("oversize: %v", err)
 	}
 	far := msg("far")
-	far.Hops = maxHops + 1
+	far.Hops = MaxHops + 1
 	if err := d.Send(far); !errors.Is(err, ErrInvalid) {
 		t.Fatalf("too many hops: %v", err)
 	}

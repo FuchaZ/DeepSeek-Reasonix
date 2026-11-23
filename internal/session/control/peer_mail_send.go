@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 
@@ -30,6 +31,7 @@ var (
 	ErrPeerRateLimited = errors.New("too many messages sent in a short time")
 	ErrPeerTooLarge    = peermail.ErrTooLarge
 	ErrPeerEmpty       = errors.New("a message needs some text")
+	ErrPeerHopLimit    = peermail.ErrHopLimit
 )
 
 // PeerView is another session on this machine that can be written to.
@@ -37,6 +39,13 @@ type PeerView struct {
 	Key     string `json:"key"`
 	Title   string `json:"title"`
 	Project string `json:"project,omitempty"`
+	// Busy says the session is in the middle of a turn, as its own record
+	// reported at its last beat: a sender that wants an answer soon should
+	// know before writing.
+	Busy bool `json:"busy,omitempty"`
+	// Purpose is the role a dispatch opened that session to do, empty for one
+	// the person opened.
+	Purpose string `json:"purpose,omitempty"`
 }
 
 // PeerReceipt says a message was handed to the receiver's spool, not that it was
@@ -60,7 +69,7 @@ func (c *Controller) Peers() []PeerView {
 	var out []PeerView
 	for _, l := range c.livePeers() {
 		if l.SessionID != self {
-			out = append(out, PeerView{Key: l.SessionID, Title: l.Title, Project: l.Project})
+			out = append(out, PeerView{Key: l.SessionID, Title: l.Title, Project: l.Project, Busy: l.Busy, Purpose: l.Purpose})
 		}
 	}
 	return out
@@ -77,6 +86,7 @@ func (c *Controller) livePeers() []peermail.Live {
 	// are reduced here, where they are read, as the publisher reduces its own.
 	for i := range live {
 		live[i].Title, live[i].Project = peerAttribute(live[i].Title), peerAttribute(live[i].Project)
+		live[i].Purpose = peerAttribute(live[i].Purpose)
 	}
 	return live
 }
@@ -117,13 +127,20 @@ func (c *Controller) sendPeerMessage(to, text, replyTo string) (PeerReceipt, err
 	if target.Inbound != "hold" {
 		return PeerReceipt{}, ErrPeerRefused
 	}
+	hops := 0
+	if inbound, ok := c.peerInboundHops(replyTo); ok {
+		hops = inbound + 1
+	}
+	if hops > peermail.MaxHops {
+		return PeerReceipt{}, ErrPeerHopLimit
+	}
 	if !c.peerSendAllowed() {
 		return PeerReceipt{}, ErrPeerRateLimited
 	}
 	var token [8]byte
 	_, _ = rand.Read(token[:])
 	msg := peermail.Message{
-		ID: "m-" + hex.EncodeToString(token[:]), SentAt: time.Now().UTC(), Body: text, ReplyTo: replyTo,
+		ID: "m-" + hex.EncodeToString(token[:]), SentAt: time.Now().UTC(), Body: text, ReplyTo: replyTo, Hops: hops,
 		From: peermail.Party{SessionID: self, Title: peerAttribute(sessionstore.BranchID(path)), Project: peerAttribute(baseName(c.WorkspaceRoot()))},
 		To:   peermail.Party{SessionID: target.SessionID, WriterID: target.WriterID, Title: target.Title, Project: target.Project},
 	}
@@ -133,6 +150,45 @@ func (c *Controller) sendPeerMessage(to, text, replyTo string) (PeerReceipt, err
 	}
 	_ = dir.Audit(peermail.AuditRecord{Receiver: target.SessionID, Sender: self, ID: msg.ID, Decision: peermail.DecisionSent, Bytes: len(msg.Body), SHA256: peermail.Digest(msg.Body)})
 	return PeerReceipt{ID: msg.ID, To: PeerView{Key: target.SessionID, Title: target.Title, Project: target.Project}}, nil
+}
+
+// peerInboundHops is how deep the message replyTo names sits in its chain. An
+// unnamed message starts a chain of its own: a message that names nothing is
+// not an answer, so it neither continues one nor is stopped by its length.
+func (c *Controller) peerInboundHops(replyTo string) (int, bool) {
+	if replyTo == "" {
+		return 0, false
+	}
+	return c.peerMessageHops(replyTo)
+}
+
+// peerMessageHops finds one message this session received and reports the hop
+// it arrived at: still held, or let in and kept as an inbox envelope.
+func (c *Controller) peerMessageHops(msgID string) (int, bool) {
+	p := c.peers
+	p.mu.Lock()
+	m, held := p.held[msgID]
+	p.mu.Unlock()
+	if held {
+		return m.Hops, true
+	}
+	c.inbox.mu.Lock()
+	st := c.inbox.store
+	c.inbox.mu.Unlock()
+	if st == nil {
+		return 0, false
+	}
+	for _, item := range st.Snapshot().Items {
+		if item.Idempotency != "peer-"+msgID {
+			continue
+		}
+		if _, env, err := st.ReadItem(item.ID); err == nil {
+			if hops, err := strconv.Atoi(env.Extra[peerExtraHops]); err == nil {
+				return hops, true
+			}
+		}
+	}
+	return 0, false
 }
 
 // peerSendAllowed spends one send from the window; a refused send spends none.
@@ -254,7 +310,7 @@ func (c *Controller) peerReplyText(msgID, receiver string, sentAt time.Time) (st
 		if item.Source != peerSourcePrefix+receiver || item.CreatedAt.Before(sentAt) {
 			continue
 		}
-		if _, env, err := c.ReadInboxItem(item.ID); err == nil && env.Extra["reply_to"] == msgID {
+		if _, env, err := c.ReadInboxItem(item.ID); err == nil && env.Extra[peerExtraReplyTo] == msgID {
 			return item.Preview, true
 		}
 	}

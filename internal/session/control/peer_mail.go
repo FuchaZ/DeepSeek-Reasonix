@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -34,6 +35,9 @@ const (
 	peerMessageTag    = "peer-message"
 	peerSourcePrefix  = "peer:"
 	peerAttributeRune = 64
+	// Envelope keys: what a delivered message carries into the turn that reads it.
+	peerExtraReplyTo = "reply_to"
+	peerExtraHops    = "hops"
 )
 
 var (
@@ -162,6 +166,7 @@ func (c *Controller) rebindPeers() {
 	}
 	path := c.SessionPath()
 	key := sessionPeerKey(path)
+	inbound := config.LoadForEdit(config.UserConfigPath()).PeersInbound()
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	if key == p.key {
@@ -175,7 +180,7 @@ func (c *Controller) rebindPeers() {
 	if key == "" {
 		return
 	}
-	c.publishPeerLiveLocked(path)
+	c.publishPeerLiveLocked(path, inbound)
 }
 
 // peerTitle is the name a peer can match this session by: the title the person
@@ -193,8 +198,10 @@ func (c *Controller) peerTitle(path string) string {
 }
 
 // publishPeerLiveLocked writes this session's record with a fresh beat; it is
-// called when the session changes and on every ingest tick.
-func (c *Controller) publishPeerLiveLocked(path string) {
+// called when the session changes and on every ingest tick. Inbound is what the
+// user's answer says this session takes, read outside this lock: a refusal is
+// how a sender learns before writing.
+func (c *Controller) publishPeerLiveLocked(path, inbound string) {
 	p := c.peers
 	dir := p.dir.Load()
 	if dir == nil {
@@ -205,11 +212,25 @@ func (c *Controller) publishPeerLiveLocked(path string) {
 	err := dir.PublishLive(peermail.Live{
 		SessionID: p.key, Instance: p.instance, SessionPath: path, PID: os.Getpid(), Hostname: host,
 		Title: c.peerTitle(path), Project: peerAttribute(filepath.Base(c.WorkspaceRoot())),
-		StartedAt: now, BeatAt: now, Inbound: "hold",
+		StartedAt: now, BeatAt: now, Inbound: inbound,
+		Busy: c.Running(), Purpose: c.PeerPurpose(),
 	})
 	if err != nil {
 		slog.Warn("controller: could not publish this session to its peers", "err", err)
 	}
+}
+
+// publishPeerLive refreshes this session's record from outside the lock, so the
+// config read is not done while the ingest loop holds it.
+func (c *Controller) publishPeerLive(key, path string) {
+	inbound := config.LoadForEdit(config.UserConfigPath()).PeersInbound()
+	p := c.peers
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.key != key {
+		return
+	}
+	c.publishPeerLiveLocked(path, inbound)
 }
 
 // closePeers withdraws this controller's record. Messages stay in the spool.
@@ -256,10 +277,10 @@ func (c *Controller) peerIngest() {
 	}
 	p.mu.Lock()
 	key, path := p.key, c.SessionPath()
-	if key != "" {
-		c.publishPeerLiveLocked(path)
-	}
 	p.mu.Unlock()
+	if key != "" {
+		c.publishPeerLive(key, path)
+	}
 	if key == "" {
 		return
 	}
@@ -338,6 +359,10 @@ func (c *Controller) releaseHeldPeerMessages(ids []string) {
 	for _, id := range ids {
 		var consent peermail.Consent
 		switch {
+		// "Never" is the person's widest refusal, so it outranks a released
+		// project: one of their own answers must not be widened by another.
+		case incoming == config.IncomingNever:
+			continue
 		case projectReleased:
 			consent = peermail.ConsentProject
 		case incoming == config.IncomingAsk:
@@ -449,9 +474,9 @@ func (c *Controller) resolvePeerMessage(id string, approve bool, released peerma
 	decision := peermail.DecisionDenied
 	if approve {
 		display, submit := peerMessageTexts(m, released)
-		extra := map[string]string(nil)
+		extra := map[string]string{peerExtraHops: strconv.Itoa(m.Hops)}
 		if m.ReplyTo != "" {
-			extra = map[string]string{"reply_to": m.ReplyTo}
+			extra[peerExtraReplyTo] = m.ReplyTo
 		}
 		receipt, err := c.EnqueueInbox(InboxRequest{
 			Intent: sessioninbox.IntentFollowup, Origin: sessioninbox.OriginHost,

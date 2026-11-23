@@ -17,7 +17,7 @@ type peerDirectory struct{ c *Controller }
 func (d peerDirectory) Peers() []tool.PeerView {
 	var out []tool.PeerView
 	for _, p := range d.c.Peers() {
-		out = append(out, tool.PeerView{Key: p.Key, Title: p.Title, Project: p.Project})
+		out = append(out, tool.PeerView{Key: p.Key, Title: p.Title, Project: p.Project, Busy: p.Busy, Purpose: p.Purpose})
 	}
 	return out
 }
@@ -61,7 +61,7 @@ func peerErrorCode(err error) string {
 	for code, sentinel := range map[string]error{
 		"peer.disabled": ErrPeersDisabled, "peer.not_found": ErrPeerNotFound, "peer.ambiguous": ErrPeerAmbiguous,
 		"peer.self": ErrPeerSelf, "peer.refused": ErrPeerRefused, "peer.rate_limited": ErrPeerRateLimited,
-		"peer.empty": ErrPeerEmpty, "peer.too_large": ErrPeerTooLarge,
+		"peer.empty": ErrPeerEmpty, "peer.too_large": ErrPeerTooLarge, "peer.hop_limit": ErrPeerHopLimit,
 		"dispatch.disabled": ErrDispatchDisabled, "dispatch.unavailable": ErrDispatchUnavailable, "dispatch.not_local": ErrDispatchNotLocal, "dispatch.unknown_project": ErrDispatchUnknownProject,
 		"dispatch.ambiguous": ErrDispatchAmbiguous, "dispatch.nested": ErrDispatchNested,
 		"dispatch.untrusted": ErrDispatchUntrusted, "dispatch.awaiting_trust": ErrDispatchAwaitingTrust, "dispatch.same_project": ErrDispatchSameProject, "dispatch.failed": ErrDispatchFailed, "dispatch.limit": ErrDispatchLimit,

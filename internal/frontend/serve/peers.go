@@ -17,6 +17,7 @@ const (
 	codePeerRateLimit   = "peer.rate_limited"
 	codePeerEmpty       = "peer.empty"
 	codePeerTooLarge    = "peer.too_large"
+	codePeerHopLimit    = "peer.hop_limit"
 	codePeerNotHeld     = "peer.not_held"
 	codePeerSendFailed  = "peer.send_failed"
 	codePeerBadProject  = "peer.invalid_project"
@@ -180,12 +181,14 @@ func refusePeer(w http.ResponseWriter, err error) {
 		refuse(w, http.StatusBadRequest, codePeerEmpty, "a message needs some text", nil)
 	case errors.Is(err, control.ErrPeerTooLarge):
 		refuse(w, http.StatusRequestEntityTooLarge, codePeerTooLarge, "that message is too long", nil)
+	case errors.Is(err, control.ErrPeerHopLimit):
+		refuse(w, http.StatusConflict, codePeerHopLimit, "this session is as deep in a chain of replies as messages may go", nil)
 	case errors.Is(err, control.ErrPeerProjectInvalid):
 		refuse(w, http.StatusBadRequest, codePeerBadProject, "a released project must be an absolute folder path", nil)
 	case errors.Is(err, control.ErrPeerCeilingInvalid):
 		refuse(w, http.StatusBadRequest, codePeerBadCeiling, "a dispatch ceiling is a count of 0 or more", nil)
 	case errors.Is(err, control.ErrPeerIncomingInvalid):
-		refuse(w, http.StatusBadRequest, codePeerBadIncoming, `incoming must be "ask", "dispatch" or "always"`, nil)
+		refuse(w, http.StatusBadRequest, codePeerBadIncoming, `incoming must be "ask", "dispatch", "always" or "never"`, nil)
 	case errors.Is(err, control.ErrPeerCrossProjectInvalid):
 		refuse(w, http.StatusBadRequest, codePeerBadCross, `cross_project must be "always", "paired" or "never"`, nil)
 	case errors.Is(err, control.ErrPeerSettingsUnwritable):

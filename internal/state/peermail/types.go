@@ -13,8 +13,11 @@ const (
 	MaxBodyBytes = 64 << 10
 	maxFileBytes = MaxBodyBytes + 8<<10
 	maxLiveBytes = 8 << 10
-	maxHops      = 8
-	seenKeep     = 1000
+	// MaxHops bounds a reply chain. A hop count belongs to the chain: a reply
+	// carries one more than the message it answers, so a model answering every
+	// arrival cannot start one that never ends.
+	MaxHops  = 8
+	seenKeep = 1000
 )
 
 var (
@@ -22,6 +25,7 @@ var (
 	ErrTooLarge  = errors.New("peermail: message too large")
 	ErrDuplicate = errors.New("peermail: message id already spooled")
 	ErrUnsafeDir = errors.New("peermail: directory is not private to this user")
+	ErrHopLimit  = errors.New("peermail: the chain of replies is as long as it may get")
 )
 
 // idPattern is every identity this package turns into a path component. It
@@ -82,6 +86,11 @@ type Live struct {
 	BeatAt time.Time `json:"beat_at"`
 	// Inbound is the receiver's own policy for messages: "hold" or "refuse".
 	Inbound string `json:"inbound"`
+	// Busy and Purpose are what the session says about itself: whether a turn
+	// is under way, and the role a dispatch opened it to do. A caller choosing
+	// a recipient reads them; the receiver of a message never acts on them.
+	Busy    bool   `json:"busy,omitempty"`
+	Purpose string `json:"purpose,omitempty"`
 }
 
 // Rejected is a file the reader would not accept, with the typed reason.
@@ -109,7 +118,7 @@ func (m Message) Validate() error {
 		return ErrInvalid
 	case m.From.WriterID != "" && !validID(m.From.WriterID), m.To.WriterID != "" && !validID(m.To.WriterID):
 		return ErrInvalid
-	case m.Hops < 0 || m.Hops > maxHops:
+	case m.Hops < 0 || m.Hops > MaxHops:
 		return ErrInvalid
 	case strings.TrimSpace(m.Body) == "":
 		return ErrInvalid
