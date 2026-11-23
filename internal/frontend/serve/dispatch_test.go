@@ -463,12 +463,18 @@ func TestADeclinedProjectIsRefusedBeforeAnyPaneOpens(t *testing.T) {
 
 // Until the person allows dispatch_to_project, a dispatch into this session's
 // own project opens nothing.
-func TestADispatchToTheSendersOwnProjectOpensNothing(t *testing.T) {
+// A dispatch into the sender's own project is allowed like any other: the
+// person's answer on the dispatch card is the yes, and an allow rule up front
+// was a second door to the same room — one a fresh session could not open,
+// because the only place that rule came from was the card it gated.
+func TestADispatchToTheSendersOwnProjectOpensASession(t *testing.T) {
 	f := newDispatchFixture(t, dispatchOn)
 	a := f.project("alpha", true)
-	_, err := f.sender(a).DispatchToProject(context.Background(), "alpha", "x", "")
-	if !errors.Is(err, control.ErrDispatchSameProject) || f.opened != 0 {
-		t.Fatalf("err = %v, opened %d; want dispatch.same_project and no pane", err, f.opened)
+	if _, err := f.sender(a).DispatchToProject(context.Background(), "alpha", "x", ""); err != nil {
+		t.Fatalf("dispatch into the own project = %v, want it sent", err)
+	}
+	if f.opened != 1 {
+		t.Fatalf("opened %d panes, want 1", f.opened)
 	}
 }
 
@@ -515,31 +521,20 @@ func TestARoleOpensASecondSessionInTheSendersOwnProject(t *testing.T) {
 	}
 }
 
-// The allowance is a permission rule, the same yes the card's "always allow"
-// writes: with no rule the own project is refused, and with one it opens a
-// session that a role-less second dispatch reuses.
-func TestAnAllowRuleIsWhatLetsTheOwnProjectOpenASession(t *testing.T) {
+// A role-less second dispatch goes back to the pane the first one opened
+// rather than opening another: one task per project is the rule without a role.
+func TestARolelessSecondDispatchReusesThePane(t *testing.T) {
 	f := newDispatchFixture(t, dispatchOn)
 	a := f.project("alpha", true)
 	sender := f.sender(a)
-	if _, err := sender.DispatchToProject(context.Background(), "alpha", "x", ""); !errors.Is(err, control.ErrDispatchSameProject) {
-		t.Fatalf("no rule = %v, want ErrDispatchSameProject", err)
-	}
-	if f.opened != 0 {
-		t.Fatalf("%d panes opened with no rule, want 0", f.opened)
-	}
-
-	allowed := newDispatchFixture(t, dispatchOn+"[permissions]\nallow = [\"dispatch_to_project\"]\n")
-	a2 := allowed.project("alpha", true)
-	sender2 := allowed.sender(a2)
-	first, err := sender2.DispatchToProject(context.Background(), "alpha", "gate the build", "")
+	first, err := sender.DispatchToProject(context.Background(), "alpha", "gate the build", "")
 	if err != nil {
-		t.Fatalf("allow rule: %v", err)
+		t.Fatalf("first dispatch: %v", err)
 	}
-	if allowed.opened != 1 {
-		t.Fatalf("%d panes opened, want 1", allowed.opened)
+	if f.opened != 1 {
+		t.Fatalf("%d panes opened, want 1", f.opened)
 	}
-	again, err := sender2.DispatchToProject(context.Background(), "alpha", "and lint it", "")
+	again, err := sender.DispatchToProject(context.Background(), "alpha", "and lint it", "")
 	if err != nil {
 		t.Fatalf("second dispatch: %v", err)
 	}

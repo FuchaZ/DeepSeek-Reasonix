@@ -134,13 +134,12 @@ func (h *Hub) dispatchTo(ctx context.Context, from *Runtime, project, text, role
 	if !ok {
 		return control.DispatchResult{}, control.ErrDispatchNotLocal
 	}
-	// This session's own project opens a second session only once the person
-	// allowed dispatch_to_project: "always allow" on the card is that yes. Until
-	// then the old rule stands and no window is opened for the same folder.
+	// This session's own project opens a second session; the person's answer on
+	// the dispatch card is what allows it, the same way it allows a task into
+	// any other project. The old rule asked for an allow rule up front, and the
+	// only place that rule could come from was that same card — a fresh session
+	// could never reach it.
 	own := sameFolder(root, sender.WorkspaceRoot())
-	if own && !sender.DispatchIntoSelfAllowed() {
-		return control.DispatchResult{}, projectError(control.ErrDispatchSameProject, root)
-	}
 	// Across projects the user's outgoing answer rules: "never" refuses every
 	// dispatch into another project, and "paired" lets through only what this
 	// session already has there (a reuse or pending hit), so a fresh pane refuses.
