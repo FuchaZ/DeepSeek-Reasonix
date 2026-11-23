@@ -255,7 +255,7 @@
   },
   {
     "Name": "list_peers",
-    "Description": "List the other Reasonix sessions on this machine that are listening for messages. Use the name or key it prints as the target of send_peer_message.",
+    "Description": "List the other Reasonix sessions on this machine that are listening for messages. Use the name or key it prints as the target of send_peer_message. A row marked busy is in the middle of a turn: its side reads your message when the turn ends. A row named role= is a session a dispatch opened to do that job.",
     "ReadOnly": true,
     "Schema": {
       "additionalProperties": false,

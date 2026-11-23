@@ -240,6 +240,7 @@ func (h *Hub) openDispatchSession(ctx context.Context, from *Runtime, sender *co
 	}
 	ctrl.AdoptSessionGrant(grant)
 	ctrl.MarkOpenedByDispatch(sender.PeerKey(), secret, sender.DispatchDepth()+1)
+	ctrl.NotePeerPurpose(role)
 	ctrl.SetFreshSessionPath(sessionstore.NewSessionPath(SessionDirFor(root), "dispatch"))
 	if role != "" {
 		h.nameDispatchPaneAfterRole(ctrl, root, role)

@@ -10,6 +10,10 @@ type PeerView struct {
 	Key     string
 	Title   string
 	Project string
+	// Busy says the session is in the middle of a turn.
+	Busy bool
+	// Purpose is the role a dispatch opened that session to do.
+	Purpose string
 }
 
 // PeerReceipt says a message was handed to the receiver's spool, not read.

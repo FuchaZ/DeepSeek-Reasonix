@@ -56,7 +56,11 @@ type dispatchSession struct {
 	mu     sync.Mutex
 	opened bool
 	depth  int
-	pairs  map[string]*dispatchPair
+	// purpose is the role a dispatch opened this session to do. It is what the
+	// session says about itself to a caller choosing a recipient, so it rides
+	// the live record rather than any message.
+	purpose string
+	pairs   map[string]*dispatchPair
 }
 
 // dispatchWindow is how many accepted sequence numbers a pairing remembers; one
@@ -141,6 +145,24 @@ func (c *Controller) DispatchDepth() int {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	return d.depth
+}
+
+// NotePeerPurpose records the role a dispatch opened this session to do, so the
+// session can say it on its live record. An empty purpose clears it.
+func (c *Controller) NotePeerPurpose(purpose string) {
+	d := c.dispatch.sessionState()
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	d.purpose = peerAttribute(purpose)
+}
+
+// PeerPurpose is the role this session was opened under, empty for one the
+// person opened.
+func (c *Controller) PeerPurpose() string {
+	d := c.dispatch.sessionState()
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	return d.purpose
 }
 
 // NoteDispatchedSession records a session this one opened for a task: the

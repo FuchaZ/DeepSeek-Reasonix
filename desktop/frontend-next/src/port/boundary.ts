@@ -159,6 +159,10 @@ export interface PeerView {
   key: string;
   title: string;
   project?: string;
+  /** The session is in the middle of a turn; its side reads new messages when it ends. */
+  busy?: boolean;
+  /** The role a dispatch opened this session to do, empty for one the person opened. */
+  purpose?: string;
 }
 
 export interface PeerHeld {
@@ -171,7 +175,7 @@ export interface PeerHeld {
 }
 
 /** What another of the user's sessions may send without a card. */
-export type PeerIncoming = "ask" | "dispatch" | "always";
+export type PeerIncoming = "ask" | "dispatch" | "always" | "never";
 
 /** What the model may hand to a session in another of the user's projects. */
 export type PeerCrossProject = "always" | "paired" | "never";

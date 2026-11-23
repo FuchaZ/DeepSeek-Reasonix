@@ -22,7 +22,7 @@ type listPeers struct{ link *tool.PeerLink }
 
 func (*listPeers) Name() string { return "list_peers" }
 func (*listPeers) Description() string {
-	return "List the other Reasonix sessions on this machine that are listening for messages. Use the name or key it prints as the target of send_peer_message."
+	return "List the other Reasonix sessions on this machine that are listening for messages. Use the name or key it prints as the target of send_peer_message. A row marked busy is in the middle of a turn: its side reads your message when the turn ends. A row named role= is a session a dispatch opened to do that job."
 }
 func (*listPeers) Schema() json.RawMessage {
 	return json.RawMessage(`{"type":"object","properties":{},"additionalProperties":false}`)
@@ -44,7 +44,14 @@ func (t *listPeers) Execute(_ context.Context, _ json.RawMessage) (string, error
 		if p.Project != "" {
 			name = p.Project + "/" + p.Title
 		}
-		fmt.Fprintf(&b, "%s\tkey=%s\n", name, p.Key)
+		fmt.Fprintf(&b, "%s\tkey=%s", name, p.Key)
+		if p.Busy {
+			b.WriteString("\tbusy")
+		}
+		if p.Purpose != "" {
+			fmt.Fprintf(&b, "\trole=%s", p.Purpose)
+		}
+		b.WriteString("\n")
 	}
 	return b.String(), nil
 }
