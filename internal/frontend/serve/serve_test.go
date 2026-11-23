@@ -175,8 +175,20 @@ func TestServeEndpoints(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.StatusCode != http.StatusNoContent {
-		t.Fatalf("tool approval mode auto status = %d, want 204", resp.StatusCode)
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("tool approval mode auto status = %d, want 200", resp.StatusCode)
+	}
+	// The answer names which cards the switch auto-allowed: a fresh decision
+	// stays pending whatever the posture, and a window that assumed otherwise
+	// hid a card nobody answered.
+	var switched struct {
+		Drained []string `json:"drained"`
+	}
+	if err := json.NewDecoder(resp.Body).Decode(&switched); err != nil {
+		t.Fatalf("tool approval mode answer: %v", err)
+	}
+	if switched.Drained == nil {
+		t.Fatal("tool approval mode answer carries no drained list")
 	}
 	resp.Body.Close()
 	if got := ctrl.ToolApprovalMode(); got != control.ToolApprovalAuto {
@@ -190,8 +202,8 @@ func TestServeEndpoints(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp.Body.Close()
-		if resp.StatusCode != http.StatusNoContent {
-			t.Fatalf("tool approval mode %s status = %d, want 204", mode, resp.StatusCode)
+		if resp.StatusCode != http.StatusOK {
+			t.Fatalf("tool approval mode %s status = %d, want 200", mode, resp.StatusCode)
 		}
 		if got := ctrl.ToolApprovalMode(); got != mode {
 			t.Fatalf("tool approval mode = %q, want %q", got, mode)
