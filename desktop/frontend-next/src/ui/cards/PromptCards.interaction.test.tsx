@@ -97,7 +97,7 @@ describe("decision cards", () => {
     expect(fullAccess).not.toHaveBeenCalled();
     expect(screen.getByText("全部放行会跳过后续工具确认")).toBeTruthy();
     await userEvent.click(screen.getByRole("button", { name: "确认全部放行" }));
-    expect(fullAccess).toHaveBeenCalledWith("row");
+    expect(fullAccess).toHaveBeenCalledWith("row", "gate");
   });
 
   it("does not invent a recommendation and restores answered tab state", () => {

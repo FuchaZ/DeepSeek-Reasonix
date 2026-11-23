@@ -3,11 +3,11 @@ import { describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 import { useGateActions } from "./gates";
 
-// Switching to full access answers only the cards the new posture covers. A
-// fresh decision — a dispatch, a peer message, a setting — stays on the queue
-// whatever the posture, and the window must keep showing it: marking it settled
-// hid a card nobody had answered, and the turn waited for a reply that could
-// never come.
+// "Confirm full access" is one decision, not two. The switch covers the cards
+// the new posture allows; a card it does not cover — a dispatch, a peer
+// message, a command that runs another command — is answered by the same click,
+// because that is what the button says it does. Leaving it for a second click
+// read as the first one having failed.
 
 const setup = (drained: string[] | undefined) => {
   const port = {
@@ -24,21 +24,25 @@ const setup = (drained: string[] | undefined) => {
 };
 
 describe("full access", () => {
-  it("marks a card the kernel actually let through", async () => {
-    const { actions, dispatch } = setup(["i1"]);
-    await actions.onFullAccess("i1");
+  it("marks a card the switch itself covered", async () => {
+    const { actions, port, dispatch } = setup(["i1"]);
+    await expect(actions.onFullAccess("i1", "a1")).resolves.toBe(true);
+    expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ id: "i1", verdict: "yolo" }));
+    expect(port.approve).not.toHaveBeenCalled();
+  });
+
+  it("answers a card the switch did not cover, so one click settles it", async () => {
+    const { actions, port, dispatch } = setup([]);
+    await expect(actions.onFullAccess("i1", "a1")).resolves.toBe(true);
+    expect(port.approve).toHaveBeenCalledExactlyOnceWith("a1", "once");
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ id: "i1", verdict: "yolo" }));
   });
 
-  it("leaves a fresh decision on the queue", async () => {
-    const { actions, dispatch } = setup([]);
-    await actions.onFullAccess("i1");
-    expect(dispatch).not.toHaveBeenCalled();
-  });
-
-  it("does not guess when the answer says nothing", async () => {
-    const { actions, dispatch } = setup(undefined);
-    await actions.onFullAccess("i1");
+  it("keeps the card when there is no approval id to answer", async () => {
+    const { actions, port, dispatch } = setup([]);
+    // Nothing to settle: marking it here would hide a card nobody answered.
+    await expect(actions.onFullAccess("i1")).resolves.toBe(false);
+    expect(port.approve).not.toHaveBeenCalled();
     expect(dispatch).not.toHaveBeenCalled();
   });
 
@@ -46,9 +50,16 @@ describe("full access", () => {
     const { actions, port, dispatch, fail } = setup([]);
     const boom = new Error("busy");
     port.setApprovalMode.mockRejectedValueOnce(boom);
-    // The failure is both reported and handed back: the card keeps its confirm
-    // box open on a rejection, so it has to know the call did not land.
-    await expect(actions.onFullAccess("i1")).rejects.toBe(boom);
+    await expect(actions.onFullAccess("i1", "a1")).rejects.toBe(boom);
+    expect(fail).toHaveBeenCalledWith(boom);
+    expect(dispatch).not.toHaveBeenCalled();
+  });
+
+  it("reports a card that could not be answered, without claiming it was", async () => {
+    const { actions, port, dispatch, fail } = setup([]);
+    const boom = new Error("already decided");
+    port.approve.mockRejectedValueOnce(boom);
+    await expect(actions.onFullAccess("i1", "a1")).rejects.toBe(boom);
     expect(fail).toHaveBeenCalledWith(boom);
     expect(dispatch).not.toHaveBeenCalled();
   });

@@ -32,19 +32,27 @@ export function useGateActions({ port, dispatch, refreshStatus, fail, onRevise }
   );
 
   const onFullAccess = useCallback(
-    async (itemId: string): Promise<boolean> => {
+    async (itemId: string, id?: string): Promise<boolean> => {
       try {
         const drained = await port.setApprovalMode("yolo");
-        // Only a card the kernel actually let through may be marked settled. A
-        // fresh decision (a dispatch, a peer message, a setting) stays pending
-        // whatever the posture, and marking it here hid a card nobody answered:
-        // the turn waited for a reply that could never come.
-        const settled = drained.includes(itemId);
-        if (settled) {
+        // A card the new posture covers is already answered by the switch. One
+        // it does not — a dispatch, a peer message, a command that runs another
+        // command — still waits, and the person who clicked "confirm full
+        // access" meant this call too: that is what the button says. So the
+        // card is answered here as well, once, rather than left for a second
+        // click that reads as the first one having failed.
+        if (drained.includes(itemId)) {
           dispatch({ kind: "__decided", id: itemId, verdict: "yolo" } as never);
+        } else if (id) {
+          await port.approve(id, "once");
+          dispatch({ kind: "__decided", id: itemId, verdict: "yolo" } as never);
+        } else {
+          // No id to answer with: say so rather than mark a card nobody settled.
+          refreshStatus();
+          return false;
         }
         refreshStatus();
-        return settled;
+        return true;
       } catch (e) {
         fail(e);
         throw e;

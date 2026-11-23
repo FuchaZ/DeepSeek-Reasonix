@@ -63,7 +63,7 @@ interface Props {
   find?: { id: string; nth: number; n: number; mode?: { regex?: boolean; caseSensitive?: boolean } } | null;
   query?: string;
   onApprove: (itemId: string, id: string, v: ApprovalVerdict) => Promise<void>;
-  onFullAccess: (itemId: string) => Promise<boolean>;
+  onFullAccess: (itemId: string, id?: string) => Promise<boolean>;
   onPlan: (itemId: string, id: string, action: PlanAction) => Promise<void>;
   onAnswer: (itemId: string, id: string, answers: { questionId: string; selected: string[]; value?: Record<string, unknown> }[]) => Promise<void>;
   onForget: (itemId: string, name: string) => void;

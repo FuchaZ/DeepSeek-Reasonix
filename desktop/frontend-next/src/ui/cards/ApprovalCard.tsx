@@ -97,7 +97,7 @@ export type { PlanAction };
 interface Props {
   item: Extract<Item, { t: "approval" }>;
   onApprove: (itemId: string, id: string, v: ApprovalVerdict) => Promise<void>;
-  onFullAccess: (itemId: string) => Promise<boolean>;
+  onFullAccess: (itemId: string, id?: string) => Promise<boolean>;
   onPlan: (itemId: string, id: string, action: PlanAction) => Promise<void>;
 }
 
@@ -133,7 +133,7 @@ export function ApprovalCard({ item, onApprove, onFullAccess, onPlan }: Props) {
       // call acts in the person's name on something else, so it still needs an
       // answer. Saying so is the whole point — the button must not return to
       // the label that invited the same click again.
-      const settled = await onFullAccess(item.id);
+      const settled = await onFullAccess(item.id, item.a.id);
       setConfirmFullAccess(false);
       setFullAccessNotice(!settled);
     } catch {
