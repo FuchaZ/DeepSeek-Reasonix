@@ -27,11 +27,33 @@ func (f *peerFixture) sendSignedHops(t *testing.T, id, body string, seq uint64, 
 	}
 }
 
+// waitForInboundHop ingests until the hop of a message this session received is
+// readable. A paired message is let in rather than held, and its hop then lives
+// in the inbox envelope: the release and the envelope's first snapshot are two
+// steps, so a reply sent right after ingestion can read as a fresh chain.
+func waitForInboundHop(t *testing.T, f *peerFixture, id string) {
+	t.Helper()
+	deadline := time.Now().Add(3 * time.Second)
+	for {
+		f.c.peerIngest()
+		if _, ok := f.c.peerMessageHops(id); ok {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatalf("the hop of %q never became readable", id)
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}
+
 func TestAMessageAtTheHopLimitIsNotSentAgain(t *testing.T) {
 	f := newPeerFixture(t)
 	f.pairedWith(t, true)
 	f.sendSignedHops(t, "m-far", "keep going", 1, peermail.MaxHops)
-	f.c.peerIngest()
+	// Let in rather than held, so the hop lives in the inbox envelope: release
+	// and the envelope's first snapshot are two steps, and a reply between them
+	// read as a fresh chain. Ingestion is idempotent, so asking again is free.
+	waitForInboundHop(t, f, "m-far")
 	if _, err := f.c.sendPeerMessage(f.sender, "again", "m-far"); !errors.Is(err, ErrPeerHopLimit) {
 		t.Fatalf("a message one hop past the limit = %v, want ErrPeerHopLimit", err)
 	}
