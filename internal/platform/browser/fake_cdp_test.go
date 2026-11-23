@@ -11,6 +11,7 @@ import (
 type fakePage struct {
 	nodes          map[int64][]string // backend node id → localName then attributes
 	active         int64              // backend node id document.activeElement names; 0 is <body>
+	axNodes        []axNode           // answer for Accessibility.getFullAXTree
 	evalExpression string
 	evalContext    string
 	evalResult     any
@@ -73,6 +74,8 @@ func (p *fakePage) answer(msg wireMessage) any {
 			return map[string]any{"result": p.evalRemote}
 		}
 		return map[string]any{"result": map[string]any{"value": ""}}
+	case "Accessibility.getFullAXTree":
+		return map[string]any{"nodes": p.axNodes}
 	case "DOM.describeNode":
 		node := params.BackendNodeID
 		if params.ObjectID == "active" {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -14,6 +15,7 @@ import (
 
 	"reasonix/internal/contract/event"
 	"reasonix/internal/contract/provider"
+	"reasonix/internal/platform/browser"
 	"reasonix/internal/safety/evidence"
 	"reasonix/internal/safety/permission"
 	"reasonix/internal/tools/builtin"
@@ -89,6 +91,7 @@ model = "x"
 	opts := Options{Sink: event.Discard}
 	if len(options) > 0 {
 		opts.ComputerDriver = options[0].ComputerDriver
+		opts.BrowserSession = options[0].BrowserSession
 	}
 	ctrl, err := Build(context.Background(), opts)
 	if err != nil {
@@ -244,4 +247,132 @@ func BrowserToolNames() []string {
 		names = append(names, t.Name())
 	}
 	return names
+}
+
+// scriptedPage is the browser a scripted run drives: a fixed accessibility
+// tree the test moves between calls, so the page changes when the script says.
+type scriptedPage struct {
+	in     chan []byte
+	closed chan struct{}
+	once   sync.Once
+
+	mu    sync.Mutex
+	ax    string
+	title string
+	url   string
+}
+
+func (p *scriptedPage) setAX(ax string) {
+	p.mu.Lock()
+	p.ax = ax
+	p.mu.Unlock()
+}
+
+func (p *scriptedPage) ReadMessage() ([]byte, error) {
+	select {
+	case msg := <-p.in:
+		return msg, nil
+	case <-p.closed:
+		return nil, io.EOF
+	}
+}
+
+func (p *scriptedPage) Close() error {
+	p.once.Do(func() { close(p.closed) })
+	return nil
+}
+
+func (p *scriptedPage) WriteMessage(raw []byte) error {
+	var msg struct {
+		ID     int64
+		Method string
+	}
+	if err := json.Unmarshal(raw, &msg); err != nil {
+		return err
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	result := map[string]any{}
+	switch msg.Method {
+	case "Target.createTarget":
+		result["targetId"] = "page-1"
+	case "Target.attachToTarget":
+		result["sessionId"] = "sess-1"
+	case "Page.getFrameTree":
+		result["frameTree"] = map[string]any{"frame": map[string]string{"id": "frame-1", "url": p.url}}
+	case "Page.navigate":
+		result["loaderId"] = "loader-1"
+	case "Accessibility.getFullAXTree":
+		result["nodes"] = json.RawMessage(p.ax)
+	case "Runtime.evaluate":
+		result["result"] = map[string]any{"value": p.title}
+	}
+	reply, err := json.Marshal(map[string]any{"id": msg.ID, "result": result})
+	if err != nil {
+		return err
+	}
+	p.in <- reply
+	if msg.Method == "Page.navigate" {
+		ev, _ := json.Marshal(map[string]any{"method": "Page.lifecycleEvent", "sessionId": "sess-1", "params": map[string]any{"frameId": "frame-1", "loaderId": "loader-1", "name": "load"}})
+		p.in <- ev
+	}
+	return nil
+}
+
+const effectSaveTree = `[
+	{"nodeId":"1","role":{"value":"RootWebArea"},"name":{"value":"Greeter"},"childIds":["2","3"],"backendDOMNodeId":1},
+	{"nodeId":"2","parentId":"1","role":{"value":"StaticText"},"name":{"value":"Hello"}},
+	{"nodeId":"3","parentId":"1","role":{"value":"button"},"name":{"value":"Save"},"backendDOMNodeId":6}
+]`
+
+const effectSavedTree = `[
+	{"nodeId":"1","role":{"value":"RootWebArea"},"name":{"value":"Greeter"},"childIds":["2","3"],"backendDOMNodeId":1},
+	{"nodeId":"2","parentId":"1","role":{"value":"StaticText"},"name":{"value":"Hello"}},
+	{"nodeId":"3","parentId":"1","role":{"value":"button"},"name":{"value":"Saved"},"backendDOMNodeId":6}
+]`
+
+// Through the real assembly, at the provider request: a repeat read of an
+// unchanged page reaches the model as that page's identifiers, the tree it
+// already holds does not, and a page that moves is sent whole again.
+func TestEffectUnchangedSnapshotRepeatReachesTheModelAsItsIdentifiers(t *testing.T) {
+	page := &scriptedPage{in: make(chan []byte, 64), closed: make(chan struct{}), ax: effectSaveTree, title: "Greeter", url: "https://example.com/"}
+	pool := &browser.Pool{}
+	pool.SetEndpoint(func(context.Context, string) (browser.Endpoint, error) { return page, nil })
+	session := browser.NewSession(browser.Config{Pool: pool, Launch: browser.LaunchSpec{ProfileDir: "/profiles/effect"}})
+	t.Cleanup(session.Close)
+	reqs := buildBrowserEffect(t, `[browser]
+executable = "/fake/chrome"
+headless = true`, []func(string) *provider.ToolCall{
+		func(string) *provider.ToolCall {
+			return browserCall("open-1", "browser_open", map[string]any{"url": "https://example.com/"})
+		},
+		func(string) *provider.ToolCall {
+			return browserCall("read-1", "browser_read", map[string]any{"what": "snapshot"})
+		},
+		func(string) *provider.ToolCall {
+			return browserCall("read-2", "browser_read", map[string]any{"what": "snapshot"})
+		},
+		func(string) *provider.ToolCall {
+			page.setAX(effectSavedTree)
+			return browserCall("read-3", "browser_read", map[string]any{"what": "snapshot"})
+		},
+	}, Options{BrowserSession: session})
+	results := effectToolResults(reqs[len(reqs)-1])
+	if len(results) != 4 {
+		t.Fatalf("tool results at the boundary = %d, want open and three reads", len(results))
+	}
+	if !strings.Contains(results[0], `- button "Save" [e1]`) {
+		t.Fatalf("the open did not carry the tree:\n%s", results[0])
+	}
+	for i, repeat := range results[1:3] {
+		if !strings.Contains(repeat, "Unchanged since your last snapshot of this page (2 lines)") {
+			t.Fatalf("repeat %d did not carry the unchanged contract:\n%s", i+1, repeat)
+		}
+		if strings.Contains(repeat, "Save") {
+			t.Fatalf("repeat %d repeated the tree the model holds:\n%s", i+1, repeat)
+		}
+	}
+	if !strings.Contains(results[3], `- button "Saved" [e1]`) {
+		t.Fatalf("a moved page did not reach the model whole again:\n%s", results[3])
+	}
 }

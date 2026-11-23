@@ -501,3 +501,151 @@ func TestAViewportIsAskedForInPixelsWithinReason(t *testing.T) {
 		t.Fatalf("resize = %q, %v", note, err)
 	}
 }
+
+const savedButtonTree = `[
+	{"nodeId":"1","role":{"value":"RootWebArea"},"name":{"value":"Greeter"},"childIds":["2","3"],"backendDOMNodeId":1},
+	{"nodeId":"2","parentId":"1","role":{"value":"StaticText"},"name":{"value":"Hello"}},
+	{"nodeId":"3","parentId":"1","role":{"value":"button"},"name":{"value":"Save"},"backendDOMNodeId":6}
+]`
+
+const savedButtonTreeMoved = `[
+	{"nodeId":"1","role":{"value":"RootWebArea"},"name":{"value":"Greeter"},"childIds":["2","3"],"backendDOMNodeId":1},
+	{"nodeId":"2","parentId":"1","role":{"value":"StaticText"},"name":{"value":"Hello"}},
+	{"nodeId":"3","parentId":"1","role":{"value":"button"},"name":{"value":"Saved"},"backendDOMNodeId":6}
+]`
+
+// The unchanged mark names the render the agent was given as snapshot text: a
+// fetch nobody was shown must leave it alone, so the next read still delivers.
+func TestTheUnchangedMarkMovesOnlyWhenTheAgentIsGivenTheLines(t *testing.T) {
+	page := &fakePage{axNodes: axJSON(t, savedButtonTree)}
+	s, _ := newFakeSession(t, page)
+	ctx := context.Background()
+	first, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if first.Unchanged {
+		t.Fatal("a first look reported the agent already holds this page")
+	}
+	s.NoteShown(first)
+	again, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !again.Unchanged || strings.Join(again.Lines, "\n") != strings.Join(first.Lines, "\n") {
+		t.Fatalf("a repeat of the same render = unchanged %v:\n%v", again.Unchanged, again.Lines)
+	}
+	page.axNodes = axJSON(t, savedButtonTreeMoved)
+	moved, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if moved.Unchanged {
+		t.Fatal("a moved render reported itself unchanged")
+	}
+	unshown, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if unshown.Unchanged {
+		t.Fatal("a fetch nobody was shown moved the mark; the next read must still deliver")
+	}
+	s.NoteShown(moved)
+	if last, err := s.Snapshot(ctx, "", ""); err != nil || !last.Unchanged {
+		t.Fatalf("after the agent was given the render, a repeat = %v, %v", last.Unchanged, err)
+	}
+}
+
+// A navigation is a new document even when its render happens to match the old
+// one, and a within-document move changes the address the read has to report.
+func TestNavigationClearsTheUnchangedMarkEvenWhenTheLinesMatch(t *testing.T) {
+	refFree := `[
+		{"nodeId":"1","role":{"value":"RootWebArea"},"name":{"value":"Page"},"childIds":["2"]},
+		{"nodeId":"2","parentId":"1","role":{"value":"StaticText"},"name":{"value":"Hello"}}
+	]`
+	page := &fakePage{axNodes: axJSON(t, refFree)}
+	s, tb := newFakeSession(t, page)
+	ctx := context.Background()
+	snap, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.NoteShown(snap)
+	tb.onEvent(event{Method: "Page.frameNavigated", Params: json.RawMessage(`{"frame":{"id":"frame-1","parentId":"","url":"https://example.com/one"}}`)})
+	crossed, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Join(crossed.Lines, "\n") != strings.Join(snap.Lines, "\n") {
+		t.Fatalf("the two documents render differently, so the mark is not the point: %v", crossed.Lines)
+	}
+	if crossed.Unchanged {
+		t.Fatal("a cross-document navigation kept the mark")
+	}
+	s.NoteShown(crossed)
+	tb.onEvent(event{Method: "Page.navigatedWithinDocument", Params: json.RawMessage(`{"frameId":"frame-1","url":"https://example.com/two"}`)})
+	within, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if within.Unchanged {
+		t.Fatal("a within-document navigation kept the mark")
+	}
+}
+
+// An act reconciles the agent to the new tree with a change list, not the tree
+// itself; the read after it must still deliver the whole page.
+func TestAnActsRefreshDoesNotClaimTheAgentHoldsTheNewTree(t *testing.T) {
+	page := &fakePage{axNodes: axJSON(t, savedButtonTree)}
+	s, _ := newFakeSession(t, page)
+	ctx := context.Background()
+	snap, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.NoteShown(snap)
+	page.axNodes = axJSON(t, savedButtonTreeMoved)
+	refreshed, changes, err := s.Refresh(ctx, "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if changes.NewDocument || len(changes.Added) == 0 {
+		t.Fatalf("the act's refresh did not see the move: %+v", changes)
+	}
+	if refreshed.Unchanged {
+		t.Fatal("the refresh reported the new render as one the agent holds")
+	}
+	read, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if read.Unchanged {
+		t.Fatal("the read after an act that changed the tree elided; the agent holds a change list, not the tree")
+	}
+}
+
+// A subtree render is not the page, whatever the agent holds of the page.
+func TestAScopedSnapshotIsNeverReportedUnchanged(t *testing.T) {
+	page := &fakePage{axNodes: axJSON(t, savedButtonTree)}
+	s, _ := newFakeSession(t, page)
+	ctx := context.Background()
+	whole, err := s.Snapshot(ctx, "", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	s.NoteShown(whole)
+	ref := s.refs.refFor("t1", 6)
+	scoped, err := s.Snapshot(ctx, "", ref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if scoped.Unchanged {
+		t.Fatal("a subtree render claimed the agent already holds the whole page")
+	}
+	if strings.Join(scoped.Lines, "\n") == strings.Join(whole.Lines, "\n") {
+		t.Fatalf("the subtree rendered as the whole page: %v", scoped.Lines)
+	}
+	if after, err := s.Snapshot(ctx, "", ""); err != nil || !after.Unchanged {
+		t.Fatalf("a scoped look moved the mark: unchanged %v, %v", after.Unchanged, err)
+	}
+}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -20,6 +21,9 @@ type Snapshot struct {
 	Tab    TabInfo
 	Lines  []string
 	Dialog *Dialog
+	// Unchanged reports a whole-page render identical to the one the agent was
+	// last given as snapshot text, of the same document at the same address.
+	Unchanged bool
 }
 
 type axValue struct {
@@ -77,6 +81,7 @@ func (s *Session) Snapshot(ctx context.Context, tabID, scope string) (Snapshot, 
 			root = n
 		}
 	}
+	var unchanged bool
 	if scope != "" {
 		target, err := s.refs.resolve(scope)
 		if err != nil {
@@ -97,9 +102,22 @@ func (s *Session) Snapshot(ctx context.Context, tabID, scope string) (Snapshot, 
 		r.children(root, 0, root.Name.String())
 		t.mu.Lock()
 		t.seen = seenSnapshot{lines: r.lines, document: t.navigated, valid: true}
+		unchanged = t.shown.valid && t.shown.document == t.navigated && t.shown.url == t.url && slices.Equal(t.shown.lines, r.lines)
 		t.mu.Unlock()
 	}
-	return Snapshot{Tab: t.info(true), Lines: r.lines, Dialog: t.currentDialog()}, nil
+	return Snapshot{Tab: t.info(true), Lines: r.lines, Dialog: t.currentDialog(), Unchanged: unchanged}, nil
+}
+
+// NoteShown records the whole-page render the agent is being given as snapshot
+// text: the baseline a later default read compares against to skip repeating it.
+func (s *Session) NoteShown(snap Snapshot) {
+	t, err := s.tab(snap.Tab.ID)
+	if err != nil {
+		return
+	}
+	t.mu.Lock()
+	t.shown = shownSnapshot{lines: snap.Lines, document: t.navigated, url: t.url, valid: true}
+	t.mu.Unlock()
 }
 
 // Changes is how a page differs from the last snapshot the agent saw of it.

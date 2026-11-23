@@ -53,6 +53,7 @@ type tab struct {
 	pointer   pointerState
 	runtime   runtimeState
 	seen      seenSnapshot
+	shown     shownSnapshot
 }
 
 type pointerState struct {
@@ -69,6 +70,16 @@ type runtimeState struct {
 type seenSnapshot struct {
 	lines    []string
 	document int64
+	valid    bool
+}
+
+// shownSnapshot is the whole-page render last delivered to the agent as
+// snapshot text. A default read elides only while its render, document and
+// address all still match what that text described.
+type shownSnapshot struct {
+	lines    []string
+	document int64
+	url      string
 	valid    bool
 }
 

@@ -139,6 +139,7 @@ func (b browserOpen) snapshot(ctx context.Context) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	b.session.NoteShown(snap)
 	out := renderSnapshot(snap, 0, browserSnapshotLines)
 	if tabs := b.session.Tabs(); len(tabs) > 1 {
 		out += "\n" + renderTabs(tabs)
@@ -151,12 +152,12 @@ type browserRead struct{ session *browser.Session }
 func (browserRead) Name() string { return "browser_read" }
 
 func (browserRead) Description() string {
-	return "Read a browser page: snapshot (default; page with offset/limit, or ref for one subtree), find (lines carrying text, with their refs), " +
+	return "Read a browser page: snapshot (default; page with offset/limit, or ref for one subtree; a repeat of an unchanged page carries its identifiers, force=true returns the lines), find (lines carrying text, with their refs), " +
 		"screenshot (browser_act x/y use its pixels, and the person is shown it too), logs (errors since you last read them), network (what it requested and what came back; text narrows by URL), tabs."
 }
 
 func (browserRead) Schema() json.RawMessage {
-	return json.RawMessage(`{"type":"object","properties":{"what":{"type":"string","enum":["snapshot","find","screenshot","logs","network","tabs"]},"tab":{"type":"string"},"ref":{"type":"string"},"text":{"type":"string"},"offset":{"type":"integer"},"limit":{"type":"integer"}}}`)
+	return json.RawMessage(`{"type":"object","properties":{"what":{"type":"string","enum":["snapshot","find","screenshot","logs","network","tabs"]},"tab":{"type":"string"},"ref":{"type":"string"},"text":{"type":"string"},"force":{"type":"boolean"},"offset":{"type":"integer"},"limit":{"type":"integer"}}}`)
 }
 
 // PermissionArgs names the site the tab being read shows.
@@ -197,6 +198,7 @@ func (b browserRead) ExecuteWithImages(ctx context.Context, args json.RawMessage
 		Tab    string `json:"tab"`
 		Ref    string `json:"ref"`
 		Text   string `json:"text"`
+		Force  bool   `json:"force"`
 		Offset int    `json:"offset"`
 		Limit  int    `json:"limit"`
 	}
@@ -211,6 +213,15 @@ func (b browserRead) ExecuteWithImages(ctx context.Context, args json.RawMessage
 		snap, err := b.session.Snapshot(ctx, p.Tab, p.Ref)
 		if err != nil {
 			return "", nil, err
+		}
+		// Only a default read hands the model the page's snapshot text: a peek
+		// through ref/offset/limit delivers a window, and moving the baseline
+		// to it would let a later read elide against lines the model never saw.
+		if p.Ref == "" && p.Offset == 0 && p.Limit == 0 {
+			b.session.NoteShown(snap)
+		}
+		if snap.Unchanged && len(snap.Lines) > 0 && p.Ref == "" && !p.Force && p.Offset == 0 && p.Limit == 0 {
+			return renderUnchanged(snap), nil, nil
 		}
 		limit := browserSnapshotLines
 		if p.Limit > 0 {
@@ -443,6 +454,19 @@ func renderSnapshot(snap browser.Snapshot, offset, limit int) string {
 	for _, line := range snap.Lines[start:end] {
 		b.WriteString(line + "\n")
 	}
+	return b.String()
+}
+
+// renderUnchanged answers a default read of a page whose tree the agent
+// already holds: the identifiers that say which page, and how to have the
+// lines back when that context is gone.
+func renderUnchanged(snap browser.Snapshot) string {
+	var b strings.Builder
+	b.WriteString(tabLine(snap.Tab) + "\n")
+	if snap.Dialog != nil {
+		fmt.Fprintf(&b, "A %s dialog is open: %q. Answer it with a browser_act dialog step.\n", snap.Dialog.Type, snap.Dialog.Message)
+	}
+	fmt.Fprintf(&b, "Unchanged since your last snapshot of this page (%d lines); use that snapshot. force=true returns the full tree.\n", len(snap.Lines))
 	return b.String()
 }
 
