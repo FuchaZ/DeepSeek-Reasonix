@@ -240,6 +240,7 @@ export const REMOTE: Messages = {
   "remote.turn_on_session_messages_first": { zh: "先启用会话间消息，再放行项目。", en: "Turn on session messages first, then allow projects through." },
   "remote.turn_on_session_messages_first_2": { zh: "先启用会话间消息。", en: "Turn on session messages first." },
   "remote.turn_on_dispatch_first": { zh: "先在上一块里允许模型把任务交给别的会话，这里才用得上。", en: "Turn on handing tasks to another session in the block above; this needs it." },
+  "remote.turn_on_messages_to_dispatch": { zh: "会话间消息关着，这里派不出去。", en: "Messages between sessions are off, so nothing can be handed over here." },
   "remote.turn_this_machine_off": { zh: "停用这台主机", en: "Turn this machine off" },
   "remote.turn_this_machine_on": { zh: "启用这台主机", en: "Turn this machine on" },
   "remote.up_one_level": { zh: "上一级", en: "Up one level" },

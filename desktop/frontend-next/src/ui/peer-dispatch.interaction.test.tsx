@@ -72,7 +72,7 @@ describe("handing a task over yourself", () => {
 
   it("stays inert until messages between sessions are on", async () => {
     draw(settings({ enabled: false }));
-    expect(await screen.findByText(/先启用会话间消息/)).toBeTruthy();
+    expect(await screen.findByText(/会话间消息关着/)).toBeTruthy();
     expect(screen.queryByRole("button", { name: "派过去" })).toBeNull();
   });
 

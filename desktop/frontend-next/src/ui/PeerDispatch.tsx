@@ -53,7 +53,7 @@ export function PeerDispatch({ port, hub, settings }: { port: AgentPort; hub: Pi
   const shownError = error || settings.loadError;
   if (!state) return shownError ? <div className="why" role="alert">{shownError}</div> : null;
   if (!state.available) return <div className="peernote" role="status">{t("remote.not_supported_in_this_session")}</div>;
-  if (!state.enabled) return <div className="peernote">{t("remote.turn_on_session_messages_first")}</div>;
+  if (!state.enabled) return <div className="peernote">{t("remote.turn_on_messages_to_dispatch")}</div>;
   if (!state.dispatch) return <div className="peernote">{t("remote.turn_on_dispatch_first")}</div>;
   if (known.length === 0) return <div className="peernote">{t("remote.there_is_no_project_to")}</div>;
 
