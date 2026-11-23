@@ -26,6 +26,18 @@ const (
 	codePeerBadCross    = "peer.invalid_cross_project"
 	codePeerRemember    = "peer.remember_denied"
 	codePeerSettings    = "peer.settings_unwritable"
+
+	codeDispatchDisabled      = "dispatch.disabled"
+	codeDispatchUnavailable   = "dispatch.unavailable"
+	codeDispatchNotLocal      = "dispatch.not_local"
+	codeDispatchUnknown       = "dispatch.unknown_project"
+	codeDispatchAmbiguous     = "dispatch.ambiguous"
+	codeDispatchNested        = "dispatch.nested"
+	codeDispatchUntrusted     = "dispatch.untrusted"
+	codeDispatchAwaitingTrust = "dispatch.awaiting_trust"
+	codeDispatchCrossProject  = "dispatch.cross_project"
+	codeDispatchLimit         = "dispatch.limit"
+	codeDispatchFailed        = "dispatch.failed"
 )
 
 func (s *Server) registerPeerRoutes(mux *http.ServeMux) {
@@ -34,6 +46,7 @@ func (s *Server) registerPeerRoutes(mux *http.ServeMux) {
 	go s.autoRefreshDisplayNames()
 	mux.HandleFunc("GET /peers", s.peers)
 	mux.HandleFunc("GET /dispatch-threads", s.dispatchThreads)
+	mux.HandleFunc("POST /dispatch", s.startDispatch)
 	mux.HandleFunc("POST /peers/send", s.sendPeerMessage)
 	mux.HandleFunc("POST /peers/held/{id}", s.resolvePeerMessage)
 	mux.HandleFunc("GET /peers/settings", s.peersSettings)
@@ -109,6 +122,69 @@ func (s *Server) dispatchThreads(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, s.hubThreads(r.URL.Query().Get("path")))
+}
+
+// dispatchAccepted is what a dispatch hands back: where the task went, so the
+// pane can open the session it just started.
+type dispatchAccepted struct {
+	Project string `json:"project"`
+	Key     string `json:"key"`
+	ID      string `json:"id"`
+	Role    string `json:"role,omitempty"`
+}
+
+// startDispatch is a person's own dispatch, from the pane rather than the
+// model's tool. The card that gates the tool is not asked again: pressing the
+// control is the decision that card would have collected.
+func (s *Server) startDispatch(w http.ResponseWriter, r *http.Request) {
+	if !s.grants.at(r).providerEdit {
+		refuse(w, http.StatusForbidden, "peer.editing_disabled", "messages between sessions are not enabled for this client", nil)
+		return
+	}
+	var body struct {
+		Project string `json:"project"`
+		Text    string `json:"text"`
+		Role    string `json:"role"`
+	}
+	if err := json.NewDecoder(http.MaxBytesReader(w, r.Body, 256<<10)).Decode(&body); err != nil {
+		badBody(w)
+		return
+	}
+	got, err := s.ctl().DispatchToProject(r.Context(), body.Project, body.Text, body.Role)
+	if err != nil {
+		refuseDispatch(w, err)
+		return
+	}
+	writeJSON(w, dispatchAccepted{Project: got.Project, Key: got.Key, ID: got.ID, Role: got.Role})
+}
+
+// refuseDispatch is the HTTP twin of the tool path's peerErrorCode: the same
+// failures, each carrying the code the desktop says.
+func refuseDispatch(w http.ResponseWriter, err error) {
+	switch {
+	case errors.Is(err, control.ErrDispatchDisabled):
+		refuse(w, http.StatusConflict, codeDispatchDisabled, "handing a task to another session is turned off", nil)
+	case errors.Is(err, control.ErrDispatchUnavailable):
+		refuse(w, http.StatusConflict, codeDispatchUnavailable, "this pane cannot open a session in another project", nil)
+	case errors.Is(err, control.ErrDispatchNotLocal):
+		refuse(w, http.StatusConflict, codeDispatchNotLocal, "this pane is not one of this machine's own sessions", nil)
+	case errors.Is(err, control.ErrDispatchUnknownProject):
+		refuse(w, http.StatusNotFound, codeDispatchUnknown, "no project answers to that name", nil)
+	case errors.Is(err, control.ErrDispatchAmbiguous):
+		refuse(w, http.StatusConflict, codeDispatchAmbiguous, "more than one project answers to that name", nil)
+	case errors.Is(err, control.ErrDispatchNested):
+		refuse(w, http.StatusConflict, codeDispatchNested, "this session is as many dispatches deep as the ceiling allows", nil)
+	case errors.Is(err, control.ErrDispatchUntrusted):
+		refuse(w, http.StatusConflict, codeDispatchUntrusted, "the user declined to trust that project", nil)
+	case errors.Is(err, control.ErrDispatchAwaitingTrust):
+		refuse(w, http.StatusConflict, codeDispatchAwaitingTrust, "the user has not answered whether to trust that project", nil)
+	case errors.Is(err, control.ErrDispatchCrossProject):
+		refuse(w, http.StatusConflict, codeDispatchCrossProject, "the cross-project setting refuses that task", nil)
+	case errors.Is(err, control.ErrDispatchLimit):
+		refuse(w, http.StatusConflict, codeDispatchLimit, "as many dispatched sessions are open as the ceiling allows", nil)
+	default:
+		saveFailed(w, http.StatusInternalServerError, codeDispatchFailed, err)
+	}
 }
 
 // sendPeerMessage and resolvePeerMessage ride the provider-edit grant: a held

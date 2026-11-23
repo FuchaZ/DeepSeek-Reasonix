@@ -94,7 +94,9 @@ if [ "$print_plan" = 1 ]; then
       echo "check-fast: go test ./$pkg/... (whole package: no sibling test)"
     fi
   done
-  echo "check-fast: frontend typecheck over:$(printf ' %s' $ts_files)"
+  # `pnpm typecheck` is `tsc --noEmit` over the whole project, not the changed
+  # files; the count says what triggered the run, never its scope.
+  echo "check-fast: frontend typecheck (whole project) — $(printf '%s' "$ts_files" | grep -c . || true) frontend file(s) changed"
   exit 0
 fi
 

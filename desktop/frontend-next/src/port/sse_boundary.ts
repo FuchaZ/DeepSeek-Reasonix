@@ -3,7 +3,7 @@ import type { PresentFilesSettings } from "./boundary";
 import type { AgentComposition, AgentPresetVersion, AgentPresetCatalog, CompositionSummary } from "./composition";
 import type { ScheduleBoard, ScheduleDraft, SchedulePreview, ScheduleResultView, ScheduleView } from "./schedule";
 import type { PersonaDraft, PersonaSettings } from "./boundary";
-import type { Adjudications, BrowserToolsSettings, SubagentClaimsSettings, WriteLeaseSettings, PlanApprovalSettings, DefaultModeSettings, ToolSettings, PeerReceipt, PeersState, PeersSettings, PeersSettingsEdit, PeerRemember, ConfigProblem, ConfigRepair, PermissionLists, PermissionRules, SandboxSettings } from "./port";
+import type { Adjudications, BrowserToolsSettings, SubagentClaimsSettings, WriteLeaseSettings, PlanApprovalSettings, DefaultModeSettings, ToolSettings, PeerReceipt, PeersState, PeersSettings, PeersSettingsEdit, PeerRemember, ConfigProblem, ConfigRepair, PermissionLists, PermissionRules, SandboxSettings, DispatchAccepted } from "./port";
 import type { AskTimeoutSettings, ModStatus, ModsSettings, ModsSettingsEdit, SessionRefSettings, AutoArchiveSettings, ChangedFilesSettings, FeedbackLevelNotices, FoldWorkSettings, ChangedSettings, TurnNarrationSettings, ObservabilityPatch, ObservabilitySettings, WebAccessPatch, WebAccessSettings, SearxngProbe, DisplayCurrencyMode, DisplayCurrencySettings, ProgressWatchSettings, WorkspaceRoots } from "./boundary";
 
 // Where the agent may reach: the permission rules a call is matched against and
@@ -109,6 +109,9 @@ export class SseBoundary extends SseShell {
   }
   sendPeerMessage(to: string, text: string) {
     return this.post0<PeerReceipt>("/peers/send", { to, text });
+  }
+  dispatchToProject(project: string, text: string, role?: string) {
+    return this.post0<DispatchAccepted>("/dispatch", { project, text, role: role ?? "" });
   }
   resolvePeerMessage(id: string, approve: boolean, remember: PeerRemember = "none") {
     return this.post(`/peers/held/${encodeURIComponent(id)}`, { approve, remember });

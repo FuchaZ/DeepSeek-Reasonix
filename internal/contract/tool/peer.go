@@ -46,8 +46,8 @@ type DispatchReceipt struct {
 }
 
 // ProjectDispatcher is what the dispatch tool asks of the session that owns it:
-// hand a task to a session in another of the user's projects. A non-empty role
-// keeps several sessions in one project apart.
+// hand a task to a session in one of the user's projects, its own included — the
+// dispatch card is the gate. A non-empty role keeps several sessions apart.
 type ProjectDispatcher interface {
 	DispatchToProject(ctx context.Context, project, text, role string) (DispatchReceipt, error)
 }

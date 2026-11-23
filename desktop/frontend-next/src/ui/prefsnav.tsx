@@ -185,6 +185,9 @@ export const SETTINGS: SettingEntry[] = [
   { section: "session", anchor: "browser-tools", title: "common.built_in_browser", scope: "machine", apply: "runtime-rebuild", keywords: ["browser", "网页", "chrome", "浏览器工具"] },
   { section: "peers", anchor: "peers", title: "remote.messages_between_sessions_experimental", scope: "machine", apply: "next-turn", keywords: ["peer", "会话间", "互聊", "会话互聊", "消息", "发送", "批准", "挂起", "另一个会话"] },
   { section: "peers", anchor: "peer-projects", within: "peers", title: "remote.projects_allowed_through", scope: "machine", apply: "next-turn", keywords: ["放行", "项目", "不再询问", "长期", "撤销", "peer", "release", "会话间", "会话互聊"] },
+  // A task the person hands over themselves: the same dispatch the model's tool
+  // performs, started by the press rather than by a card.
+  { section: "peers", anchor: "peer-dispatch", within: "peers", title: "remote.hand_over_a_task", scope: "machine", apply: "immediate", keywords: ["派发", "任务", "交给", "dispatch", "hand over", "会话互聊", "角色", "role"] },
   // The two ceilings on handing a task over: how deep a dispatch may chain, and
   // how many sessions one turn may hand to at once. Saved with the switches
   // above, and read the same way — at the next turn boundary.

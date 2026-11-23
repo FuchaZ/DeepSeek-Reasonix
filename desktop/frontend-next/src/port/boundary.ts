@@ -250,6 +250,15 @@ export interface PeerReceipt {
   to: PeerView;
 }
 
+/** Where a dispatch the person started landed: the project, the session's peer
+ *  key and the message it carries there. */
+export interface DispatchAccepted {
+  project: string;
+  key: string;
+  id: string;
+  role?: string;
+}
+
 export interface AutoArchiveSettings {
   enabled: boolean;
   days: number;

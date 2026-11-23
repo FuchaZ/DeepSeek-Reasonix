@@ -60,7 +60,7 @@ const undeclared = census.roots.filter((r) => !r.actions.length);
 // and what remains is the old forms' legacy (AddProvider, AddServer, the
 // composer's local chips). Carry it at the honest number until those are
 // named; lower it the moment any drop.
-const UNDECLARED_CEILING = 215;
+const UNDECLARED_CEILING = 214;
 
 /** One file, for holding the discovery rules themselves. */
 const only = (src: string) => certifyRoots(new Map([["src/ui/X.tsx", src]]), { resolve });

@@ -26,11 +26,13 @@ test("the plan names the packages a change touched, not the whole module", () =>
 });
 
 test("a narrowed run selects tests by the feature a file belongs to", () => {
-  const r = plan("--base", "HEAD");
+  // A recorded baseline, not HEAD: a clean checkout changes nothing against
+  // HEAD, and the rule has to hold over history as well as over a working tree.
+  const r = plan("--base", "f56990695~1");
   assert.equal(r.status, 0, r.stderr);
-  // The peer feature's files are changed in this checkout, so the names they
-  // share with their test files appear; unrelated features do not.
-  assert.match(r.stdout, /TestAMessageAtTheHopLimitIsNotSentAgain|TestNeverIsOneOfTheFourAnswers/);
+  // That commit changed peer_mail.go beside peer_hop_limit_test.go, so the
+  // tests naming the shared stem appear; unrelated features do not.
+  assert.match(r.stdout, /TestAMessageAtTheHopLimitIsNotSentAgain|TestARoundTripRaisesTheHopCountByOne/);
 });
 
 test("an unknown argument is refused rather than ignored", () => {

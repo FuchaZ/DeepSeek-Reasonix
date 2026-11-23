@@ -22,4 +22,11 @@ export const PEERS_ACTIONS: UIAction[] = [
   { id: "peers.release-add", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
   { id: "peers.release-pick", kind: "view", target: "none", proof: "interaction" },
   { id: "peers.deny", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
+  // A task the person hands over themselves: the project picked, the words, the
+  // optional role, and the press that starts it. No card follows — the press is
+  // the decision the model's dispatch card would have collected.
+  { id: "peers.dispatch-project", kind: "view", target: "none", proof: "interaction" },
+  { id: "peers.dispatch-text", kind: "view", target: "none", proof: "interaction" },
+  { id: "peers.dispatch-role", kind: "view", target: "none", proof: "interaction" },
+  { id: "peers.dispatch-start", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
 ];

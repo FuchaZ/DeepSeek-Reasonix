@@ -247,7 +247,8 @@ func (c *Controller) TrustOfWorkspace(root string) config.WorkspaceTrust {
 	return trust
 }
 
-// DispatchToProject hands a task to a session in another of the user's projects.
+// DispatchToProject hands a task to a session in one of the user's projects,
+// its own included: the dispatch card is the gate, not a same-project rule.
 func (c *Controller) DispatchToProject(ctx context.Context, project, text, role string) (DispatchResult, error) {
 	cfg := config.LoadForEdit(config.UserConfigPath())
 	if !cfg.PeersDispatch() {

@@ -448,6 +448,10 @@ type PeerMail interface {
 	// dispatches was opened under — the sender's own record, which outlives
 	// the dispatched panes.
 	DispatchRoles() map[string]string
+	// DispatchToProject opens, or reuses, a session in one of the user's
+	// projects and writes the task into it. A person asking for it is the
+	// decision; the card that gates the model's tool is not asked again.
+	DispatchToProject(ctx context.Context, project, text, role string) (DispatchResult, error)
 	SendPeerMessage(to, text string) (PeerReceipt, error)
 	HeldPeerMessages() []PeerHeld
 	ResolvePeerMessage(id string, approve bool) error
