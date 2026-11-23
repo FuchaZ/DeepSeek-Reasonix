@@ -209,16 +209,35 @@ export class SseHttp {
   }
 
   // postAckedJson is postAcked for the call whose answer is data rather than an
-  // acknowledgement: the same bounded wait, and the body it answered with.
+  // acknowledgement: the same bounded wait, the same typed failures, and the
+  // body it answered with. A bare fetch here would hang a button forever.
   protected async postAckedJson<T>(path: string, body?: unknown): Promise<T> {
-    const res = await fetch(this.base + path, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      credentials: "same-origin",
-      body: body === undefined ? undefined : JSON.stringify(body),
-    });
-    if (!res.ok) await SseHttp.fail(path, res);
-    return (await res.json()) as T;
+    const ctl = new AbortController();
+    const began = performance.now();
+    let stalled = false;
+    const timer = setTimeout(() => {
+      stalled = performance.now() - began - ACK_WAIT_MS > STALL_TOLERANCE_MS;
+      ctl.abort();
+    }, ACK_WAIT_MS);
+    let answered = false;
+    try {
+      const res = await fetch(this.base + path, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        credentials: "same-origin",
+        body: body === undefined ? undefined : JSON.stringify(body),
+        signal: ctl.signal,
+      });
+      answered = true;
+      if (!res.ok) await SseHttp.fail(path, res);
+      return (await res.json()) as T;
+    } catch (e) {
+      if (!answered && ctl.signal.aborted) throw new DeliveryError(stalled ? "ui_stalled" : "kernel_busy");
+      if (!answered && e instanceof TypeError) throw new DeliveryError("unreachable");
+      throw e;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 }
 
