@@ -660,3 +660,67 @@ PE32 / NSIS self-extracting，未签名（首次运行按系统提示放行）�
   client 方向全树没有。
 - **§8 折叠卡顿 B1/B2**：待用户拍板方案。
 - **`Workspaces.tsx` 1157 行**抽取：仍是 UI 每次改动最费劲处。
+
+## 11. 首次推送与 CI 修复（2026-11-24，`a1e2249f7`）
+
+30 个提交推到 `origin/studio` 后，CI 七红。七处最后归到**五个根因**，全是这次推送
+之前就在的东西，只有一处是真正的回归。记下来是因为其中三条的排查方向都先猜错了。
+
+### 11.1 五个根因
+
+| 现象 | 根因 | 修法 |
+| --- | --- | --- |
+| `TestServeEndpoints` 204 vs 200 | `f4668e6c8` 让 `POST /tool-approval-mode` 返回 `{drained:[...]}`，测试仍断言 204 | 改断言 200 并校验 `drained` 存在 |
+| `TestEveryRouteReachesTheDevServer` | 新增 `POST /dispatch` 没进 `vite.config.ts` 的 `ROUTES` | 加 `"/dispatch"` |
+| `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH` | `21192a3b6` 顺手带走了 `pnpm-lock.yaml` 的 `overrides` 段 | 整份回到漂移前版本 |
+| `TestCheckProviderDecisionSourceUnreachable` | `srv.Close()` 释放端口，同轮别的测试抢到，探针打到别人的 mux 得 405 | 指向 `127.0.0.1:1`（永不监听） |
+| `peers-section` 找到两个相同文案 | 新派发区块复用了项目区块的「先启用会话间消息」 | 派发区块用自己的话 |
+
+`lint` 那一轮还独立抓到 `approval_cancel_race_test.go` 的 `context.Background()`
+该换 `t.Context()`——`go vet` 看不出来，只有按 CI 版本跑 golangci 才有。
+
+### 11.2 hop 测试：修了两次才对
+
+`TestAMessageAtTheHopLimitIsNotSentAgain` 在 Windows CI 上偶发，本地 30 次复现不了。
+
+**第一次判断错了**：以为 spool 写入还没被 `Pending` 看到，加了「等 held 出现」的
+轮询助手。结果 **CI 变成稳定失败**，耗时 3.25s——正好是助手的 3 秒超时。
+
+**第二次才查清**：这条消息根本没有进 held。`pairedWith(t, true)` 把它标成 dispatch
+配对，`releaseHeldPeerMessages` 于是**放行**它，hop 存进 inbox envelope；
+`peerMessageHops` 走兜底路径去读 envelope。这条路依赖机器上 `peers.incoming` 的答案，
+而测试从没固定过它——**测的是配置，不是上限**。
+
+改法：显式 `setPeerIncoming(t, config.IncomingAsk)`，让消息留在 held，hop 立即可读。
+运行时间 3.2s → 0.25s（不再轮询），这才是修好的证据。
+
+顺序有个坑：`setPeerIncoming` 依赖 `REASONIX_HOME`，而这由 `newPeerFixture` 内部的
+`setDispatchSwitch` 设置，所以**必须放在 fixture 之后**，否则会写进真实用户配置。
+
+### 11.3 `pnpm census`：一个被改出来的既有缺口
+
+`UNDECLARED_MUTATION = 1`：`CapabilityScope.tsx:158` 的 `ScopePicker` 选项没有 action 名。
+
+**它不是新代码**——那个按钮 11-13 就存在。变的是 census 现在**能跟到**这条写入了：
+`Settings.tsx` 里把 `setApprovalMode` 包进 `async` 箭头函数（为拿 `drained`），
+给 effect 联结多了一条边，于是这个根从"只读"变成"已证明会写"。
+
+修法：给按钮加 `data-action="ext.scope-pick"`，`actions.ts` 注册为 `kernel-mutation`。
+
+教训：**instrumentation 变强会暴露既有债务**。这和 census 注释里写的 213→215 是同一类
+事件——数字变了不等于债务新增。
+
+### 11.4 剩下两项（都非本次引入，待决策）
+
+- **`govulncheck`**：`gorilla/websocket@v1.5.3` 的 GO-2026-6278（弱 PRNG 生成 WebSocket
+  mask key）。修复版本 `v1.5.4-0.20240701034025-d67f41855da4` 是**未正式发布的 commit**，
+  `go list -m -versions` 只到 v1.5.3。升上去能转绿，但引入伪版本。
+- **`browser guards`**：8 处对比度不足，全在 `Notifications.tsx` 的关闭态从属行。
+  根因 `.subrow[data-off] { opacity: .5 }`：`--text` 10.65→2.66、`--faint` 5.52→2.08。
+  实测调到 0.8 也只有 3.61，**光调透明度解决不了**，得改颜色方案。
+
+### 11.5 macOS 三个 job 被取消
+
+`test (macos-15)` / `sdk (macos-15)` / `desktop-macos` 全部 `cancelled`：runner 排队
+超时，与代码无关。免费额度下这一轮的 job 调度普遍偏慢（run 级状态长时间停在
+`pending`，而 job 级其实已在跑——**查 CI 进度要看 job 级**）。
