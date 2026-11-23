@@ -207,6 +207,19 @@ export class SseHttp {
       clearTimeout(timer);
     }
   }
+
+  // postAckedJson is postAcked for the call whose answer is data rather than an
+  // acknowledgement: the same bounded wait, and the body it answered with.
+  protected async postAckedJson<T>(path: string, body?: unknown): Promise<T> {
+    const res = await fetch(this.base + path, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+    if (!res.ok) await SseHttp.fail(path, res);
+    return (await res.json()) as T;
+  }
 }
 
 // A capability scope rides as a query rather than a path segment: every one of

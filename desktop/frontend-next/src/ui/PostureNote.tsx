@@ -66,7 +66,7 @@ export function PostureNote({ port, status, onChanged }: {
     <div className="rtbar posturenote" data-kind="unconfined" data-lvl="warn" role="status">
       <StudioIcon name="info" />
       <span className="t" title={refused || t("composer.no_os_sandbox_is_in")}>{refused || t("composer.no_sandbox_ask_first")}</span>
-      <button data-action="tool-approval.mode" data-value="auto" disabled={busy} onClick={() => act(() => port.setApprovalMode("auto"))}>{t("composer.auto_approve")}</button>
+      <button data-action="tool-approval.mode" data-value="auto" disabled={busy} onClick={() => act(async () => { await port.setApprovalMode("auto"); })}>{t("composer.auto_approve")}</button>
       <button data-action="posture-note.dismiss" onClick={() => { markUnconfinedSeen(); setHidden(true); }}>{t("common.got_it")}</button>
     </div>
   );

@@ -32,7 +32,10 @@ func (h *fakePostureHost) SetWorkspaceTrust(t config.WorkspaceTrust) error {
 func (h *fakePostureHost) DefaultApprovalMode() string {
 	return control.DefaultApprovalMode(h.confined, h.trust)
 }
-func (h *fakePostureHost) SetToolApprovalMode(mode string) { h.mode, h.sets = mode, h.sets+1 }
+func (h *fakePostureHost) SetToolApprovalMode(mode string) []string {
+	h.mode, h.sets = mode, h.sets+1
+	return nil
+}
 
 func settleWith(t *testing.T, h *fakePostureHost, mode cliPermissionMode, named bool, home, input string) (string, error) {
 	t.Helper()

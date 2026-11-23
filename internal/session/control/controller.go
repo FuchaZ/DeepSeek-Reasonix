@@ -1194,13 +1194,13 @@ func (c *Controller) SetMode(plan, autoApproveTools bool) {
 }
 
 // ApplyMode is SetMode reporting which pending approval prompt ids the tool
-// approval switch auto-allowed (see ApplyToolApprovalMode).
+// approval switch auto-allowed (see SetToolApprovalMode).
 func (c *Controller) ApplyMode(plan, autoApproveTools bool) []string {
 	c.applyPlanMode(plan)
 	if autoApproveTools {
-		return c.ApplyToolApprovalMode(ToolApprovalYolo)
+		return c.SetToolApprovalMode(ToolApprovalYolo)
 	}
-	return c.ApplyToolApprovalMode(ToolApprovalAsk)
+	return c.SetToolApprovalMode(ToolApprovalAsk)
 }
 
 // Bypass is the legacy name for AutoApproveTools.

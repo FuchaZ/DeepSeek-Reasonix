@@ -34,8 +34,14 @@ export function useGateActions({ port, dispatch, refreshStatus, fail, onRevise }
   const onFullAccess = useCallback(
     async (itemId: string) => {
       try {
-        await port.setApprovalMode("yolo");
-        dispatch({ kind: "__decided", id: itemId, verdict: "yolo" } as never);
+        const drained = await port.setApprovalMode("yolo");
+        // Only a card the kernel actually let through may be marked settled. A
+        // fresh decision (a dispatch, a peer message, a setting) stays pending
+        // whatever the posture, and marking it here hid a card nobody answered:
+        // the turn waited for a reply that could never come.
+        if (drained.includes(itemId)) {
+          dispatch({ kind: "__decided", id: itemId, verdict: "yolo" } as never);
+        }
         refreshStatus();
       } catch (e) {
         fail(e);

@@ -618,7 +618,7 @@ export class SsePort extends SseTerminal implements AgentPort {
     return this.post("/plan", { on });
   }
   setApprovalMode(mode: ApprovalMode) {
-    return this.post("/tool-approval-mode", { mode });
+    return this.postAckedJson<{ drained?: string[] }>("/tool-approval-mode", { mode }).then((r) => r?.drained ?? []);
   }
   decideWorkspaceTrust(trust: "trusted" | "declined") {
     return this.post("/workspace-trust", { trust });

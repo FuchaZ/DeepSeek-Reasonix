@@ -22,7 +22,7 @@ function deferred<T>() {
 function draw(calls: Partial<AgentPort> = {}) {
   const onChanged = vi.fn();
   const port = {
-    setApprovalMode: vi.fn(async () => {}),
+    setApprovalMode: vi.fn(async () => [] as string[]),
     ...calls,
   } as unknown as AgentPort;
   const view = render(<Policy port={port} status={STATUS} onChanged={onChanged} />);
@@ -40,7 +40,7 @@ describe("execution permission changes", () => {
   });
 
   it("does not submit a second permission while the first is pending", async () => {
-    const call = deferred<void>();
+    const call = deferred<string[]>();
     const setApprovalMode = vi.fn(() => call.promise);
     const { open, option } = draw({ setApprovalMode });
     await open();
@@ -48,11 +48,11 @@ describe("execution permission changes", () => {
     expect((option("询问") as HTMLButtonElement).disabled).toBe(true);
     await userEvent.click(option("询问"));
     expect(setApprovalMode).toHaveBeenCalledTimes(1);
-    call.settle();
+    call.settle([]);
   });
 
   it("keeps the committed value and explains a refusal", async () => {
-    const call = deferred<void>();
+    const call = deferred<string[]>();
     const { open, option, onChanged } = draw({ setApprovalMode: () => call.promise });
     await open();
     await userEvent.click(option("全部放行"));

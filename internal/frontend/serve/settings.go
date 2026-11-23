@@ -192,8 +192,11 @@ func (s *Server) toolApprovalMode(w http.ResponseWriter, r *http.Request) {
 		badValue(w, "mode", "readOnly", "ask", "auto", "dontAsk", "yolo")
 		return
 	}
-	s.applyApprovalMode(mode)
-	w.WriteHeader(http.StatusNoContent)
+	drained := s.applyApprovalMode(mode)
+	// Which cards were auto-allowed. A fresh decision stays pending whatever the
+	// posture, so a window that assumed the switch settled everything hid a card
+	// nobody answered and waited forever.
+	writeJSON(w, map[string]any{"drained": drained})
 }
 
 // bypass is the legacy HTTP endpoint for YOLO/full-access tool auto-approval.
@@ -205,14 +208,15 @@ func (s *Server) bypass(w http.ResponseWriter, r *http.Request) {
 // has to outlive this pane: the hub, so the next conversation opens in it, and
 // the config, so the next launch does. A switch that only lands on the running
 // controller reads, either way round, as a choice that was never made.
-func (s *Server) applyApprovalMode(mode string) {
-	s.ctl().SetToolApprovalMode(mode)
+func (s *Server) applyApprovalMode(mode string) []string {
+	drained := s.ctl().SetToolApprovalMode(mode)
 	s.stance.set(mode)
 	// A terminal states its posture on its own command line; recording its
 	// switch would make a terminal's YOLO the window's next default.
 	if s.statsSurface() != surface.CLI {
 		persistDesktopApprovalMode(mode)
 	}
+	return drained
 }
 
 // persistDesktopApprovalMode records the posture chosen on the composer. Same

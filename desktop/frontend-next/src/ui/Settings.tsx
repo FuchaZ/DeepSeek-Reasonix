@@ -472,7 +472,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
           {at === "tools" && (
             <>
               <SafetySettings port={port} mode={status?.toolApprovalMode} busy={busy} onChanged={onChanged}
-                onMode={(id) => run(id, () => port.setApprovalMode(id))} />
+                onMode={(id) => run(id, async () => { await port.setApprovalMode(id); })} />
               {scope && (
                 <SectionCard title={t("ext.extension_scope")}>
                   <ScopeRow scope={scope} scopes={scopes} onPick={setScopeAt} />

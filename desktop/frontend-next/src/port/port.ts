@@ -781,7 +781,7 @@ export interface AgentPort extends RunningWorkPort, MemoryHoldPort, WorkspacePre
   submitExtensionForm(pluginId: string, surfaceId: string, values: Record<string, unknown>): Promise<void>;
 
   setPlanMode(on: boolean): Promise<void>;
-  setApprovalMode(mode: ApprovalMode): Promise<void>;
+  setApprovalMode(mode: ApprovalMode): Promise<string[]>; // answers which cards were auto-allowed
   // The person's answer to "trust this folder?" for the session's workspace.
   decideWorkspaceTrust(trust: "trusted" | "declined"): Promise<void>;
   setPreset(preset: Preset): Promise<void>;

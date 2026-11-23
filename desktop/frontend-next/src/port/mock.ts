@@ -765,6 +765,7 @@ export class MockPort extends MockWorkspace implements AgentPort {
   }
   async setApprovalMode(mode: ApprovalMode) {
     this.state.toolApprovalMode = mode;
+    return [] as string[];
   }
   async setPreset(preset: Preset) {
     this.state.preset = preset;

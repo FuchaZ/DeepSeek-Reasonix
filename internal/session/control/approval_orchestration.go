@@ -475,20 +475,14 @@ func (c *Controller) emitPendingPrompts(sink event.Sink, approvals []event.Appro
 // without it, a mode switch (Shift+Tab) would only rebuild the parent
 // executor's gate and leave sub-agents pinned to whatever mode was active
 // when the session booted.
-func (c *Controller) SetToolApprovalMode(mode string) {
-	c.ApplyToolApprovalMode(mode)
-}
-
-// ApplyToolApprovalMode is SetToolApprovalMode reporting which pending
-// approval prompt ids the new posture auto-allowed. Prompts NOT in the
-// returned set are still pending here — fresh user decisions (plan, memory,
-// sandbox escape) never drain, and auto keeps approvals an allow policy would
-// not cover — so a frontend must keep showing them instead of assuming the
-// posture switch resolved everything (#6432).
-func (c *Controller) ApplyToolApprovalMode(mode string) []string {
+func (c *Controller) SetToolApprovalMode(mode string) []string {
 	if c.observe != nil {
 		return nil
 	}
+	// Prompts NOT in the returned set are still pending here — fresh user
+	// decisions (plan, memory, sandbox escape, dispatch, a peer message) never
+	// drain — so a frontend must keep showing them instead of assuming the
+	// posture switch resolved everything (#6432).
 	mode = normalizeToolApprovalMode(mode)
 	drained, _ := c.switchApprovalMode(mode, func() ([]drainedApproval, bool) { return c.approval.setMode(mode), true })
 	return drained

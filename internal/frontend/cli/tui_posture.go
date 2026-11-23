@@ -21,7 +21,7 @@ type postureHost interface {
 	WorkspaceTrust() config.WorkspaceTrust
 	SetWorkspaceTrust(config.WorkspaceTrust) error
 	DefaultApprovalMode() string
-	SetToolApprovalMode(string)
+	SetToolApprovalMode(string) []string
 }
 
 // settleTUIPosture puts an interactive session in the posture it opens in.

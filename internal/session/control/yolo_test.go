@@ -1179,12 +1179,12 @@ func TestAskSerializesBehindPromptLockEvenWithBypass(t *testing.T) {
 	}
 }
 
-// TestApplyToolApprovalModeReportsDrainedIDs pins the drain-report contract
+// TestSetToolApprovalModeReportsDrainedIDs pins the drain-report contract
 // the desktop frontend relies on (#6432): a posture switch returns exactly
 // the pending approval ids it auto-allowed, so the UI dismisses those cards
 // and keeps the ones still pending here. Fresh user decisions (plan) never
 // drain, and auto keeps approvals an allow policy would not cover.
-func TestApplyToolApprovalModeReportsDrainedIDs(t *testing.T) {
+func TestSetToolApprovalModeReportsDrainedIDs(t *testing.T) {
 	c := New(Options{
 		Policy: permission.New("ask", nil, []string{"bash(git commit*)"}, nil),
 	})
@@ -1193,7 +1193,7 @@ func TestApplyToolApprovalModeReportsDrainedIDs(t *testing.T) {
 	askRuleID, askRuleReply := c.approval.register("bash", "git commit -m x", "")
 	planID, planReply := c.approval.registerDecision(planApprovalTool, "", "", true, false)
 
-	drained := c.ApplyToolApprovalMode(ToolApprovalAuto)
+	drained := c.SetToolApprovalMode(ToolApprovalAuto)
 	if len(drained) != 1 || drained[0] != autoOKID {
 		t.Fatalf("auto drained = %v, want [%s]", drained, autoOKID)
 	}
@@ -1211,7 +1211,7 @@ func TestApplyToolApprovalModeReportsDrainedIDs(t *testing.T) {
 	default:
 	}
 
-	drained = c.ApplyToolApprovalMode(ToolApprovalYolo)
+	drained = c.SetToolApprovalMode(ToolApprovalYolo)
 	if len(drained) != 1 || drained[0] != askRuleID {
 		t.Fatalf("yolo drained = %v, want [%s]", drained, askRuleID)
 	}

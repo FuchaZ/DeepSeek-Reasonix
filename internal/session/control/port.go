@@ -100,7 +100,9 @@ type Approvals interface {
 	PendingPrompt() bool
 	EnableInteractiveApproval()
 	ToolApprovalMode() string
-	SetToolApprovalMode(mode string)
+	// SetToolApprovalMode answers which pending prompts the new posture
+	// auto-allowed; a fresh decision is never one of them.
+	SetToolApprovalMode(mode string) []string
 	AutoApproveTools() bool
 	SetAutoApproveTools(on bool)
 	Bypass() bool

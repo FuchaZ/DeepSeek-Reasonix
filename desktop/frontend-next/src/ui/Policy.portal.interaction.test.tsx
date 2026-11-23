@@ -13,7 +13,7 @@ const STATUS = { preset: "balanced", effort: "medium", toolApprovalMode: "ask" }
 describe("the policy menu renders through a portal", () => {
   it("renders the open menu into the body, so no ancestor stacking context can trap it under the meter rail", async () => {
     const port = {
-      setApprovalMode: vi.fn(async () => {}),
+      setApprovalMode: vi.fn(async () => [] as string[]),
     } as unknown as AgentPort;
     const { container } = render(<Policy port={port} status={STATUS} onChanged={vi.fn()} />);
     await userEvent.click(screen.getByRole("button", { name: "执行权限：询问" }));
@@ -23,7 +23,7 @@ describe("the policy menu renders through a portal", () => {
 
   it("keeps the portaled menu open when a press lands on the menu itself", async () => {
     const port = {
-      setApprovalMode: vi.fn(async () => {}),
+      setApprovalMode: vi.fn(async () => [] as string[]),
     } as unknown as AgentPort;
     render(<Policy port={port} status={STATUS} onChanged={vi.fn()} />);
     const trigger = screen.getByRole("button", { name: "执行权限：询问" });
