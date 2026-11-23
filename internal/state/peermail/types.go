@@ -52,7 +52,11 @@ type Message struct {
 	SentAt time.Time `json:"sent_at"`
 	Hops   int       `json:"hops"`
 	Body   string    `json:"body"`
-	Proof  string    `json:"proof,omitempty"`
+	// ReplyTo names the message this one answers. It rides outside the proof on
+	// purpose: old messages keep verifying, and a forged pointer only misleads a
+	// reader about which message is being answered.
+	ReplyTo string `json:"reply_to,omitempty"`
+	Proof   string `json:"proof,omitempty"`
 	// Seq numbers the messages one session signs for one partner, from 1. The
 	// proof covers it, so the receiver can refuse a number it has already taken.
 	Seq uint64 `json:"seq,omitempty"`

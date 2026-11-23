@@ -87,6 +87,11 @@ func (c *Controller) livePeers() []peermail.Live {
 // "project/title", compared without case. More than one answer is refused, never
 // guessed. What the receiver does with it is the receiver's decision.
 func (c *Controller) SendPeerMessage(to, text string) (PeerReceipt, error) {
+	return c.sendPeerMessage(to, text, "")
+}
+
+// sendPeerMessage is SendPeerMessage with the message this one answers, if any.
+func (c *Controller) sendPeerMessage(to, text, replyTo string) (PeerReceipt, error) {
 	p := c.peers
 	dir := p.dirOrNil()
 	if dir == nil {
@@ -118,7 +123,7 @@ func (c *Controller) SendPeerMessage(to, text string) (PeerReceipt, error) {
 	var token [8]byte
 	_, _ = rand.Read(token[:])
 	msg := peermail.Message{
-		ID: "m-" + hex.EncodeToString(token[:]), SentAt: time.Now().UTC(), Body: text,
+		ID: "m-" + hex.EncodeToString(token[:]), SentAt: time.Now().UTC(), Body: text, ReplyTo: replyTo,
 		From: peermail.Party{SessionID: self, Title: peerAttribute(sessionstore.BranchID(path)), Project: peerAttribute(baseName(c.WorkspaceRoot()))},
 		To:   peermail.Party{SessionID: target.SessionID, WriterID: target.WriterID, Title: target.Title, Project: target.Project},
 	}
@@ -173,6 +178,87 @@ func resolvePeer(live []peermail.Live, name string) (peermail.Live, error) {
 		return match[0], nil
 	}
 	return peermail.Live{}, ErrPeerAmbiguous
+}
+
+// PeerMessageState is what became of one message this session sent.
+type PeerMessageState struct {
+	State string // queued | accepted | declined | replied
+	Reply string // the answer that named this message, empty until one does
+}
+
+// PeerMessageState reports what became of the message msgID: the receiver's
+// side decision from the shared audit, and the answer that names the message —
+// from the spool while the reply is still held, or from this session's inbox
+// once it has been let in.
+func (c *Controller) PeerMessageState(msgID string) (PeerMessageState, bool) {
+	p := c.peers
+	dir := p.dirOrNil()
+	if dir == nil {
+		return PeerMessageState{}, false
+	}
+	p.mu.Lock()
+	self := p.key
+	p.mu.Unlock()
+	if self == "" {
+		return PeerMessageState{}, false
+	}
+	state := "queued"
+	var receiver string
+	var sentAt time.Time
+	for _, r := range dir.AuditSince(time.Now().Add(-peerThreadWindow)) {
+		if r.ID != msgID || r.Sender != self {
+			continue
+		}
+		receiver, sentAt = r.Receiver, r.At
+		switch r.Decision {
+		case peermail.DecisionApproved, peermail.DecisionReleased:
+			state = "accepted"
+		case peermail.DecisionDenied, peermail.DecisionRejected:
+			state = "declined"
+		}
+	}
+	if receiver == "" {
+		return PeerMessageState{}, false
+	}
+	if reply, ok := c.peerReplyText(msgID, receiver, sentAt); ok {
+		return PeerMessageState{State: "replied", Reply: reply}, true
+	}
+	return PeerMessageState{State: state}, true
+}
+
+// peerReplyText is the answer to one sent message: a spool message still held
+// here that names it in ReplyTo, else the inbox item let in with the same
+// pointer in its envelope. A reply that names nothing is not counted — a
+// message from the same session may be about anything.
+func (c *Controller) peerReplyText(msgID, receiver string, sentAt time.Time) (string, bool) {
+	p := c.peers
+	if dir := p.dirOrNil(); dir != nil {
+		p.mu.Lock()
+		self := p.key
+		p.mu.Unlock()
+		if pending, _ := dir.Pending(self); len(pending) > 0 {
+			for _, m := range pending {
+				if m.ReplyTo == msgID && m.From.SessionID == receiver {
+					return m.Body, true
+				}
+			}
+		}
+	}
+	c.inbox.mu.Lock()
+	st := c.inbox.store
+	c.inbox.mu.Unlock()
+	if st == nil {
+		return "", false
+	}
+	for _, item := range c.InboxSnapshot().Items {
+		if item.Source != peerSourcePrefix+receiver || item.CreatedAt.Before(sentAt) {
+			continue
+		}
+		if _, env, err := c.ReadInboxItem(item.ID); err == nil && env.Extra["reply_to"] == msgID {
+			return item.Preview, true
+		}
+	}
+	return "", false
 }
 
 func baseName(path string) string {

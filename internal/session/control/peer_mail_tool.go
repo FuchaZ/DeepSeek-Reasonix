@@ -22,12 +22,17 @@ func (d peerDirectory) Peers() []tool.PeerView {
 	return out
 }
 
-func (d peerDirectory) SendPeerMessage(to, text string) (tool.PeerReceipt, error) {
-	r, err := d.c.SendPeerMessage(to, text)
+func (d peerDirectory) SendPeerMessage(to, text, replyTo string) (tool.PeerReceipt, error) {
+	r, err := d.c.sendPeerMessage(to, text, replyTo)
 	if err != nil {
 		return tool.PeerReceipt{}, fmt.Errorf("%s: %w", peerErrorCode(err), err)
 	}
 	return tool.PeerReceipt{ID: r.ID, To: tool.PeerView{Key: r.To.Key, Title: r.To.Title, Project: r.To.Project}}, nil
+}
+
+func (d peerDirectory) PeerMessageState(id string) (tool.PeerMessageState, bool) {
+	st, ok := d.c.PeerMessageState(id)
+	return tool.PeerMessageState{State: st.State, Reply: st.Reply}, ok
 }
 
 // fmtPeerError is the refusal a peer tool reports: the error's identity, and

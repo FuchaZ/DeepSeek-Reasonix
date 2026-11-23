@@ -449,10 +449,14 @@ func (c *Controller) resolvePeerMessage(id string, approve bool, released peerma
 	decision := peermail.DecisionDenied
 	if approve {
 		display, submit := peerMessageTexts(m, released)
+		extra := map[string]string(nil)
+		if m.ReplyTo != "" {
+			extra = map[string]string{"reply_to": m.ReplyTo}
+		}
 		receipt, err := c.EnqueueInbox(InboxRequest{
 			Intent: sessioninbox.IntentFollowup, Origin: sessioninbox.OriginHost,
 			Source: peerSourcePrefix + m.From.SessionID, Idempotency: "peer-" + m.ID,
-			Display: display, Submit: submit,
+			Display: display, Submit: submit, Extra: extra,
 		})
 		if err != nil {
 			return err

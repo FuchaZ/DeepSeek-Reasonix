@@ -14,15 +14,19 @@ type fakePeers struct {
 	peers []tool.PeerView
 	sent  []string
 	err   error
+	state tool.PeerMessageState
 }
 
 func (f *fakePeers) Peers() []tool.PeerView { return f.peers }
-func (f *fakePeers) SendPeerMessage(to, text string) (tool.PeerReceipt, error) {
+func (f *fakePeers) SendPeerMessage(to, text, replyTo string) (tool.PeerReceipt, error) {
 	if f.err != nil {
 		return tool.PeerReceipt{}, f.err
 	}
-	f.sent = append(f.sent, to+"|"+text)
+	f.sent = append(f.sent, to+"|"+text+"|"+replyTo)
 	return tool.PeerReceipt{ID: "m-1", To: tool.PeerView{Key: "s-1", Title: "docs", Project: "notes"}}, nil
+}
+func (f *fakePeers) PeerMessageState(string) (tool.PeerMessageState, bool) {
+	return f.state, true
 }
 
 func peerToolsFor(link *tool.PeerLink) (list, send tool.Tool) {
@@ -54,7 +58,7 @@ func TestPeerToolsListAndSendThroughTheBoundDirectory(t *testing.T) {
 		t.Fatalf("list = %q, %v", out, err)
 	}
 	got, err := send.Execute(context.Background(), json.RawMessage(`{"to":"notes/docs","text":"hello"}`))
-	if err != nil || !strings.Contains(got, "m-1") || len(fake.sent) != 1 || fake.sent[0] != "notes/docs|hello" {
+	if err != nil || !strings.Contains(got, "m-1") || len(fake.sent) != 1 || fake.sent[0] != "notes/docs|hello|" {
 		t.Fatalf("send = %q, %v, sent %v", got, err, fake.sent)
 	}
 }

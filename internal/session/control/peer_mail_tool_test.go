@@ -50,7 +50,7 @@ func TestTheControllerBindsItselfToThePeerLinkAndAnswersThroughIt(t *testing.T) 
 	if len(peers) != 1 || peers[0].Key != b.peers.key {
 		t.Fatalf("peers = %+v", peers)
 	}
-	if _, err := bound.SendPeerMessage("nobody", "hi"); err == nil || !strings.HasPrefix(err.Error(), "peer.not_found") {
+	if _, err := bound.SendPeerMessage("nobody", "hi", ""); err == nil || !strings.HasPrefix(err.Error(), "peer.not_found") {
 		t.Fatalf("err = %v, want a refusal that leads with its code", err)
 	}
 }

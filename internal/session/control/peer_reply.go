@@ -27,38 +27,39 @@ func (c *Controller) dispatchOpenerKey() string {
 }
 
 // replyOwed reports whether a task from the session that opened this one is
-// among the items the finishing turn ran, and returns that session's key. Only
-// the opener is answered: a reply travels from the session that was handed the
-// task to the one that handed it, and is itself never answered, so two sessions
-// cannot keep each other talking.
-func (c *Controller) replyOwed() string {
-	opener := c.dispatchOpenerKey()
+// among the items the finishing turn ran, and returns that session's key with
+// the id of the message being answered. Only the opener is answered: a reply
+// travels from the session that was handed the task to the one that handed it,
+// and is itself never answered, so two sessions cannot keep each other talking.
+func (c *Controller) replyOwed() (opener, replyTo string) {
+	opener = c.dispatchOpenerKey()
 	if opener == "" {
-		return ""
+		return "", ""
 	}
 	c.inbox.mu.Lock()
 	ids := c.inbox.activeIDs()
 	st := c.inbox.store
 	c.inbox.mu.Unlock()
 	if st == nil {
-		return ""
+		return "", ""
 	}
 	for _, id := range ids {
 		if meta, _, err := st.ReadItem(id); err == nil && meta.Source == peerSourcePrefix+opener {
-			return opener
+			return opener, strings.TrimPrefix(meta.Idempotency, "peer-")
 		}
 	}
-	return ""
+	return "", ""
 }
 
 // replyToOpener sends the finished turn's outcome back to the session that
-// handed this one the task. The user's dispatch switch is their consent for the
-// replies of the sessions it opened; with it off nothing is sent.
-func (c *Controller) replyToOpener(opener string, done event.Event) {
+// handed this one the task, naming the message it answers so the opener can
+// match the answer to the question. The user's dispatch switch is their consent
+// for the replies of the sessions it opened; with it off nothing is sent.
+func (c *Controller) replyToOpener(opener, replyTo string, done event.Event) {
 	if opener == "" || !config.LoadForEdit(config.UserConfigPath()).PeersDispatch() {
 		return
 	}
-	if _, err := c.SendPeerMessage(opener, c.replyBody(done)); err != nil {
+	if _, err := c.sendPeerMessage(opener, c.replyBody(done), replyTo); err != nil {
 		slog.Warn("controller: reply to the session that dispatched this one", "err", err)
 	}
 }

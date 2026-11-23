@@ -18,10 +18,18 @@ type PeerReceipt struct {
 	To PeerView
 }
 
+// PeerMessageState is what became of one message the session sent: the
+// receiver's side decision, and the answer that came back once one did.
+type PeerMessageState struct {
+	State string // queued | accepted | declined | replied
+	Reply string // the answer that named this message, empty until one does
+}
+
 // PeerDirectory is what the peer tools ask of the session that owns them.
 type PeerDirectory interface {
 	Peers() []PeerView
-	SendPeerMessage(to, text string) (PeerReceipt, error)
+	SendPeerMessage(to, text, replyTo string) (PeerReceipt, error)
+	PeerMessageState(id string) (PeerMessageState, bool)
 }
 
 // DispatchReceipt says a task was written into a session of another project.
