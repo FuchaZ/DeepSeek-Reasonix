@@ -178,10 +178,7 @@ export function ToolCard({
   useEffect(() => {
     if (bad) setOpen(null);
   }, [bad]);
-  // A picture a call handed back is the one thing that call existed to show, so
-  // its card opens itself; a reader who closes it keeps it closed.
-  const shots = (tool.images?.length ?? 0) > 0;
-  const open = touched ?? (start || shots);
+  const open = touched ?? start;
   // The body of a finished, closed card is most of what a long session holds in
   // the page, so such a card does not mount it; once opened it stays, so what the
   // reader did inside (show all) survives closing it again.
@@ -204,10 +201,10 @@ export function ToolCard({
   // output yet: a row that cannot open is the one that looks stuck.
   const hasBody = Boolean(
     takeover || tool.diff || goal || tool.argumentNormalization || tool.name === "todo_write" ||
-    (tool.output && !echoed && children.length === 0) || tool.err || children.length || (activity && running && activityArgs) || shots,
+    (tool.output && !echoed && children.length === 0) || tool.err || children.length || (activity && running && activityArgs),
   );
   const activityResult = Boolean(
-    takeover || tool.diff || goal || tool.name === "todo_write" || tool.output || tool.err || children.length || shots,
+    takeover || tool.diff || goal || tool.name === "todo_write" || tool.output || tool.err || children.length,
   );
   const heading = (
     <>
@@ -317,8 +314,6 @@ export function ToolCard({
               <ToolOutput name={shown} text={full.text ?? ""} bound={tool.bound} id={tool.id} />
             </>
           )}
-          <ToolShots images={tool.images} />
-          <ToolVideos videos={tool.videos} />
         </>
       )}
       {/* The error stays outside the takeover: an extension may redraw what
@@ -381,6 +376,11 @@ export function ToolCard({
         ) : (
           <div className="hl" data-swap={settling.swap ? "" : undefined}>{heading}</div>
         )}
+        {/* What the call handed the model to look at sits outside the
+            disclosure: a picture nobody can see without opening a debug panel
+            is not the call's result, it is a detail about it. */}
+        <ToolShots images={tool.images} />
+        <ToolVideos videos={tool.videos} />
         {failLine && (
           <div className="step-err" role="status">
             <code>{failLine}</code>

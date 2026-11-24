@@ -7,6 +7,7 @@ const LABEL: Record<string, string> = {
   web_search: "common.web_search", web_fetch: "chat.fetch_page", task: "chat.delegate_task", bash: "chat.run_command",
   bash_output: "chat.command_output", kill_shell: "chat.stop_command", wait: "chat.wait",
   read_file: "chat.read_file", grep: "chat.search_code", glob: "safety.finding_files", ls: "chat.list_directory",
+  view_image: "chat.view_image",
   edit_file: "chat.edit_file", write_file: "chat.write_file", multi_edit: "chat.edit_files",
   todo_write: "chat.update_plan", remember: "chat.save_memory", use_capability: "chat.call_mcp",
   code_index: "chat.build_index", complete_step: "chat.complete_step", review_report: "chat.review_results",

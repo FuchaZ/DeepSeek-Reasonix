@@ -33,4 +33,17 @@ describe("folding the earlier steps of a long run of work", () => {
     expect(fold.earlier.map((i) => i.id)).toEqual(["old"]);
     expect(fold.recent.map((i) => i.id)).toEqual(["bad", "live", ...Array.from({ length: KEEP_RECENT }, (_, i) => `k${i}`)]);
   });
+
+  // A picture is drawn under its row whether the row is open or shut, but a
+  // folded-earlier count is a button: what it swallowed is out of the flow. A
+  // call whose whole point was the picture cannot be what that count takes.
+  it("never folds a call that showed a picture, however old", () => {
+    const rows = [
+      tool("shot", "view_image", { images: ["data:image/png;base64,AAAA"] }), tool("old", "read_file"),
+      ...Array.from({ length: KEEP_RECENT }, (_, i) => tool(`k${i}`, "read_file")),
+    ];
+    const fold = foldEarlier(rows);
+    expect(fold.earlier.map((i) => i.id)).toEqual(["old"]);
+    expect(fold.recent.map((i) => i.id)).toEqual(["shot", ...Array.from({ length: KEEP_RECENT }, (_, i) => `k${i}`)]);
+  });
 });

@@ -3,6 +3,7 @@ import { StudioIcon, type StudioIconName } from "./StudioIcon";
 const BY_TOOL: Record<string, StudioIconName> = {
   todo_write: "tasks", submit_plan: "tasks", code_index: "fileCode",
   read_file: "file", grep: "search", glob: "fileSearch", ls: "folder", lsp_diagnostics: "activity",
+  view_image: "image",
   web_search: "search", web_fetch: "globe",
   bash: "terminal", bash_output: "terminal", kill_shell: "stop", wait: "clock",
   use_capability: "tools", update_goal: "target", complete_step: "complete", complete_subtask: "complete",

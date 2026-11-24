@@ -5,7 +5,6 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 import userEvent from "@testing-library/user-event";
 import { UserCard } from "./cards/UserCard";
 import { ToolCard } from "./cards/ToolCard";
-import { openCards } from "./cards/openCards";
 import { Composer } from "./Composer";
 import { MockPort } from "../port/mock";
 import type { AgentPort, SessionStatus } from "../port/port";
@@ -105,17 +104,20 @@ describe("shared image preview entrances", () => {
     expect(screen.getByText(item.text)).toBeTruthy();
   });
 
-  it("uses the same viewer for tool screenshots and preserves the expanded tool disclosure", async () => {
+  // The picture is drawn beside the row, so opening the viewer is the only
+  // thing a press on it does: the row it belongs to keeps whatever state the
+  // reader left it in.
+  it("uses the same viewer for tool screenshots without moving the row it belongs to", async () => {
     const user = userEvent.setup();
     const { container } = render(<ToolCard tool={{ id: "shot", name: "computer_read", images: [shot], output: "screen", readOnly: true }} running={false} />);
     const disclosure = container.querySelector("details")!;
-    openCards(container);
+    expect(disclosure.open).toBe(false);
     await user.click(screen.getByRole("button", { name: "查看图片 工具截图 1" }));
     expect(within(screen.getByRole("dialog")).getByRole("img").getAttribute("src")).toBe(shot);
-    expect(disclosure.open).toBe(true);
+    expect(disclosure.open).toBe(false);
     await user.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(disclosure.open).toBe(true);
+    expect(disclosure.open).toBe(false);
   });
 
   it.each(["upload", "paste"])("previews a composer image from %s without sending, and releases the viewer when the attachment is removed", async (source) => {

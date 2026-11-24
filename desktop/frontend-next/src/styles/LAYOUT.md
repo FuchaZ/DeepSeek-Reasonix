@@ -592,6 +592,22 @@ the picker and keyboard navigation.
   cards landed on the default grey beside an uncategorised tool. A dashed line is
   the one dimension of this gutter still free: colour is category, length is
   duration, motion is state.
+- A picture or a video a call handed back is drawn beside its row, outside the
+  disclosure: it is what the call produced, not a detail about the call. Seeing
+  the agent's own evidence never costs a reader a debug panel, and a call whose
+  row stays folded is the normal state for one that finished.
+- A thumbnail is `contain`ed, never cropped, and capped at 260 × 104: the edges
+  of a screenshot are the part being judged, while the ceiling keeps a run of
+  pictures from pushing the next step off the screen. Its border is a hairline —
+  a picture is not a surface — and the ground behind it is `--face-sunk`, since
+  the transparent letterbox is read as a failed load.
+- Inside `.activity-body` the row's text starts at 10px (the row's own padding),
+  while outside it the summary's negative margin puts text at 0; a thumbnail
+  follows whichever it stands under, so it lines up with the words above it in
+  both places.
+- A step count that folds older calls never takes one that showed a picture:
+  what the count swallows leaves the flow, which is the same as the call having
+  shown nothing.
 
 ## Four weights
 

@@ -6,7 +6,7 @@ describe("tool icons describe the operation", () => {
   it.each([
     ["read_file", "file-text"], ["grep", "search"], ["ls", "folder"],
     ["kill_shell", "square"], ["wait", "clock"], ["delete_range", "trash-2"],
-    ["web_search", "search"], ["web_fetch", "globe"],
+    ["web_search", "search"], ["web_fetch", "globe"], ["view_image", "image"],
   ])("distinguishes %s with a %s library icon", (tool, icon) => {
     const html = renderToStaticMarkup(<Sym icon={iconFor(tool)} done />);
     expect(html).toContain(`lucide-${icon}`);

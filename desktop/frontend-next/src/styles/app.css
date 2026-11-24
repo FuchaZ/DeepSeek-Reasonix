@@ -984,9 +984,9 @@
 
   .tvideos { padding: 6px 0 2px }
   .tvideo { color: var(--muted); font: var(--w-reg) var(--fs-ui) var(--ui); overflow-wrap: anywhere }
-  .tshots { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 0 2px 31px }
-  .tshot { padding: 0; border: 1px solid var(--border); border-radius: var(--r-sm); background: var(--sunk); overflow: hidden; cursor: zoom-in }
-  .tshot img { display: block; max-width: 260px; max-height: 170px; object-fit: contain }
+  .tshots { display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 0 2px }
+  .tshot { padding: 0; border: 1px solid var(--hair); border-radius: var(--r-sm); background: var(--face-sunk); overflow: hidden; cursor: zoom-in }
+  .tshot img { display: block; max-width: 260px; max-height: 104px; object-fit: contain }
   .tshot:hover { border-color: var(--halo) }
   .tshot:focus-visible { outline: 2px solid var(--focus); outline-offset: 1px }
 

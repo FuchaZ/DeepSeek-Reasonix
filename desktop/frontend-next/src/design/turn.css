@@ -48,6 +48,7 @@
 .activity-body .tool-state[data-state="failed"] { color: var(--err-ink); }
 .activity-body .tool-fold { order: 10; }
 .activity-body .tool-disclosure > .out { margin: 2px 10px 6px 32px; padding: 6px 10px 8px; border: 1px solid var(--hair); border-radius: var(--r-sm); }
+.activity-body :is(.tshots, .tvideos) { padding-inline-start: 10px; }
 
 .think { margin-top: 6px; }
 .think > summary .fold { gap: 6px; color: var(--muted); font: var(--w-med) var(--fs-ui)/1.4 var(--ui); }

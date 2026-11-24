@@ -47,17 +47,22 @@ describe("tool outcome cards", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  // The picture is the one thing a view_image call existed to show; a folded
-  // card is where it goes unread. The reader's own close still holds.
-  it("opens a call that showed the model a picture by itself", () => {
+  // A picture a call handed back is the one thing that call existed to show, so
+  // it is drawn beside the row rather than inside its details: no reader has to
+  // open a debug panel to see what the agent saw. The row itself stays folded,
+  // as every other finished call's does.
+  it("shows a call's picture without unfolding its row", () => {
     const { container } = render(
       <ToolCard tool={{ id: "vi", name: "view_image", args: '{"path":"shots/w280.png"}', output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: ["data:image/png;base64,AAAA"], readOnly: true }} running={false} />,
     );
     const disclosure = container.querySelector("details.tool-disclosure") as HTMLDetailsElement;
+    expect(disclosure.open).toBe(false);
+    const shot = container.querySelector(".tshots img");
+    expect(shot).not.toBeNull();
+    expect(disclosure.contains(shot)).toBe(false);
+    fireEvent.click(disclosure.querySelector("summary")!);
     expect(disclosure.open).toBe(true);
     expect(container.querySelector(".tshots img")).not.toBeNull();
-    fireEvent.click(disclosure.querySelector("summary")!);
-    expect(disclosure.open).toBe(false);
   });
 
   // A video handed to the model natively is a file the person cannot see in the

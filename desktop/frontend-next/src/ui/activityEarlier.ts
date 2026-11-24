@@ -9,6 +9,7 @@ const SEARCH = /grep|search|glob|find/;
 
 /** The verb an activity row leads with, or null when the call's category has none and its own name says more. */
 export function activityVerb(name: string): string | null {
+  if (name === "view_image") return "chat.viewed_image";
   const category = categoryOf(name);
   if (category === "read") return SEARCH.test(name) ? "chat.search" : "chat.read";
   if (category === "write") return "common.edit";
@@ -24,7 +25,11 @@ function verbOf(name: string): string {
 }
 
 const nameOf = (tool: { name?: string; resolvedName?: string }) => tool.resolvedName || tool.name || "";
-const stays = (item: Item) => (item.t === "tool" && (item.running || toolFailed(item.tool)))
+// A picture the person can see is why a call is on screen at all, so the count
+// that folds older steps never takes one: folded, it would be the same as the
+// call having shown nothing.
+const showsPicture = (tool: { images?: string[] }) => (tool.images?.length ?? 0) > 0;
+const stays = (item: Item) => (item.t === "tool" && (item.running || toolFailed(item.tool) || showsPicture(item.tool)))
   || (item.t === "reads" && item.tools.some(toolFailed));
 
 export function foldEarlier(items: Item[]): { earlier: Item[]; recent: Item[]; kinds: [string, number][] } {
