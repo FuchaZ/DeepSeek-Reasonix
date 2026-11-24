@@ -9,7 +9,7 @@ import { HttpError, type BrowserTab } from "../port/port";
 import { observePageTabs, openPage, unseenPageOpenings } from "./browser_open";
 const agent: BrowserTab = {id:'a', target:'ta', url:'https://agent.example', title:'Agent', active:true};
 const page: BrowserTab = {id:'b', target:'tb', url:'file:///w/index.html', title:'Failed preview', active:false};
-const props = {manual:false, shown:true, scheme:'dark' as const, changes:[], onSurfaces:vi.fn(), onCloseManual:vi.fn(), onExternal:vi.fn()};
+const props = {manual:false, shown:true, scheme:'dark' as const, changes:[], onCloseManual:vi.fn(), onExternal:vi.fn()};
 const filesShown = () => document.querySelector('.workbench-body')!.hasAttribute('data-files');
 afterEach(() => {cleanup(); vi.restoreAllMocks();});
 it.each(['event-first', 'reply-first'])('preserves newer Files when preview workspace lookup delays browser request: %s', async (order) => {

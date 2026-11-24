@@ -5,7 +5,7 @@ export const WORKBENCH_ACTIONS: UIAction[] = [
   { id: "workbench.close-save", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
   { id: "workbench.close-drop", kind: "view", target: "none", proof: "interaction" },
   { id: "workbench.close-cancel", kind: "view", target: "none", proof: "interaction" },
-  { id: "workbench.tab-overflow", kind: "view", target: "none", proof: "interaction" },
+  { id: "workbench.tab-picker", kind: "view", target: "none", proof: "interaction" },
   { id: "workbench.stage", kind: "kernel-mutation", target: "entity", proof: "authority-effect" },
   { id: "workbench.stage-all", kind: "kernel-mutation", target: "none", proof: "authority-effect" },
   { id: "workbench.open-with-menu", kind: "view", target: "none", proof: "interaction" },

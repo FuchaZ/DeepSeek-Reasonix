@@ -20,7 +20,7 @@ function Harness({ port, link, root = "/w", remote = false }: { port: AgentPort;
   return (
     <>
       <button onClick={() => files.refs.link?.(link)?.()}>link</button>
-      <WorkbenchPanel scheme="dark" shown changes={[]} onSurfaces={vi.fn()} onCloseManual={vi.fn()} onExternal={vi.fn()}
+      <WorkbenchPanel scheme="dark" shown changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()}
         manual tabs={[]} port={port} fileRequest={files.request} workspaceRoot={root} />
     </>
   );

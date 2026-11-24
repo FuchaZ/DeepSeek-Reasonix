@@ -15,6 +15,7 @@ import { workspaceDirectoryDescription } from "./workspaceDirectory";
 import { WindowControls, zoomOnTitleBar } from "./WindowControls";
 import type { PaneView } from "../state/paneview";
 import { useReachable, useViewer } from "../state/viewer";
+import { registerDockHead } from "../state/dockhead";
 
 const base = (p: string) => p.replace(/[/\\]+$/, "").split(/[/\\]/).pop() || p;
 // The filename is a timestamp and a model ref — true, and useless to read. The
@@ -42,14 +43,13 @@ interface Props {
   // The focused pane's view, and what the switch needs to draw itself.
   view: PaneView;
   rows: number;
-  surfaces: number;
   onView: (to: PaneView) => void;
   // The window's port, for what belongs to the window rather than a pane.
   hub?: HubPort;
   onError?: (e: unknown) => void;
 }
 
-export function Chrome({ port, status, workspace: ws, title, steer, host, task = false, theme, onTheme, onFind, view, rows, surfaces, onView, hub, onError }: Props) {
+export function Chrome({ port, status, workspace: ws, title, steer, host, task = false, theme, onTheme, onFind, view, rows, onView, hub, onError }: Props) {
   const root = status?.workspaceRoot || status?.cwd || "";
   const project = root ? base(root) : "—";
   // The folder mark opens the project itself. Only a shell that can enter a
@@ -160,10 +160,18 @@ export function Chrome({ port, status, workspace: ws, title, steer, host, task =
             <StudioIcon name="moon" />
           )}
         </TooltipButton>
-        {port && <ViewSwitch view={view} rows={rows} surfaces={surfaces} onView={onView} />}
+        {port && <ViewSwitch view={view} rows={rows} onView={onView} />}
         </div>
-        <WindowControls />
+        {/* The docked workbench lands its tab strip here, so the window bar
+            and the workbench share one line instead of stacking two. Docked,
+            app.css parks this slot over the dock column and the icon group
+            before it at the seam; with the workbench closed, undocked or
+            stacked, the slot is empty and takes no room. The panel finds it
+            through the registry rather than by an id, so the two halves of
+            this contract are checked by the compiler. */}
+        <div className="wb-dock-head" ref={registerDockHead} />
       </div>
+      <WindowControls />
     </div>
     </>
   );

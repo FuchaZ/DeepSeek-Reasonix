@@ -25,17 +25,17 @@ const rtOf = (id: string) => ({ id, root: "/w", name: "w" }) as RuntimeView;
 // The window's view switch beside one pane, wired as App wires it: the pane
 // reports its view, and a press goes back to it as a counted request.
 function Harness({ paneKey, onReport, ...rest }: Record<string, any>) {
-  const [rep, setRep] = useState({ view: "flow" as PaneView, rows: 0, surfaces: 0 });
+  const [rep, setRep] = useState({ view: "flow" as PaneView, rows: 0 });
   const [req, setReq] = useState<{ to: PaneView; n: number } | undefined>();
   const outer = useRef(onReport);
   outer.current = onReport;
   const report = useCallback((id: string, r: PaneReport) => {
-    setRep((was) => (was.view === r.view && was.rows === r.rows && was.surfaces === r.surfaces ? was : { view: r.view, rows: r.rows, surfaces: r.surfaces }));
+    setRep((was) => (was.view === r.view && was.rows === r.rows ? was : { view: r.view, rows: r.rows }));
     outer.current?.(id, r);
   }, []);
   return (
     <>
-      <ViewSwitch view={rep.view} rows={rep.rows} surfaces={rep.surfaces} onView={(to) => setReq((r) => ({ to, n: (r?.n ?? 0) + 1 }))} />
+      <ViewSwitch view={rep.view} rows={rep.rows} onView={(to) => setReq((r) => ({ to, n: (r?.n ?? 0) + 1 }))} />
       <Pane key={paneKey} {...(rest as any)} viewRequest={req} onReport={report} />
     </>
   );

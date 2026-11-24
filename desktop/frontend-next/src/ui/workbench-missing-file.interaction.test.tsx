@@ -10,7 +10,7 @@ import "./testkit";
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
 const gone = () => new HttpError(404, "missing", { code: "workspace.file_missing", error: "no such file" });
-const props = (port: MockPort) => ({ port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], workspaceRoot: "/one", onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() });
+const props = (port: MockPort) => ({ port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], workspaceRoot: "/one", onCloseManual: vi.fn(), onExternal: vi.fn() });
 
 it("says a requested file cannot be found instead of leaving the panel blank", async () => {
   const port = new MockPort();

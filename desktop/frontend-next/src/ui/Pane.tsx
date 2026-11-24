@@ -127,7 +127,6 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   const revealBrowser = useCallback(() => onManualBrowser?.(true), [onManualBrowser]);
   useRevealAgentPages(pages, active && !rt.host, revealBrowser);
   useRevealBrowserOpen(s.items, s.revision, active && !rt.host, revealBrowser);
-  const [surfaces, setSurfaces] = useState(0);
   // Analysis owns the whole working canvas. A docked browser and the composer
   // are useful while talking to the agent, but both compete with the timeline
   // for exactly the horizontal/vertical space the analysis view explains.
@@ -522,9 +521,8 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
       interactions:s.interactions,
       view: docked ? "browser" : tab,
       rows: traj.rows.length,
-      surfaces,
     });
-  }, [rt.id, onReport, status, workspace, title, queue, run, running, blocked, trustWaiting, cost, contextPercent, ctx, mcp, walletDisplay, s.interactions, docked, tab, traj.rows.length, surfaces]);
+  }, [rt.id, onReport, status, workspace, title, queue, run, running, blocked, trustWaiting, cost, contextPercent, ctx, mcp, walletDisplay, s.interactions, docked, tab, traj.rows.length]);
 
   // The composer's project pill reads its place and its machine from here —
   // provided once instead of threading the pane's rows through the composer's
@@ -630,7 +628,6 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
             fullMode={docked ? { full: browserSize.size === "full", onToggle: browserSize.toggleFull } : undefined}
             manual={manualBrowser}
             shown={visible && workbench}
-            onSurfaces={setSurfaces}
             onActiveFile={onActiveFile}
             scheme={theme === "light" ? "light" : "dark"}
             changes={tree?.changes ?? []} onTreeChanged={refreshTree} revealChanges={revealChanges} revealFiles={revealFiles} toggleFiles={toggleFiles} terminalRequest={terminalPulse}

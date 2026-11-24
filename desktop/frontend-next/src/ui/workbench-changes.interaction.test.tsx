@@ -23,7 +23,7 @@ function draw(list: WorkspaceChange[] = changes, port?: AgentPort) {
   const onOpen = vi.fn();
   render(
     <WorkbenchChanges port={p} changes={list} current="" onOpen={onOpen} onChanged={onChanged}
-      commit={{ button: <button data-action="commit.draft">提交…</button>, card: null }} />,
+      commit={{ button: <button data-action="commit.draft">提交</button>, card: null }} />,
   );
   return { port: p, onChanged, onOpen };
 }

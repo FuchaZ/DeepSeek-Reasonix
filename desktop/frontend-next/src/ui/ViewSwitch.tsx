@@ -7,11 +7,12 @@ import { TooltipButton } from "./TooltipButton";
 /** The focused pane's two side views, drawn on the window bar. The conversation
  *  is where a pane rests, so it has no button: pressing the view that is showing
  *  returns to it. The analysis view is drawn only once there is a conversation
- *  to analyse. */
-export function ViewSwitch({ view, rows, surfaces, onView }: {
+ *  to analyse. How many tabs the workbench holds is said by the strip's own
+ *  picker, next to the tabs it counts — not here, where it read as a badge on a
+ *  button that only opens the view. */
+export function ViewSwitch({ view, rows, onView }: {
   view: PaneView;
   rows: number;
-  surfaces: number;
   onView: (to: PaneView) => void;
 }) {
   const press = (to: PaneView) => onView(view === to ? "flow" : to);
@@ -32,8 +33,7 @@ export function ViewSwitch({ view, rows, surfaces, onView }: {
         aria-pressed={view === "browser"} aria-label={t("common.workbench")} aria-keyshortcuts={ariaChord("3")}
         title={view === "browser" ? t("app.close_workbench") : t("app.open_workbench")} shortcut={chord("3")} onClick={() => press("browser")}
       >
-        <StudioIcon name="panel" />
-        {surfaces > 0 && <span className="view-count">{surfaces}</span>}
+        <StudioIcon name="monitor" />
       </TooltipButton>
     </>
   );

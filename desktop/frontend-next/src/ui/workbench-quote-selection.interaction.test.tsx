@@ -15,7 +15,7 @@ afterEach(() => { cleanup(); vi.restoreAllMocks(); localStorage.clear(); });
 
 const props = (port: MockPort) => ({
   port, workspaceRoot: "/work/project", tabs: [], manual: false, shown: true, scheme: "light" as const,
-  changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn(),
+  changes: [], onCloseManual: vi.fn(), onExternal: vi.fn(),
 });
 
 function Both({ port, onSubmit }: { port: MockPort; onSubmit: (text: string) => Promise<boolean> }) {

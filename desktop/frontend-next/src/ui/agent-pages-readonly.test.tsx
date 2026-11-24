@@ -171,7 +171,7 @@ describe("agent pages on a shell that cannot draw them", () => {
 
 describe("the workbench on a shell that cannot draw agent pages", () => {
   const mount = (tabs: BrowserTab[]) =>
-    render(<WorkbenchPanel port={new MockPort()} tabs={tabs} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={new MockPort()} tabs={tabs} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
 
   it("names the agent's page instead of showing the empty text", async () => {
     drawsViews(false);
@@ -198,7 +198,7 @@ describe("the workbench on a shell that cannot draw agent pages", () => {
   it("lets a page that closed go", () => {
     drawsViews(false);
     const view = mount([page("a", "https://example.com/", "Example Domain")]);
-    view.rerender(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    view.rerender(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     expect(screen.queryByText("https://example.com/")).toBeNull();
     expect(screen.getByRole("group", { name: "开始" })).toBeTruthy();
   });

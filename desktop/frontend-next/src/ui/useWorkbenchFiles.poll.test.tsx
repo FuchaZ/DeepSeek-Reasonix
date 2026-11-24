@@ -108,7 +108,7 @@ it("leaves the rendered Workbench untouched when Markdown polls are unchanged", 
   const commits = vi.fn();
   render(<Profiler id="workbench" onRender={commits}><WorkbenchPanel port={port} workspaceRoot="/fixture"
     tabs={[]} manual={false} shown scheme="light" changes={[]}
-    onCloseManual={() => {}} onSurfaces={() => {}} onExternal={() => {}} /></Profiler>);
+    onCloseManual={() => {}} onExternal={() => {}} /></Profiler>);
   await user.click(await screen.findByRole("button", { name: "notes.md" }));
   await screen.findByRole("heading", { name: "Saved" });
   await act(async () => {});

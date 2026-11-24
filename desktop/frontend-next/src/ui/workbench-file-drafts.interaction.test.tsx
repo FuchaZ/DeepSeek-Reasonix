@@ -41,7 +41,7 @@ function fixture() {
   vi.spyOn(port, "workspaceFiles").mockResolvedValue({ files: ["a.txt", "b.txt"], directories: [] });
   const read = vi.spyOn(port, "workspaceFile").mockImplementation(async (path) => file(path));
   const save = vi.spyOn(port, "saveWorkspaceFile").mockImplementation(async (file) => ({ ...file, revision: "r2" }));
-  const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], workspaceRoot: "/one", onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+  const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], workspaceRoot: "/one", onCloseManual: vi.fn(), onExternal: vi.fn() };
   const view = render(<WorkbenchPanel {...props} />);
   const open = async (path: string) => {
     await user.click(button("files"));

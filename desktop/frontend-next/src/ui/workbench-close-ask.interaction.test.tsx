@@ -13,7 +13,7 @@ async function dirtyReadme() {
   const user = userEvent.setup();
   const port = new MockPort();
   const saved = vi.spyOn(port, "saveWorkspaceFile");
-  const { container } = render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+  const { container } = render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
   await user.click(await screen.findByRole("button", { name: "README.md" }));
   await user.click(screen.getByRole("button", { name: "编辑" }));
   const editor = await waitFor(() => {

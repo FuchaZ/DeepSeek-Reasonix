@@ -10,7 +10,7 @@ afterEach(cleanup);
 it("reports actual tab selection and clears it when the canvas is hidden or its file closes", async () => {
   const port = new MockPort(), onActiveFile = vi.fn();
   const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [],
-    workspaceRoot: "/project", onSurfaces: vi.fn(), onCloseManual: vi.fn(), onExternal: vi.fn(), onActiveFile };
+    workspaceRoot: "/project", onCloseManual: vi.fn(), onExternal: vi.fn(), onActiveFile };
   const view = render(<WorkbenchPanel {...props} fileRequest={{ path: "docs/one.md" }} />);
   await waitFor(() => expect(onActiveFile).toHaveBeenLastCalledWith("docs/one.md"));
   view.rerender(<WorkbenchPanel {...props} fileRequest={{ path: "other/one.md" }} />);

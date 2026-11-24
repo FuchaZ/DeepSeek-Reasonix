@@ -62,19 +62,21 @@ describe("the window bar's view switch", () => {
 });
 
 describe("ViewSwitch on its own", () => {
-  it("draws analysis once there are rows, shows the workbench count, and presses back to the conversation", async () => {
+  it("draws analysis once there are rows, and presses back to the conversation", async () => {
     const user = userEvent.setup();
     const onView = vi.fn();
-    const { rerender } = render(<ViewSwitch view="flow" rows={0} surfaces={0} onView={onView} />);
+    const { rerender } = render(<ViewSwitch view="flow" rows={0} onView={onView} />);
     expect(screen.queryByRole("button", { name: "运行分析" })).toBeNull();
-    rerender(<ViewSwitch view="flow" rows={3} surfaces={2} onView={onView} />);
-    expect(screen.getByRole("button", { name: "工作台" }).textContent).toBe("2");
+    rerender(<ViewSwitch view="flow" rows={3} onView={onView} />);
+    // The switch says which view, not how much is in it: the tab count lives on
+    // the strip's own picker, beside the tabs it counts.
+    expect(screen.getByRole("button", { name: "工作台" }).textContent).toBe("");
     // The analysis entry reads as words, not only an icon: a control that exists
     // solely as a picture is one people scroll past.
     expect(screen.getByRole("button", { name: "运行分析" }).textContent).toBe("运行分析");
     await user.click(screen.getByRole("button", { name: "运行分析" }));
     expect(onView).toHaveBeenLastCalledWith("analysis");
-    rerender(<ViewSwitch view="analysis" rows={3} surfaces={2} onView={onView} />);
+    rerender(<ViewSwitch view="analysis" rows={3} onView={onView} />);
     expect(screen.getByRole("button", { name: "运行分析" }).getAttribute("aria-pressed")).toBe("true");
     await user.click(screen.getByRole("button", { name: "运行分析" }));
     expect(onView).toHaveBeenLastCalledWith("flow");

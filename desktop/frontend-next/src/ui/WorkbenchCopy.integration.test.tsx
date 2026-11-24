@@ -9,7 +9,7 @@ import "./testkit";
 
 const props = (port = new MockPort(), workspaceRoot = "/old") => ({
   port, workspaceRoot, tabs: [], manual: false, shown: true, scheme: "light" as const,
-  changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn(),
+  changes: [], onCloseManual: vi.fn(), onExternal: vi.fn(),
 });
 const deferred = () => {
   let resolve!: (value: { files: string[]; directories: string[] }) => void;

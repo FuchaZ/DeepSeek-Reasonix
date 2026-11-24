@@ -2,10 +2,30 @@
 [data-titlebar="app"][data-platform="darwin"] .app { --chrome-h: 51px; }
 
 .chrome {
-  position: relative; flex: none; display: flex; align-items: center; gap: 8px;
+  /* The bar's own insets, named because a percentage inside one element means
+     two different lengths: a margin resolves against the *content* box, an
+     absolutely positioned child against the *padding* box. The docked rules in
+     app.css read the same percentage from both sides, so the difference has to
+     be available by name or the two edges drift apart by exactly it. */
+  --chrome-pad-l: max(20px, calc(var(--lights-w) + var(--rail-toggle-gap) - var(--nav-w) - var(--rail-w)));
+  --chrome-pad-r: 12px;
+  --chrome-pad-sum: calc(var(--chrome-pad-l) + var(--chrome-pad-r));
+  --chrome-gap: 8px;
+  /* How far the bar's right end reaches back from the window's own right edge
+     to the end of anything flex-sized on it. On a shell that draws no controls
+     — macOS and Linux — that is the right padding alone. Where frameless
+     Windows draws minimise/maximise/close it is counted the way the flex row
+     charges them: three `--wc-w` targets, the lead in front of them and a
+     -12px margin hanging them off the padding. Named once here because two
+     rules must agree on it, and written as a length rather than "the controls"
+     so a rule can subtract it without asking which platform it is on. */
+  --wc-w: 44px;
+  --winctl-lead: 6px;
+  --winctl-w: var(--chrome-pad-r);
+  position: relative; flex: none; display: flex; align-items: center; gap: var(--chrome-gap);
   width: auto; height: var(--chrome-h); box-sizing: border-box;
   margin-left: calc(var(--nav-w) + var(--rail-w));
-  padding: 0 12px 0 max(20px, calc(var(--lights-w) + var(--rail-toggle-gap) - var(--nav-w) - var(--rail-w)));
+  padding: 0 var(--chrome-pad-r) 0 var(--chrome-pad-l);
   background: var(--surface); color: var(--text); border-bottom: 1px solid var(--hair); box-shadow: none;
   transition: margin-left var(--t-panel) var(--ease-out);
 }
@@ -23,6 +43,48 @@
 .chrome .badge[hidden] { display: none; }
 .chrome .badge[data-err] { color: var(--err-ink); background: color-mix(in srgb, var(--err) 12%, transparent); white-space: normal; max-width: 24ch; }
 .chrome .r { margin-left: auto; display: flex; align-items: center; align-self: center; gap: 4px; }
+/* The docked workbench's tab strip, portalled here from WorkbenchPanel so the
+   window bar and the workbench read as one head. It starts where the dock
+   column starts, the icons before it end where the conversation column does:
+   one fixed line for both panes' controls, no stacking. */
+.chrome .wb-dock-head { display: flex; align-items: center; gap: 2px; min-width: 0; flex: 0 1 auto; }
+.chrome:has(> .winctl) {
+  /* Written out of the controls' own parts rather than as 146px, so that moving
+     one of them cannot leave this number behind: three `--wc-w` targets, the
+     lead in front of them, a -12px margin hanging them off the bar's padding,
+     and then the two lengths the row puts before them. The slot keeps its left
+     edge on the seam — one hairline has to run through the whole window — and
+     keeps this much space on its own inside instead, so its tabs and buttons
+     stop in front of the controls rather than under them. */
+  --winctl-w: calc(var(--chrome-pad-r) + var(--chrome-gap) + var(--winctl-lead) + 3 * var(--wc-w) - 12px);
+}
+.chrome .wb-dock-head:empty { display: none; }
+/* The strip is stretched to the slot rather than sized by its tabs: as a flex
+   item its automatic minimum is min-content, so nine tabs would run the row off
+   the window instead of scrolling inside the strip. */
+/* Docked, the strip ends where the window controls begin, so its own 6px right
+   padding would turn into a gap between the expand button and minimise that
+   reads wider than the 4px the bar's icon group keeps. 4px here, and the two
+   ends of the bar use one rhythm. Undocked the strip keeps its 6px: there it
+   meets the panel's own edge, with no controls to align with. */
+.chrome .wb-dock-head .workbench-tabs { flex: 1 1 auto; min-width: 0; width: 100%; height: auto; padding-top: 0; padding-right: 4px; border-bottom: 0; background: transparent; align-items: center; }
+.chrome .wb-dock-head .workbench-tab { margin-bottom: 0; border-radius: var(--r-sm); }
+.chrome .wb-dock-head .workbench-tab[aria-selected="true"] { box-shadow: none; }
+/* The full-width strip stands its squares on the file tree's line by
+   flex-end and a bottom margin; docked, the bar centres its whole row, and
+   that bottom edge would sit the squares under the line the tabs share.
+   Spelled with the strip itself in the selector: the full-width rule lives in a
+   later sheet at the same weight, so only weight that outranks it holds
+   regardless of which sheet lands last. */
+.chrome .wb-dock-head .workbench-tabs > :is(.workbench-new, .workbench-files:not([data-action="workbench.files"])) { align-self: center; margin-bottom: 0; }
+/* The picker sits on the same edge as the file tree rather than the row's
+   centre: they are a 28px square and a 34px tab, so centring them apart leaves
+   their glyphs on different lines. Its own margin half the difference is what
+   puts the two icons on one line, and that only works with both on the bottom
+   edge — the full-width strip is `flex-end`, this bar is `center`. */
+.chrome .wb-dock-head .workbench-picker { align-self: flex-end; }
+.chrome .wb-dock-head .workbench-files { align-self: auto; }
+.chrome .wb-dock-head .workbench-tablist { align-items: center; }
 .chrome :is(.thbtn, .top-action) {
   position: relative; width: 28px; min-width: 28px; height: 28px; padding: 0; flex: none;
   display: inline-grid; place-items: center; border: 0; border-radius: var(--r-sm);

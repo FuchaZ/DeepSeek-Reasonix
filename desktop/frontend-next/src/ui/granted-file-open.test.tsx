@@ -56,7 +56,7 @@ it("opens a granted file in the workbench read-only, asking the folder and never
   const read = vi.spyOn(mock, "workspaceFile").mockResolvedValue({ path: "notes/plan.md", content: "# plan\n", revision: "r1", root: "/library", readOnly: true });
   const diff = vi.spyOn(mock, "changeDiff");
   const save = vi.spyOn(mock, "saveWorkspaceFile");
-  const props = { scheme: "dark" as const, shown: true, changes: [], onSurfaces: vi.fn(), onCloseManual: vi.fn(), onExternal: vi.fn(), manual: true, tabs: [] };
+  const props = { scheme: "dark" as const, shown: true, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn(), manual: true, tabs: [] };
   render(<WorkbenchPanel {...props} port={mock} fileRequest={{ path: grantedFilePath("/library", "notes/plan.md") }} />);
   await waitFor(() => expect(read).toHaveBeenCalledWith("notes/plan.md", "/library"));
   expect(diff).not.toHaveBeenCalled();

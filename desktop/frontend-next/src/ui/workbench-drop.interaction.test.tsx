@@ -33,7 +33,7 @@ function draw(root = "/workspace", setup?: (port: MockPort) => void) {
   render(<>
     <WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light"
       workspaceRoot={root} changes={[{ path: "internal/provider/retry.go", status: "M" }]}
-      onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />
+      onCloseManual={vi.fn()} onExternal={vi.fn()} />
     <Composer port={port} status={null} running={false} onSubmit={onSubmit} onChanged={vi.fn()} onError={onError} />
   </>);
   return { port, dropRefs, attach, onSubmit, onError, box: screen.getByRole("combobox", { name: "任务输入" }) as HTMLTextAreaElement };

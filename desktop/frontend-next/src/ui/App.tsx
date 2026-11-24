@@ -560,7 +560,7 @@ export function App({ hub }: { hub: HubPort }) {
         theme={scheme}
         onTheme={() => setTheme(scheme === "dark" ? "light" : "dark")}
         onFind={find.toggle}
-        view={report.view} rows={report.rows} surfaces={report.surfaces} onView={showView}
+        view={report.view} rows={report.rows} onView={showView}
         hub={hub} onError={fail}
       />
 

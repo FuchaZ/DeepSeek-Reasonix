@@ -10,7 +10,7 @@ afterEach(cleanup);
 const pathOf = (el: Element | null) => el?.querySelector("path")?.getAttribute("d");
 
 it("draws the run analysis button with the activity pulse, the same mark as its card link", () => {
-  const { container } = render(<ViewSwitch view="flow" rows={1} surfaces={0} onView={vi.fn()} />);
+  const { container } = render(<ViewSwitch view="flow" rows={1} onView={vi.fn()} />);
   const button = container.querySelector('[data-action="pane.view"][data-value="analysis"]');
   const pulse = render(<StudioIcon name="activity" />).container;
   expect(pathOf(button)).toBeTruthy();

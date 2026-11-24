@@ -67,12 +67,12 @@ it("shows only the latest hint when hover moves away from a keyboard-focused con
 
 it("describes opening and closing the top-bar workbench without changing its control identity", () => {
   const onView = vi.fn();
-  const view = render(<ViewSwitch view="flow" rows={1} surfaces={2} onView={onView} />);
+  const view = render(<ViewSwitch view="flow" rows={1} onView={onView} />);
   const button = screen.getByRole("button", { name: "工作台" });
   fireEvent.focus(button);
   expect(screen.getByRole("tooltip").textContent).toContain("打开工作台");
   expect(screen.getByRole("tooltip").textContent).toContain("3");
-  view.rerender(<ViewSwitch view="browser" rows={1} surfaces={2} onView={onView} />);
+  view.rerender(<ViewSwitch view="browser" rows={1} onView={onView} />);
   expect(screen.getByRole("button", { name: "工作台" })).toBe(button);
   expect(screen.getByRole("tooltip").textContent).toContain("关闭工作台");
   fireEvent.click(button);

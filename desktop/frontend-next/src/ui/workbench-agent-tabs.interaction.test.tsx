@@ -30,7 +30,7 @@ function Harness({ port }: { port: Port }) {
       <button onClick={async () => { opened = await agents.open("call_a"); }}>a</button>
       <button onClick={async () => { opened = await agents.open("call_b"); }}>b</button>
       <button onClick={async () => { opened = await agents.open("call_none"); }}>none</button>
-      <WorkbenchPanel scheme="dark" shown changes={[]} onSurfaces={vi.fn()} onCloseManual={vi.fn()} onExternal={vi.fn()} manual tabs={[]} port={port} agentRequest={agents.request} />
+      <WorkbenchPanel scheme="dark" shown changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} manual tabs={[]} port={port} agentRequest={agents.request} />
     </>
   );
 }

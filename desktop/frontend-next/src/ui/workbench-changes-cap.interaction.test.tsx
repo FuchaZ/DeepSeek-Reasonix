@@ -17,7 +17,7 @@ function draw(list: WorkspaceChange[]) {
   port.stageChanges = vi.fn(async () => {});
   const utils = render(
     <WorkbenchChanges port={port} changes={list} current="" onOpen={() => {}} onChanged={() => {}}
-      commit={{ button: <button data-action="commit.draft">提交…</button>, card: null }} />,
+      commit={{ button: <button data-action="commit.draft">提交</button>, card: null }} />,
   );
   return { port, ...utils };
 }

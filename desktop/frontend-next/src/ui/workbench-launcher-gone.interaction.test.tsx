@@ -7,7 +7,7 @@ import { WorkbenchPanel } from "./WorkbenchPanel";
 afterEach(() => { cleanup(); localStorage.clear(); });
 
 const mount = () =>
-  render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+  render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
 
 describe("the workbench start menu once the explorer is chosen", () => {
   it("is replaced by a prompt to pick a file, not left beside the tree it just opened", async () => {

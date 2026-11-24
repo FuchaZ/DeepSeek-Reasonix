@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState, type RefObject } from "react";
-import { listenAction } from "./listen";
 
 const still = () => typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -40,28 +39,11 @@ export function useSwitchFade(ref: RefObject<HTMLElement | null>, key: string) {
   }, [ref, key]);
 }
 
-/** The tab strip's ref, and the tabs it cannot show at its width, in strip order. */
-export function useOverflowTabs(keys: string[]): [RefObject<HTMLDivElement | null>, string[]] {
-  const strip = useRef<HTMLDivElement>(null);
-  const [hidden, setHidden] = useState<string[]>([]);
-  const joined = keys.join("\n");
-  useEffect(() => {
-    const stripEl = strip.current;
-    if (!stripEl) return;
-    const measure = () => {
-      const box = stripEl.getBoundingClientRect();
-      const out = [...stripEl.querySelectorAll<HTMLElement>("[data-key]")]
-        .filter((tab) => { const r = tab.getBoundingClientRect(); return r.width > 0 && (r.right > box.right + 1 || r.left < box.left - 1); })
-        .map((tab) => tab.dataset.key!);
-      setHidden((was) => (was.join("\n") === out.join("\n") ? was : out));
-    };
-    measure();
-    const ro = typeof ResizeObserver === "function" ? new ResizeObserver(measure) : null;
-    ro?.observe(stripEl);
-    const stop = listenAction(stripEl, "scroll", { action: "workbench.tab-overflow", listener: measure }, { passive: true });
-    return () => { ro?.disconnect(); stop(); };
-  }, [joined]);
-  return [strip, hidden];
+/** The tab strip's ref. Its DOM is replaced when it changes home — docked into
+ *  the window bar or back — and React re-attaches the same ref to the new node,
+ *  so nothing has to re-measure on that move. */
+export function useTabStrip(): RefObject<HTMLDivElement | null> {
+  return useRef<HTMLDivElement>(null);
 }
 
 /** Slides the workbench in from the right when it is brought out, never when it is

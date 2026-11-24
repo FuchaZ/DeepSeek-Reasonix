@@ -33,7 +33,7 @@ async function draw(shell: Record<string, unknown>, host?: string) {
       theme="dark"
       onTheme={vi.fn()}
       onFind={vi.fn()}
-      view="flow" rows={0} surfaces={0} onView={vi.fn()}
+      view="flow" rows={0} onView={vi.fn()}
       hub={hub}
       host={host}
       onError={vi.fn()}

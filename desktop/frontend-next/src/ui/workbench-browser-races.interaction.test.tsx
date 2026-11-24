@@ -7,7 +7,7 @@ import { MockPort } from '../port/mock';
 import { host } from '../port/host';
 import { openPage, unseenPageOpenings } from './browser_open';
 const page = { id: 'b1', target: 't1', url: 'https://example.com', title: 'Existing page', active: true };
-const props = { scheme: 'dark' as const, shown: false, changes: [], onSurfaces: vi.fn(), onCloseManual: vi.fn(), onExternal: vi.fn() };
+const props = { scheme: 'dark' as const, shown: false, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
 const filesShown = () => document.querySelector('.workbench-body')!.hasAttribute('data-files');
 // The changed-files pill opens the changes page, which a late browser must not take over.
 const changesShown = () => document.querySelector('[role="tab"][aria-selected="true"]')?.textContent?.startsWith("改动") ?? false;

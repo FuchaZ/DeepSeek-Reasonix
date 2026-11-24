@@ -1,4 +1,5 @@
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from "react";
+import { createPortal } from "react-dom";
 import { t } from "../i18n";
 import { reason } from "../i18n/kernel";
 import { host } from "../port/host";
@@ -15,8 +16,8 @@ import { WorkbenchStatus } from "./WorkbenchStatus";
 import { WorkbenchFileTree } from "./WorkbenchFileTree";
 import { WorkbenchChangesPage } from "./WorkbenchChangesPage";
 import { UnifiedDiff } from "./UnifiedDiff";
-import { leave, slideAway, useEnteringTabs, useOpenSlide, useOverflowTabs, useSwitchFade } from "./workbench_motion";
-import { WorkbenchTabOverflow } from "./WorkbenchTabOverflow";
+import { leave, slideAway, useEnteringTabs, useOpenSlide, useSwitchFade, useTabStrip } from "./workbench_motion";
+import { WorkbenchTabPicker } from "./WorkbenchTabPicker";
 import { WorkbenchCloseAsk } from "./WorkbenchCloseAsk";
 import { WorkbenchState } from "./WorkbenchState";
 import { AgentBrowserPanel, UNREAD_TABS } from "./BrowserPanel";
@@ -34,6 +35,7 @@ import { documentRefs, parseGrantedFile } from "./grantedfiles";
 import { keyOf, labelOf, type Surface } from "./workbench_tabs";
 import { useTabNames } from "./useTabNames";
 import { useTabClose } from "./useTabClose";
+import { useTabMenu } from "./useTabMenu";
 import { BrowserTabMenu } from "./BrowserTabMenu";
 import { WorkbenchFileMenu, type FileMenu } from "./WorkbenchFileMenu";
 import { useWorkbenchTextMenu } from "./useWorkbenchTextMenu";
@@ -46,6 +48,7 @@ import type { HubPort } from "../port/hub";
 import { useHtmlPreview } from "./useHtmlPreview";
 import { usePageAnnotations } from "./usePageAnnotations";
 import { setShowsHiddenFiles, showsHiddenFiles } from "../state/prefs";
+import { useFullToggleFocus, useWorkbenchDock } from "./workbench_dock";
 import { BrowserFullToggle } from "./BrowserFullToggle";
 import { documentView, sourceView } from "./document/registry";
 import { TooltipButton } from "./TooltipButton";
@@ -80,7 +83,6 @@ export function WorkbenchPanel({
   toggleFiles = 0,
   onCloseManual,
   onDismiss,
-  onSurfaces,
   onActiveFile,
   onExternal,
   onAddToChat,
@@ -121,8 +123,6 @@ export function WorkbenchPanel({
   onCloseManual: () => void;
   // Closes the workbench itself, whichever way it was opened.
   onDismiss?: () => void;
-  // How many surfaces the strip holds, for the pane's own tab to count.
-  onSurfaces: (n: number) => void;
   onActiveFile?: (path: string | undefined) => void;
   onExternal: (url: string) => void;
   onAddToChat?: (reference: string) => void;
@@ -376,7 +376,6 @@ export function WorkbenchPanel({
     () => treeRows(files, directories, query, collapsed),
     [files, directories, query, collapsed],
   );
-  useEffect(() => onSurfaces(surfaces.length), [onSurfaces, surfaces.length]);
   // A strip wider than the column scrolls, and the tab being shown is always
   // brought into it: a selected tab nobody can see reads as a tab that closed.
   const canvas = useRef<HTMLDivElement>(null);
@@ -385,12 +384,19 @@ export function WorkbenchPanel({
   const [asking, setAsking] = useState<{ path: string; anchor: HTMLElement } | null>(null);
   const tabKeys = surfaces.map(keyOf);
   const entering = useEnteringTabs(tabKeys);
-  const [strip, overflow] = useOverflowTabs(tabKeys);
+  const docked = !!fullMode && !fullMode.full;
+  // Docked and not full-screen, the strip belongs on the window bar. How the
+  // stacked flag is read back from the column lives with the hook.
+  const dockHead = useWorkbenchDock(frame, docked);
+  const strip = useTabStrip();
   useSwitchFade(canvas, launcher ? "launcher" : active ? keyOf(active) : "");
   const activeKey = active ? keyOf(active) : "";
+  // The strip's DOM is replaced whenever it changes home — docked or not,
+  // stacked or not — and a fresh node starts scrolled to the left. Re-running
+  // on that move keeps the selected tab in view.
   useEffect(() => {
     strip.current?.querySelector('[aria-selected="true"]')?.scrollIntoView?.({ block: "nearest", inline: "nearest" });
-  }, [activeKey, surfaces.length]);
+  }, [activeKey, surfaces.length, !!dockHead]);
   // Picking a file is asking to read it; the list stays where it is.
   const [recentFiles, setRecentFiles] = useState(() => readRecentFiles(workspaceRoot ?? ""));
   const openFile = useCallback((path: string) => {
@@ -457,35 +463,27 @@ export function WorkbenchPanel({
   };
   const { close: closeTabs, closing, closeFailure } = useTabClose({ port, surfaces, selected, showFiles: showFiles || launcher, setBrowsers, setOpenFiles, setAgents, setDismissed, setSelected, setLauncher, onCloseManual, onCloseSelected: () => setFailed("") });
   const close = (targets: Surface[]) => { supersede(); return terminals.guard(targets, closeTabs); };
-  const dismissTabMenu = useCallback(() => setTabMenu(null), []);
-  const [tabMenu, setTabMenu] = useState<{ surface: Surface; x: number; y: number; anchor: HTMLElement } | null>(null);
-  const pages = surfaces.filter((s) => s.kind !== "file");
-  const tabAt = tabMenu ? surfaces.findIndex((s) => keyOf(s) === keyOf(tabMenu.surface)) : -1;
-  const tabOthers = tabMenu ? pages.filter((s) => keyOf(s) !== keyOf(tabMenu.surface)) : [];
-  const tabRight = tabAt < 0 ? [] : surfaces.slice(tabAt + 1).filter((s) => s.kind !== "file");
-  const returning = useRef("");
-  useEffect(() => {
-    if (tabMenu && tabAt < 0) setTabMenu(null);
-    if (tabMenu || closing || !returning.current) return;
-    const picks = [...document.querySelectorAll<HTMLButtonElement>(".workbench-tab-pick")];
-    const back = picks.find((b) => b.dataset.target === returning.current) ?? picks.find((b) => b.closest('[aria-selected="true"]'));
-    returning.current = "";
-    (back ?? newTab.current)?.focus();
-  }, [tabMenu, tabAt, surfaces, closing]);
-  const offerTabMenu = (e: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>, surface: Surface) => {
-    if (surface.kind === "file" || closing || document.getSelection()?.isCollapsed === false) return;
-    e.preventDefault();
-    e.stopPropagation();
-    const anchor = e.currentTarget.matches("button") ? e.currentTarget : e.currentTarget.querySelector<HTMLElement>(".workbench-tab-pick")!;
-    const rect = anchor.getBoundingClientRect();
-    const pointed = "clientX" in e && (e.clientX !== 0 || e.clientY !== 0);
-    setTabMenu({ surface, x: pointed ? e.clientX : rect.left, y: pointed ? e.clientY : rect.bottom, anchor });
-  };
-  return (
-    <section className="workbench" ref={frame} aria-label={t("common.workbench")} data-action-keydown="layer.dismiss" onKeyDown={(e) => {
-      if (launcher && e.key === "Escape") { e.stopPropagation(); toggleLauncher(); newTab.current?.focus(); }
-    }}>
-      <header className="workbench-tabs">
+  const tabMenu = useTabMenu({
+    surfaces, unsaved, closing, newTab, close,
+    askAbout: (at) => setAsking(at),
+  });
+  // The docked workbench shares the window bar: its tab strip lives in the
+  // chrome's dock-head slot rather than stacking a second bar of its own.
+  // The slot is absent in tests and undocked shells, so the strip falls back
+  // to its own header in place — same markup, two homes.
+  const head = (
+    <header className="workbench-tabs">
+        {/* Every open tab in one list, to jump from, at the very head of the row —
+            before the file tree. The tree opens a new tab; this one reaches the
+            tabs already open, including the ones a narrow strip has scrolled out
+            of sight, which is what the row could not do on its own. Drawn whether
+            or not anything is hidden: a strip that fits today does not once two
+            files are opened beside it. */}
+        <WorkbenchTabPicker
+          tabs={surfaces.map((surface) => ({ key: keyOf(surface), label: labelFor(surface) }))}
+          active={launcher ? "" : activeKey}
+          onPick={(k) => { pick(k); strip.current?.querySelector(`[data-key="${CSS.escape(k)}"]`)?.scrollIntoView({ inline: "nearest" }); }}
+        />
         <TooltipButton
           className="workbench-files"
           data-action="workbench.files"
@@ -515,7 +513,7 @@ export function WorkbenchPanel({
             data-dirty={surface.kind === "file" && unsaved.includes(surface.path) ? "" : undefined}
             data-key={keyOf(surface)} data-enter={entering.has(keyOf(surface)) ? "" : undefined}
             data-action-contextmenu="workbench.browser-menu" data-target={keyOf(surface)}
-            onContextMenu={(e) => offerTabMenu(e, surface)}
+            onContextMenu={(e) => tabMenu.offer(e, surface)}
           >
             {renaming === keyOf(surface) ? (
               <span className="workbench-tab-pick">
@@ -546,13 +544,13 @@ export function WorkbenchPanel({
 ` : ""}${surface.tab.url}`
                   : labelFor(surface)
               }
-              aria-haspopup={surface.kind === "file" ? undefined : "menu"}
-              aria-expanded={surface.kind === "file" ? undefined : tabMenu !== null && keyOf(tabMenu.surface) === keyOf(surface)}
+              aria-haspopup="menu"
+              aria-expanded={tabMenu.menu !== null && keyOf(tabMenu.menu.surface) === keyOf(surface)}
               onClick={() => pick(keyOf(surface))}
               onDoubleClick={surface.kind === "browser" ? () => setRenaming(keyOf(surface)) : undefined}
               data-action-dblclick="workbench.rename-tab"
               onKeyDown={(e) => {
-                if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) offerTabMenu(e, surface);
+                if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) tabMenu.offer(e, surface);
                 else if (e.key === "F2" && surface.kind === "browser") { e.preventDefault(); setRenaming(keyOf(surface)); }
               }}
             >
@@ -585,8 +583,6 @@ export function WorkbenchPanel({
           </div>
         )}
         </div>
-        <WorkbenchTabOverflow tabs={overflow.flatMap((k) => { const s = surfaces.find((x) => keyOf(x) === k); return s ? [{ key: k, label: labelFor(s) }] : []; })}
-          onPick={(k) => { pick(k); strip.current?.querySelector(`[data-key="${CSS.escape(k)}"]`)?.scrollIntoView({ inline: "nearest" }); }} />
         <TooltipButton
           className="workbench-new"
           data-action="workbench.new"
@@ -605,6 +601,13 @@ export function WorkbenchPanel({
           </TooltipButton>
         )}
       </header>
+  );
+  useFullToggleFocus(frame, fullMode?.full);
+  return (
+    <section className="workbench" ref={frame} aria-label={t("common.workbench")} data-action-keydown="layer.dismiss" onKeyDown={(e) => {
+      if (launcher && e.key === "Escape") { e.stopPropagation(); toggleLauncher(); newTab.current?.focus(); }
+    }}>
+      {dockHead ? createPortal(head, dockHead) : head}
       {closeFailure && <div className="workbench-error workbench-close-error" role="alert">{closeFailure}</div>}
       <div className="workbench-body" data-files={showFiles && !launcher ? "" : undefined}>
         <main className="workbench-canvas">
@@ -787,12 +790,7 @@ export function WorkbenchPanel({
           onSave={async () => { const ok = await saveAt(asking.path); if (ok) { setAsking(null); void close([{ kind: "file", path: asking.path }]); } return ok; }}
           onDrop={() => { dropAt(asking.path); setAsking(null); void close([{ kind: "file", path: asking.path }]); }} />
       )}
-      {tabMenu && <BrowserTabMenu menu={tabMenu} others={tabOthers.length} right={tabRight.length} all={pages.length} label={labelFor(tabMenu.surface)} onDismiss={dismissTabMenu} onClose={(mode) => {
-        const target = tabMenu.surface;
-        returning.current = keyOf(target);
-        setTabMenu(null);
-        void close(mode === "one" ? [target] : mode === "others" ? tabOthers : mode === "right" ? tabRight : pages);
-      }} />}
+      {tabMenu.menu && <BrowserTabMenu menu={tabMenu.menu} others={tabMenu.counts.others} left={tabMenu.counts.left} right={tabMenu.counts.right} all={tabMenu.counts.all} label={labelFor(tabMenu.menu.surface)} onDismiss={tabMenu.dismiss} onClose={tabMenu.takeClose} />}
     </section>
   );
 }

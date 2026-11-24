@@ -48,7 +48,7 @@ function Harness({ port, tabs }: { port: MockPort; tabs: BrowserTab[] }) {
       <button onClick={() => setManual(true)}>show browser</button>
       <a href="https://example.com/a">go</a>
       <a href="https://example.com/b">go again</a>
-      <WorkbenchPanel port={port} tabs={tabs} manual={manual} shown={false} scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />
+      <WorkbenchPanel port={port} tabs={tabs} manual={manual} shown={false} scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />
     </>
   );
 }

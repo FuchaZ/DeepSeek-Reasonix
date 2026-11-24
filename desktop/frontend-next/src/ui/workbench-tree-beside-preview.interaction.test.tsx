@@ -11,7 +11,7 @@ beforeEach(() => { localStorage.setItem(STORAGE, "zh"); boot(); });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); localStorage.clear(); });
 
 const mount = (port = new MockPort()) =>
-  render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+  render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
 const filesShown = (c: HTMLElement) => c.querySelector(".workbench-body")!.hasAttribute("data-files");
 
 async function openTree(c: HTMLElement, user: ReturnType<typeof userEvent.setup>) {

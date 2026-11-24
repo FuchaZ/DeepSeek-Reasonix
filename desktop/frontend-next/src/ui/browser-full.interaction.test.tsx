@@ -22,7 +22,7 @@ function open(active = true, setup?: (port: MockPort) => void) {
     const [browser, setBrowser] = useState(true);
     const [req, setReq] = useState<{ to: PaneView; n: number } | undefined>();
     useWindowKeys([], { browser, settings: false, running: false, confirm: false, closeBrowser: () => { close(); setBrowser(false); }, stop: vi.fn(), onArm: vi.fn() });
-    return <><ViewSwitch view={browser ? "browser" : "flow"} rows={0} surfaces={0} onView={(to) => setReq((r) => ({ to, n: (r?.n ?? 0) + 1 }))} /><Pane port={port} rt={{ id: "wide", root: "/fixture", name: "Fixture" } as RuntimeView}
+    return <><ViewSwitch view={browser ? "browser" : "flow"} rows={0} onView={(to) => setReq((r) => ({ to, n: (r?.n ?? 0) + 1 }))} /><Pane port={port} rt={{ id: "wide", root: "/fixture", name: "Fixture" } as RuntimeView}
       title="Fixture" active={active} visible={active} sideHost={null} side={false}
       onFocus={() => {}} onReport={() => {}} onSessionChanged={() => {}} pulse={0} findPulse={0}
       onSettings={() => {}} onOpenProject={() => {}}

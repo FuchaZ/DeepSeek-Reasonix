@@ -17,7 +17,7 @@ describe("WorkbenchPanel", () => {
     const user = userEvent.setup();
     const port = new MockPort();
     const save = vi.spyOn(port, "saveWorkspaceFile");
-    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
 
     await user.click(await screen.findByRole("button", { name: "README.md" }));
     expect(screen.getByRole("tab", { name: "README.md" }).getAttribute("aria-selected")).toBe("true");
@@ -48,7 +48,7 @@ describe("WorkbenchPanel", () => {
       const port = new MockPort();
       let content = "# First version";
       const read = vi.spyOn(port, "workspaceFile").mockImplementation(async (path) => ({ path, content, revision: "fixture" }));
-      render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+      render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
 
       await user.click(await screen.findByRole("button", { name: "README.md" }));
       await waitFor(() => expect(document.querySelector(".workbench-read h1")?.textContent).toBe("First version"));
@@ -106,7 +106,7 @@ describe("WorkbenchPanel", () => {
         const user = userEvent.setup();
         const port = new MockPort();
         refusedLikeTheKernel(port, code, detail);
-        render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+        render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
         expect(screen.queryByRole("alert")).toBeNull();
         await user.click(screen.getByRole("button", { name: "浏览器" }));
         const alert = await screen.findByRole("alert");
@@ -120,7 +120,7 @@ describe("WorkbenchPanel", () => {
         const user = userEvent.setup();
         const port = new MockPort();
         refusedLikeTheKernel(port, code, detail);
-        render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+        render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
         await user.click(screen.getByRole("button", { name: "新建标签" }));
         await user.click(screen.getByRole("button", { name: "浏览器" }));
         const alert = await screen.findByRole("alert");
@@ -135,7 +135,7 @@ describe("WorkbenchPanel", () => {
       const user = userEvent.setup();
       const port = new MockPort();
       vi.spyOn(port, "browserOpen").mockRejectedValue(new Error("profile is in use"));
-      render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+      render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
       await user.click(screen.getByRole("button", { name: "新建标签" }));
       await user.click(screen.getByRole("button", { name: "浏览器" }));
       await screen.findByRole("alert");
@@ -149,7 +149,7 @@ describe("WorkbenchPanel", () => {
       const port = new MockPort();
       const open = vi.spyOn(port, "browserOpen");
       open.mockRejectedValueOnce(new Error("profile is in use"));
-      render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+      render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
       await user.click(screen.getByRole("button", { name: "新建标签" }));
       await user.click(screen.getByRole("button", { name: "浏览器" }));
       await screen.findByRole("alert");
@@ -162,7 +162,7 @@ describe("WorkbenchPanel", () => {
       const user = userEvent.setup();
       const port = new MockPort();
       vi.spyOn(port, "workspaceFile").mockRejectedValue(new Error("file is gone"));
-      render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+      render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
       await user.click(await screen.findByRole("button", { name: "README.md" }));
       expect((await screen.findAllByRole("alert")).length).toBe(1);
       await user.click(screen.getByRole("button", { name: "关闭 README.md" }));
@@ -174,7 +174,7 @@ describe("WorkbenchPanel", () => {
     const user = userEvent.setup();
     const port = new MockPort();
     const open = vi.spyOn(port, "browserOpen");
-    const { container } = render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(await screen.findByRole("button", { name: "README.md" }));
     await user.click(screen.getByRole("button", { name: "编辑" }));
     const editor = await waitFor(() => {
@@ -214,7 +214,7 @@ describe("WorkbenchPanel", () => {
     const open = vi.spyOn(port, "browserOpen");
     const page = { id: "b1", target: "t1", url: "https://example.com", title: "Existing page", active: true };
     const files = vi.spyOn(port, "workspaceFiles");
-    const { container } = render(<WorkbenchPanel port={port} tabs={[page]} manual shown scheme="light" changes={[{ path: "README.md", status: "M" }]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={port} tabs={[page]} manual shown scheme="light" changes={[{ path: "README.md", status: "M" }]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     const plus = container.querySelector<HTMLButtonElement>(".workbench-new")!;
     await user.click(plus);
     expect(container.querySelector('[data-action="workbench.launch-find"]')).toBeNull();
@@ -241,7 +241,7 @@ describe("WorkbenchPanel", () => {
     let finish!: (value: Awaited<ReturnType<MockPort["browserOpen"]>>) => void;
     const open = vi.spyOn(port, "browserOpen").mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
     try {
-      render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+      render(<WorkbenchPanel port={port} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
       await user.click(screen.getByRole("button", { name: "新建标签" }));
       expect(open).not.toHaveBeenCalled();
       await user.dblClick(screen.getByRole("button", { name: "浏览器" }));
@@ -257,7 +257,7 @@ describe("WorkbenchPanel", () => {
     vi.stubGlobal("ResizeObserver", class { observe() {} disconnect() {} });
     const close = vi.fn();
     try {
-      render(<WorkbenchPanel port={new MockPort()} tabs={[{ id: "b1", target: "t1", url: "about:blank", title: "Existing page", active: true }]} manual shown scheme="light" changes={[]} onCloseManual={close} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+      render(<WorkbenchPanel port={new MockPort()} tabs={[{ id: "b1", target: "t1", url: "about:blank", title: "Existing page", active: true }]} manual shown scheme="light" changes={[]} onCloseManual={close} onExternal={vi.fn()} />);
       hide.mockClear();
       await user.click(screen.getByRole("button", { name: "新建标签" }));
       expect(hide).toHaveBeenCalled();
@@ -269,7 +269,7 @@ describe("WorkbenchPanel", () => {
 
   it.each(["escape", "plus"])("restores the explorer when new-tab choice is cancelled with %s", async (cancel) => {
     const user = userEvent.setup();
-    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(container.querySelector('[data-action="workbench.files"]')!);
     await user.click(screen.getByRole("button", { name: "新建标签" }));
     expect(container.querySelector(".workbench-body")?.hasAttribute("data-files")).toBe(false);
@@ -285,7 +285,7 @@ describe("WorkbenchPanel", () => {
     let finish!: (value: Awaited<ReturnType<MockPort["browserOpen"]>>) => void;
     vi.spyOn(port, "browserOpen").mockImplementation(() => new Promise((resolve) => { finish = resolve; }));
     try {
-      const props = { port, tabs: [], manual: true, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+      const props = { port, tabs: [], manual: true, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
       const { container } = render(<WorkbenchPanel {...props} />);
       await user.click(screen.getByRole("button", { name: "新建标签" }));
       await user.click(screen.getByRole("button", { name: "浏览器" }));
@@ -314,7 +314,7 @@ describe("WorkbenchPanel", () => {
     const agent = { id: "a", target: "ta", url: "https://example.com", title: "Agent page", active: true };
     const opened = { id: "b", target: "tb", url: "about:blank", title: "New browser", active: false };
     const settle = () => rejected ? fail(new HttpError(400, "failed", { code: "browser.open_failed", params: { tab: opened.id } })) : finish(opened);
-    const props = { port, manual: true, shown: false, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port, manual: true, shown: false, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     try {
       const { container, rerender } = render(<WorkbenchPanel {...props} tabs={[agent]} />);
       await user.click(screen.getByRole("button", { name: "新建标签" }));
@@ -338,7 +338,7 @@ describe("WorkbenchPanel", () => {
 
   it("still follows a newly discovered agent page while the launcher is open", async () => {
     const user = userEvent.setup();
-    const props = { port: new MockPort(), manual: true, shown: false, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port: new MockPort(), manual: true, shown: false, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { rerender } = render(<WorkbenchPanel {...props} tabs={[]} />);
     await user.click(screen.getByRole("button", { name: "新建标签" }));
     rerender(<WorkbenchPanel {...props} tabs={[{ id: "b1", target: "t1", url: "https://example.com", title: "Agent page", active: true }]} />);
@@ -348,7 +348,7 @@ describe("WorkbenchPanel", () => {
 
   it("opens on a launcher that offers a choice, and no browser until one is chosen", async () => {
     const user = userEvent.setup();
-    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     render(<WorkbenchPanel {...props} tabs={[]} />);
     expect(screen.getByRole("group", { name: "开始" })).toBeTruthy();
     expect(screen.queryByRole("tab", { name: "浏览器" })).toBeNull();
@@ -361,7 +361,7 @@ describe("WorkbenchPanel", () => {
   it("opens the file explorer from the launcher, which carries the session's change count", async () => {
     const user = userEvent.setup();
     const changes = [{ path: "a.txt", status: "M" }] as never;
-    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes, onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes, onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { container } = render(<WorkbenchPanel {...props} tabs={[]} />);
     expect(screen.getByRole("button", { name: "资源管理器" }).querySelector("small")!.textContent).toBe("1");
     expect(container.querySelector(".workbench-files-count")!.textContent).toBe("1");
@@ -370,7 +370,7 @@ describe("WorkbenchPanel", () => {
   });
 
   it("gives way to the agent's page, with no launcher over it", () => {
-    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { rerender } = render(<WorkbenchPanel {...props} tabs={[]} />);
     expect(screen.getByRole("group", { name: "开始" })).toBeTruthy();
     rerender(<WorkbenchPanel {...props} tabs={[{ id: "b1", target: "t1", url: "https://top.baidu.com", title: "百度热搜", active: true }]} />);
@@ -385,7 +385,7 @@ describe("WorkbenchPanel", () => {
       { id: "b1", target: "t1", url: "https://top.baidu.com", title: "Agent page", active: true },
       { id: "b2", target: "t2", url: "https://example.com", title: "My page", active: false },
     ];
-    render(<WorkbenchPanel port={new MockPort()} tabs={pages} manual shown={false} scheme="dark" changes={[]} onCloseManual={onCloseManual} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={new MockPort()} tabs={pages} manual shown={false} scheme="dark" changes={[]} onCloseManual={onCloseManual} onExternal={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "关闭 Agent page" }));
     expect(onCloseManual).not.toHaveBeenCalled();
     expect(screen.getByRole("tab", { name: "My page" })).toBeTruthy();
@@ -398,7 +398,7 @@ describe("WorkbenchPanel", () => {
     const user = userEvent.setup();
     const onCloseManual = vi.fn();
     const page = { id: "b1", target: "t1", url: "https://example.com", title: "My page", active: true };
-    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[page]} manual shown={false} scheme="dark" changes={[]} onCloseManual={onCloseManual} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[page]} manual shown={false} scheme="dark" changes={[]} onCloseManual={onCloseManual} onExternal={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "文件" }));
     await user.click(screen.getByRole("button", { name: "关闭 My page" }));
     expect(onCloseManual).not.toHaveBeenCalled();
@@ -410,7 +410,7 @@ describe("WorkbenchPanel", () => {
   it("keeps the explorer beside a file opened from it, and after that file is closed", async () => {
     const user = userEvent.setup();
     const onCloseManual = vi.fn();
-    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={onCloseManual} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={onCloseManual} onExternal={vi.fn()} />);
 
     await user.click(container.querySelector<HTMLElement>('[data-action="workbench.files"]')!);
     expect(container.querySelector(".workbench-body")?.hasAttribute("data-files")).toBe(true);
@@ -428,7 +428,7 @@ describe("WorkbenchPanel", () => {
     const user = userEvent.setup();
     const onCloseManual = vi.fn();
     const page = { id: "b1", target: "t1", url: "https://example.com", title: "My page", active: false };
-    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[page]} manual={false} shown scheme="light" changes={[]} onCloseManual={onCloseManual} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[page]} manual={false} shown scheme="light" changes={[]} onCloseManual={onCloseManual} onExternal={vi.fn()} />);
 
     await user.click(container.querySelector<HTMLElement>('[data-action="workbench.files"]')!);
     await user.click(await screen.findByRole("button", { name: "README.md" }));
@@ -440,31 +440,36 @@ describe("WorkbenchPanel", () => {
     expect(screen.getByRole("tab", { name: "My page" }).getAttribute("aria-selected")).toBe("true");
   });
 
-  it("keeps the column when every browser tab is closed at once beside an explorer file", async () => {
+  it("closes every tab, the open file among them, and keeps the explorer standing", async () => {
+    // A file is a tab: the strip's own menu reaches it, and "close all" means
+    // all. What it must never do is close one whose text is unsaved — that is
+    // the next test's subject, and the reason these lists are filtered.
     const user = userEvent.setup();
     const onCloseManual = vi.fn();
     const pages = [
       { id: "b1", target: "t1", url: "https://top.baidu.com", title: "Agent page", active: false },
       { id: "b2", target: "t2", url: "https://example.com", title: "My page", active: false },
     ];
-    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={pages} manual={false} shown scheme="light" changes={[]} onCloseManual={onCloseManual} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={pages} manual={false} shown scheme="light" changes={[]} onCloseManual={onCloseManual} onExternal={vi.fn()} />);
 
     await user.click(container.querySelector<HTMLElement>('[data-action="workbench.files"]')!);
     await user.click(await screen.findByRole("button", { name: "README.md" }));
     expect(screen.getByRole("tab", { name: "README.md" })).toBeTruthy();
 
     await user.pointer({ keys: "[MouseRight]", target: screen.getByRole("tab", { name: "My page" }) });
-    await user.click(await screen.findByRole("menuitem", { name: "关闭全部浏览器标签" }));
+    await user.click(await screen.findByRole("menuitem", { name: "关闭全部标签" }));
 
     expect(screen.queryByRole("tab", { name: "My page" })).toBeNull();
     expect(screen.queryByRole("tab", { name: "Agent page" })).toBeNull();
-    expect(screen.getByRole("tab", { name: "README.md" })).toBeTruthy();
+    expect(screen.queryByRole("tab", { name: "README.md" })).toBeNull();
     expect(onCloseManual).not.toHaveBeenCalled();
+    // The explorer was open through all of it, so the column keeps its list
+    // rather than folding away.
     expect(container.querySelector(".workbench-body")?.hasAttribute("data-files")).toBe(true);
   });
 
   it("shows a page the person opened beside the agent's, while the agent's tab stays active", () => {
-    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const agent = { id: "b1", target: "t1", url: "https://top.baidu.com", title: "百度热搜", active: true };
     const { rerender } = render(<WorkbenchPanel {...props} tabs={[agent]} />);
     rerender(<WorkbenchPanel {...props} tabs={[agent, { id: "b2", target: "t2", url: "https://example.com", title: "Link", active: false }]} />);
@@ -473,7 +478,7 @@ describe("WorkbenchPanel", () => {
 
   it("selects a link's page again after the previous one was closed, with the agent's tab still active", async () => {
     const user = userEvent.setup();
-    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port: new MockPort(), manual: true, shown: false, scheme: "dark" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const agent = { id: "b1", target: "t1", url: "https://top.baidu.com", title: "Agent page", active: true };
     const first = { id: "b2", target: "t2", url: "https://example.com", title: "First", active: false };
     const second = { id: "b3", target: "t3", url: "https://example.org", title: "Second", active: false };
@@ -491,7 +496,7 @@ describe("WorkbenchPanel", () => {
     localStorage.removeItem("rx-show-hidden-files");
     const port = new MockPort();
     const list = vi.spyOn(port, "workspaceFiles");
-    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { unmount } = render(<WorkbenchPanel {...props} />);
     await screen.findByRole("button", { name: "README.md" });
     expect(screen.queryByRole("button", { name: ".reasonix" })).toBeNull();
@@ -510,7 +515,7 @@ describe("WorkbenchPanel", () => {
 
   it("shows the file picked from the list and keeps the list beside it", async () => {
     const user = userEvent.setup();
-    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(screen.getAllByRole("button", { name: "文件" })[0]);
     expect(container.querySelector(".workbench-body")?.hasAttribute("data-files")).toBe(true);
     await user.click(await screen.findByRole("button", { name: "README.md" }));
@@ -524,7 +529,7 @@ describe("WorkbenchPanel", () => {
       { id: "b1", target: "t1", url: "https://top.baidu.com", title: "Agent page", active: true },
       { id: "b2", target: "t2", url: "https://example.com", title: "My page", active: false },
     ];
-    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={pages} manual shown={false} scheme="dark" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={pages} manual shown={false} scheme="dark" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(screen.getAllByRole("button", { name: "文件" })[0]);
     expect(container.querySelector(".workbench-body")?.hasAttribute("data-files")).toBe(true);
     await user.click(screen.getByRole("tab", { name: "Agent page" }).querySelector("button") ?? screen.getByRole("tab", { name: "Agent page" }));
@@ -534,7 +539,7 @@ describe("WorkbenchPanel", () => {
 
   it("steps the file list aside when a new browser tab is opened", async () => {
     const user = userEvent.setup();
-    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    const { container } = render(<WorkbenchPanel port={new MockPort()} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(screen.getAllByRole("button", { name: "文件" })[0]);
     expect(container.querySelector(".workbench-body")?.hasAttribute("data-files")).toBe(true);
     await user.click(screen.getByRole("button", { name: "新建标签" }));
@@ -550,7 +555,7 @@ describe("WorkbenchPanel", () => {
       files: [...disk].filter(([, kind]) => kind === "file").map(([name]) => name),
       directories: [...disk].filter(([, kind]) => kind === "dir").map(([name]) => name),
     }));
-    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await screen.findByRole("button", { name: "t620" });
 
     disk.delete("t620");
@@ -567,7 +572,7 @@ describe("WorkbenchPanel", () => {
     const disk = new Set(["notes.md"]);
     const port = new MockPort();
     vi.spyOn(port, "workspaceFiles").mockImplementation(async () => ({ files: [...disk], directories: [] }));
-    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { rerender } = render(<WorkbenchPanel {...props} running />);
     await screen.findByRole("button", { name: "notes.md" });
 
@@ -581,7 +586,7 @@ describe("WorkbenchPanel", () => {
     const disk = new Set(["notes.md"]);
     const port = new MockPort();
     vi.spyOn(port, "workspaceFiles").mockImplementation(async () => ({ files: [...disk], directories: [] }));
-    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], running: true, onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], running: true, onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { rerender } = render(<WorkbenchPanel {...props} wrote={0} />);
     await screen.findByRole("button", { name: "notes.md" });
 
@@ -595,7 +600,7 @@ describe("WorkbenchPanel", () => {
     const user = userEvent.setup();
     const port = new MockPort();
     const reveal = vi.spyOn(port, "revealInFileManager");
-    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
 
     await user.click(screen.getByRole("button", { name: "在系统文件管理器中显示工作区" }));
     expect(reveal).toHaveBeenLastCalledWith("");
@@ -620,7 +625,7 @@ describe("WorkbenchPanel", () => {
     const user = userEvent.setup();
     const port = new MockPort();
     const reveal = vi.spyOn(port, "revealInFileManager");
-    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(await screen.findByRole("button", { name: "README.md" }));
     await user.click(await screen.findByRole("button", { name: "更多" }));
     await user.click(await screen.findByRole("menuitem", { name: /系统文件管理器|访达|文件资源管理器/ }));
@@ -633,7 +638,7 @@ describe("WorkbenchPanel", () => {
     vi.spyOn(port, "revealInFileManager").mockRejectedValue(
       new HttpError(403, "no window", { code: "workspace.locate_no_window", error: "no window" }),
     );
-    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(await screen.findByRole("button", { name: "README.md" }));
     await user.click(await screen.findByRole("button", { name: "更多" }));
     await user.click(await screen.findByRole("menuitem", { name: /系统文件管理器|访达|文件资源管理器/ }));
@@ -643,7 +648,7 @@ describe("WorkbenchPanel", () => {
   it("offers no file-manager button on a remote workspace's file", async () => {
     const user = userEvent.setup();
     const port = new MockPort();
-    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} remote onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} remote onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(await screen.findByRole("button", { name: "README.md" }));
     await screen.findByRole("button", { name: "保存" });
     await user.click(screen.getByRole("button", { name: "更多" }));
@@ -653,7 +658,7 @@ describe("WorkbenchPanel", () => {
   it("offers no way to reveal a remote workspace's paths on this machine", async () => {
     const port = new MockPort();
     const reveal = vi.spyOn(port, "revealInFileManager");
-    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} remote onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} remote onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     const row = await screen.findByRole("button", { name: "README.md" });
 
     expect(screen.queryByRole("button", { name: "在系统文件管理器中显示工作区" })).toBeNull();
@@ -669,7 +674,7 @@ describe("WorkbenchPanel", () => {
     vi.spyOn(port, "revealInFileManager").mockRejectedValue(
       new HttpError(403, "no window", { code: "workspace.locate_no_window", error: "no window" }),
     );
-    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(screen.getByRole("button", { name: "在系统文件管理器中显示工作区" }));
     expect((await screen.findByRole("alert")).textContent).toBe("这个内核不在本机，没法在系统文件管理器中显示它的文件。");
   });
@@ -684,7 +689,7 @@ describe("WorkbenchPanel", () => {
   it("shows an open file as it is on disk once a turn settles, without reopening it", async () => {
     const user = userEvent.setup();
     const disk = { content: "# First", revision: "r1" };
-    const props = { port: diskPort(disk), tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port: diskPort(disk), tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { rerender } = render(<WorkbenchPanel {...props} running />);
     await user.click(await screen.findByRole("button", { name: "notes.md" }));
     await waitFor(() => expect(document.querySelector(".workbench-read h1")?.textContent).toBe("First"));
@@ -698,7 +703,7 @@ describe("WorkbenchPanel", () => {
   it("shows an open file as it is on disk once the window is looked at again", async () => {
     const user = userEvent.setup();
     const disk = { content: "# First", revision: "r1" };
-    render(<WorkbenchPanel port={diskPort(disk)} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} />);
+    render(<WorkbenchPanel port={diskPort(disk)} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} />);
     await user.click(await screen.findByRole("button", { name: "notes.md" }));
     await waitFor(() => expect(document.querySelector(".workbench-read h1")?.textContent).toBe("First"));
 
@@ -714,7 +719,7 @@ describe("WorkbenchPanel", () => {
     const user = userEvent.setup();
     const disk = { content: "# First", revision: "r1" };
     const port = diskPort(disk);
-    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { rerender } = render(<WorkbenchPanel {...props} running />);
     await user.click(await screen.findByRole("button", { name: "notes.md" }));
     await waitFor(() => expect(document.querySelector(".workbench-read h1")?.textContent).toBe("First"));
@@ -741,7 +746,7 @@ describe("WorkbenchPanel", () => {
     const user = userEvent.setup();
     const disk = { content: "# First", revision: "r1" };
     const port = diskPort(disk);
-    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     const { rerender } = render(<WorkbenchPanel {...props} running />);
     await user.click(await screen.findByRole("button", { name: "notes.md" }));
     await waitFor(() => expect(document.querySelector(".workbench-read h1")?.textContent).toBe("First"));
@@ -794,7 +799,7 @@ describe("opening the project in other programs from the file panel", () => {
     const port = new MockPort();
     const hub = { openWith: vi.fn().mockResolvedValue(undefined), openWithTargets: vi.fn().mockResolvedValue([{ id: "terminal", name: "终端", available: true }]) };
     vi.spyOn(hostModule, "host").mockReturnValue({ revealsFiles: () => true, describe: async () => ({ platform: "darwin" }) } as never);
-    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn(), workspaceRoot: "/w", hub };
+    const props = { port, tabs: [], manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn(), workspaceRoot: "/w", hub };
     const view = render(<WorkbenchPanel {...props} />);
     await user.click(screen.getAllByRole("button", { name: "用其他程序打开项目" })[0]!);
     await user.click(await screen.findByRole("menuitem", { name: "用 终端 打开" }));
@@ -809,7 +814,7 @@ describe("naming a built-in browser tab", () => {
   const page = { id: "p", target: "tp", url: "https://example.com/a/very/long/path?x=1", title: "", active: true };
   const draw = () => {
     const port = new MockPort();
-    const props = { port, manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn() };
+    const props = { port, manual: false, shown: true, scheme: "light" as const, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
     return render(<WorkbenchPanel {...props} tabs={[page]} />);
   };
 
@@ -824,7 +829,7 @@ describe("naming a built-in browser tab", () => {
     expect(screen.getByRole("tab", { name: "文档" })).toBeTruthy();
     expect(screen.queryByRole("textbox", { name: "重命名页签" })).toBeNull();
     // The page's own title arriving later does not take the name back.
-    view.rerender(<WorkbenchPanel port={new MockPort()} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} tabs={[{ ...page, title: "Example Domain" }]} />);
+    view.rerender(<WorkbenchPanel port={new MockPort()} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} tabs={[{ ...page, title: "Example Domain" }]} />);
     expect(screen.getByRole("tab", { name: "文档" })).toBeTruthy();
   });
 
@@ -833,7 +838,7 @@ describe("naming a built-in browser tab", () => {
     const view = draw();
     await user.dblClick(within(screen.getByRole("tab", { name: page.url })).getByText(page.url));
     await user.keyboard("{Enter}");
-    view.rerender(<WorkbenchPanel port={new MockPort()} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} tabs={[{ ...page, title: "Example Domain" }]} />);
+    view.rerender(<WorkbenchPanel port={new MockPort()} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} tabs={[{ ...page, title: "Example Domain" }]} />);
     expect(screen.getByRole("tab", { name: "Example Domain" })).toBeTruthy();
   });
 

@@ -28,7 +28,7 @@ function setup(path = "notes.txt", readOnly = false) {
   const onQuoteSelection = vi.fn();
   const props = {
     port, workspaceRoot: "/work/project", tabs: [], manual: false, shown: true, scheme: "light" as const,
-    changes: [], onCloseManual: vi.fn(), onSurfaces: vi.fn(), onExternal: vi.fn(), onQuoteSelection,
+    changes: [], onCloseManual: vi.fn(), onExternal: vi.fn(), onQuoteSelection,
     fileRequest: { path },
   };
   return { ...render(<WorkbenchPanel {...props} />), props, port, onQuoteSelection };

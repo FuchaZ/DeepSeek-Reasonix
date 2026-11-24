@@ -13,7 +13,7 @@ vi.mock("./TerminalLayer", () => ({
 import { WorkbenchPanel } from "./WorkbenchPanel";
 import { MockPort } from "../port/mock";
 
-const props = { scheme: "light" as const, shown: true, changes: [], onSurfaces: vi.fn(), onCloseManual: vi.fn(), onExternal: vi.fn() };
+const props = { scheme: "light" as const, shown: true, changes: [], onCloseManual: vi.fn(), onExternal: vi.fn() };
 const tabNames = () => [...document.querySelectorAll(".workbench-tab-pick")].map((t) => t.textContent);
 
 beforeEach(() => localStorage.clear());

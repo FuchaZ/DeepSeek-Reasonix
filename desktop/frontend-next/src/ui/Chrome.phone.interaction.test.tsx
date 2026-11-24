@@ -21,7 +21,7 @@ function bar(over: Partial<SessionStatus> = {}) {
   return render(
     <Chrome
       port={null} status={status(over)} workspace={null} title="并行会话演示" steer={0}
-      theme="light" onTheme={() => {}} onFind={() => {}} view={"flow" as never} rows={0} surfaces={0} onView={() => {}}
+      theme="light" onTheme={() => {}} onFind={() => {}} view={"flow" as never} rows={0} onView={() => {}}
     />,
   );
 }

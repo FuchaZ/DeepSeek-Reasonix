@@ -20,7 +20,7 @@ function Harness({ port, root = "/w", panel = true }: { port: AgentPort; root?: 
     <>
       <button onClick={() => files.refs.link?.("docs/notes.md")?.()}>link</button>
       <button onClick={() => setPresses((n) => n + 1)}>files</button>
-      {panel && <WorkbenchPanel scheme="dark" shown changes={[]} onSurfaces={vi.fn()} onCloseManual={onCloseManual} onExternal={vi.fn()} manual tabs={[]}
+      {panel && <WorkbenchPanel scheme="dark" shown changes={[]} onCloseManual={onCloseManual} onExternal={vi.fn()} manual tabs={[]}
         port={port} fileRequest={files.request} toggleFiles={presses} />}
     </>
   );

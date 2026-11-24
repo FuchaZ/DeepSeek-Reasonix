@@ -167,7 +167,7 @@ describe("a folder of projects shows each repository on its own", () => {
     const commit = vi.spyOn(port, "commitStaged");
     draw(port as unknown as AgentPort);
     await screen.findByRole("button", { name: /^M\s?main\.go/ });
-    await userEvent.click(screen.getAllByRole("button", { name: "提交…" })[0]);
+    await userEvent.click(screen.getAllByRole("button", { name: "提交" })[0]);
     await screen.findByRole("button", { name: "提交到本地" });
     expect(propose).toHaveBeenCalledWith(expect.anything(), "api");
     await userEvent.click(screen.getByRole("button", { name: "提交到本地" }));
@@ -190,7 +190,7 @@ describe("a folder of projects shows each repository on its own", () => {
 describe("a push is previewed, then confirmed, and says why when it is refused", () => {
   const draw = (port: MockPort, repos = [row("")]) =>
     render(<WorkbenchGit port={port as unknown as AgentPort} changes={[]} repos={repos} wrote={0} current="" onOpen={() => {}} onChanged={() => {}} remote={false} />);
-  const open = async () => userEvent.click(screen.getByRole("button", { name: "推送…" }));
+  const open = async () => userEvent.click(screen.getByRole("button", { name: "推送" }));
 
   it("shows where it goes, what it sends and what it will not do, before anything is sent", async () => {
     const port = mock();
@@ -210,7 +210,7 @@ describe("a push is previewed, then confirmed, and says why when it is refused",
     const port = mock();
     const push = vi.spyOn(port, "push");
     draw(port, [row("api"), row("web")]);
-    await userEvent.click(screen.getAllByRole("button", { name: "推送…" })[0]);
+    await userEvent.click(screen.getAllByRole("button", { name: "推送" })[0]);
     await userEvent.click(await screen.findByRole("button", { name: "推送到 github.com" }));
     await waitFor(() => expect(push).toHaveBeenCalled());
     const sent = push.mock.calls[0][0];
@@ -255,7 +255,7 @@ describe("a push is previewed, then confirmed, and says why when it is refused",
 
   it("offers no push where the workspace is remote", () => {
     render(<WorkbenchGit port={mock() as unknown as AgentPort} changes={[]} repos={[row("")]} wrote={0} current="" onOpen={() => {}} onChanged={() => {}} remote />);
-    expect(screen.queryByRole("button", { name: "推送…" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "推送" })).toBeNull();
   });
 });
 

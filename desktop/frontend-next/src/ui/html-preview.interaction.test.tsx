@@ -34,7 +34,7 @@ function setup(options: { views?: boolean; revision?: () => string } = {}) {
 
 type Props = Partial<React.ComponentProps<typeof WorkbenchPanel>>;
 const panel = (port: MockPort, extra: Props = {}) => (
-  <WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onSurfaces={vi.fn()} onExternal={vi.fn()} {...extra} />
+  <WorkbenchPanel port={port} tabs={[]} manual={false} shown scheme="light" changes={[]} onCloseManual={vi.fn()} onExternal={vi.fn()} {...extra} />
 );
 
 beforeEach(() => {

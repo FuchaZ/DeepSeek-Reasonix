@@ -6,8 +6,13 @@
   border-bottom: 1px solid var(--border); background: var(--page);
 }
 .workbench-tabs > .workbench-files[data-action="workbench.files"] { order: -1; }
-.workbench-tabs > .workbench-tablist { order: 0; flex: 1 1 auto; min-width: 0; gap: 2px; align-items: flex-end; }
-.workbench-tabs > :is(.workbench-new, .workbench-files:not([data-action="workbench.files"])) { order: 1; align-self: center; }
+/* The tablist takes only the width its tabs need, so the strip's tail controls
+   (+, full) follow the last tab while there is room; a full list crowds them
+   to the row's right end by itself, which is where they belong then. */
+.workbench-tabs > .workbench-tablist { order: 0; flex: 0 1 auto; min-width: 0; gap: 2px; align-items: flex-end; }
+.workbench-tabs > :is(.workbench-new, .workbench-files:not([data-action="workbench.files"])) {
+  order: 1; align-self: flex-end; margin-bottom: calc((34px - 28px) / 2);
+}
 .workbench-tabs > :is(.workbench-files, .workbench-new) {
   width: 28px; height: 28px; padding: 0; display: inline-grid; place-items: center; flex: none;
   border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted);
@@ -16,7 +21,54 @@
   width: auto; height: 34px; padding: 0 8px; align-self: flex-end; border-radius: var(--r-md) var(--r-md) 0 0;
 }
 .workbench-tabs > :is(.workbench-files, .workbench-new):hover, .workbench-tabs > .workbench-files[aria-pressed="true"] { background: var(--overlay); color: var(--text); }
+/* The full-workbench toggle sits at the row's right end. */
+.workbench-tabs > .workbench-files[data-action="browser.full"] { margin-left: auto; }
 .workbench-tabs > :is(.workbench-files, .workbench-new) .studio-icon { width: 16px; height: 16px; }
+
+/* The way to any open tab, at the head of the row. It takes the front rather
+   than sharing the file tree's `order: -1`, because the file tree holds that
+   slot on its own: the list of what is already open comes before the control
+   that opens something new.
+   It rides the tab-shaped controls' edge rather than the row's centre: the file
+   tree beside it is a 34px tab standing on the strip's bottom border, and the
+   row lays itself out `align-items: flex-end` — so a merely centred 28px square
+   puts this glyph 3.5px above that one. The half difference is its margin, so
+   the two glyphs share one line. */
+.workbench-tabs > .workbench-picker {
+  order: -2; flex: none; align-self: flex-end; margin-bottom: calc((34px - 28px) / 2);
+  width: auto; min-width: 28px; height: 28px; padding: 0 6px; display: inline-flex; align-items: center; gap: 4px;
+  border: 0; border-radius: var(--r-sm); background: transparent; color: var(--muted);
+}
+/* How many tabs the strip holds, said on the control that reaches them all. */
+.workbench-tabs > .workbench-picker .workbench-picker-count {
+  font: var(--w-med) var(--fs-meta)/1 var(--ui); color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.workbench-tabs > .workbench-picker:hover, .workbench-tabs > .workbench-picker[aria-expanded="true"] { background: var(--overlay); color: var(--text); }
+.workbench-tabs > .workbench-picker .studio-icon { width: 16px; height: 16px; }
+/* Fixed and portalled to the body: the button can be drawn on the window bar,
+   which is the shell's title bar, so a list inside it would be clipped and
+   would take drag presses instead of clicks. `pinToViewport` writes the
+   coordinates. */
+.workbench-picker-menu {
+  position: fixed; top: 0; left: 0; z-index: 60; min-width: 200px; max-width: 320px;
+  max-height: min(360px, calc(100vh - 24px)); overflow: auto; padding: 4px;
+  border: 1px solid var(--border); border-radius: var(--r-md); background: var(--float); box-shadow: var(--shadow-float);
+}
+.workbench-picker-menu > button {
+  display: flex; align-items: center; gap: 8px; width: 100%; padding: 7px 10px; border: 0; border-radius: var(--r-sm);
+  background: none; color: var(--text); font: var(--w-reg) var(--fs-ui)/1.3 var(--ui); text-align: start; cursor: pointer;
+}
+.workbench-picker-menu > button > .studio-icon { width: 14px; height: 14px; flex: none; color: var(--muted); }
+.workbench-picker-menu > button > span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.workbench-picker-menu > button:hover { background: var(--float-hi); }
+.workbench-picker-menu > button[aria-current="true"] { color: var(--accent-ink); font-weight: var(--w-med); background: var(--accent-wash); }
+.workbench-picker-menu > button[aria-current="true"]:hover { background: var(--float-hi); }
+.workbench-picker-menu > button[aria-current="true"] > .studio-icon { color: var(--accent-ink); }
+/* The row that is showing, said twice: a tick after the name and a wash behind
+   it. The name alone is too quiet — the list is small, and six tabs called
+   "about:blank" carry no wording to compare. */
+.workbench-picker-menu > button > .workbench-picker-mark { display: none; margin-left: auto; }
+.workbench-picker-menu > button[aria-current="true"] > .workbench-picker-mark { display: block; color: var(--accent-ink); }
 
 .workbench-tab {
   max-width: 168px; height: 34px; margin-bottom: 0; box-sizing: border-box;
@@ -190,22 +242,6 @@ svg.studio-icon[data-lang="go"] { color: var(--net); }
 svg.studio-icon[data-lang="python"] { color: var(--warn); }
 svg.studio-icon[data-lang="sheet"] { color: var(--ok); }
 
-.workbench-overflow { position: relative; flex: none; align-self: center; }
-.workbench-overflow-btn {
-  display: inline-flex; align-items: center; gap: 3px; height: 26px; padding: 0 8px; border: 0; border-radius: var(--r-sm);
-  background: transparent; color: var(--muted); font: var(--w-med) var(--fs-meta)/1 var(--ui); cursor: pointer;
-}
-.workbench-overflow-btn:hover, .workbench-overflow-btn[aria-expanded="true"] { background: var(--overlay); color: var(--text); }
-.workbench-overflow-btn .studio-icon { width: 12px; height: 12px; }
-.workbench-overflow-menu {
-  position: absolute; top: calc(100% + 4px); right: 0; z-index: 6; min-width: 200px; max-height: 320px; overflow: auto; padding: 4px;
-  border: 1px solid var(--border); border-radius: var(--r-md); background: var(--float); box-shadow: var(--shadow-float);
-}
-.workbench-overflow-menu > button {
-  display: block; width: 100%; padding: 7px 10px; border: 0; border-radius: var(--r-sm); background: none; color: var(--text);
-  font: var(--w-reg) var(--fs-ui)/1.3 var(--ui); text-align: start; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; cursor: pointer;
-}
-.workbench-overflow-menu > button:hover { background: var(--float-hi); }
 @media (prefers-reduced-motion: reduce) {
   .workbench-tab { transition: none; }
   .workbench-tab[data-enter] { animation: none; }
