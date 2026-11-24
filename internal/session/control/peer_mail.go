@@ -405,11 +405,11 @@ func (c *Controller) HeldPeerMessages() []PeerHeld {
 	return out
 }
 
-// ResolvePeerMessage approves or denies one held message. Approval queues it as
-// a host-authored follow-up and says nothing else on the sender's behalf: every
-// tool call it leads to passes this session's own permission path. The file is
-// acknowledged only after the queue holds it, and the queue de-duplicates on the
-// message id, so a crash between the two re-asks and never delivers twice.
+// ResolvePeerMessage approves or denies one held message. An approval says
+// nothing on the sender's behalf: what it leads to passes this session's own
+// permission path. A running turn takes it as a mid-turn steer; an idle one
+// queues it as a follow-up. The file is acknowledged only after the queue holds
+// it, and de-duplication on the message id means a crash never delivers twice.
 func (c *Controller) ResolvePeerMessage(id string, approve bool) error {
 	return c.resolvePeerMessage(id, approve, "")
 }
@@ -490,7 +490,16 @@ func (c *Controller) resolvePeerMessage(id string, approve bool, released peerma
 		if released != "" {
 			decision = peermail.DecisionReleased
 		}
-		if !c.Running() {
+		// A running turn takes the message at its next step. The sender is
+		// blocked on what this session knows, so waiting for the turn to end is
+		// what makes the two disagree about the state of the work.
+		injected := false
+		if c.Running() {
+			if rec, steerErr := c.steerInboxItem(receipt.ItemID, true); steerErr == nil && rec.Disposition == sessioninbox.DispositionSteerAccepted {
+				injected = true
+			}
+		}
+		if !injected {
 			c.startPeerItem(receipt.ItemID, released != "")
 		}
 	}

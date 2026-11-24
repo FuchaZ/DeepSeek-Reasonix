@@ -32,8 +32,8 @@ func TestSteerText(t *testing.T) {
 			wantOK:  true,
 		},
 		{
-			name:    "round-trip through sessionstore.MidTurnSteerMessage",
-			content: sessionstore.MidTurnSteerMessage("stop using such large diffs", false),
+			name:    "round-trip through sessionstore.MidTurnSteerSource",
+			content: sessionstore.MidTurnSteerSource("stop using such large diffs", sessionstore.SteerByUser),
 			want:    "stop using such large diffs",
 			wantOK:  true,
 		},
@@ -104,16 +104,24 @@ func TestMidTurnSteerMessageRoundTrip(t *testing.T) {
 		"",
 		"  keep going  ",
 	}
-	for _, host := range []bool{false, true} {
+	sources := []sessionstore.SteerSource{
+		sessionstore.SteerByUser,
+		sessionstore.SteerByHost,
+		sessionstore.SteerByPeer,
+	}
+	for _, source := range sources {
 		for _, in := range inputs {
-			msg := sessionstore.MidTurnSteerMessage(in, host)
+			msg := sessionstore.MidTurnSteerSource(in, source)
 			got, ok := sessionstore.SteerText(msg)
 			if !ok {
-				t.Errorf("SteerText(sessionstore.MidTurnSteerMessage(%q, %v)): not recognized as steer", in, host)
+				t.Errorf("SteerText(MidTurnSteerSource(%q, %v)): not recognized as steer", in, source)
 				continue
 			}
 			if got != in {
-				t.Errorf("SteerText(sessionstore.MidTurnSteerMessage(%q, %v)) = %q, want %q", in, host, got, in)
+				t.Errorf("SteerText(MidTurnSteerSource(%q, %v)) = %q, want %q", in, source, got, in)
+			}
+			if _, read, ok := sessionstore.SteerSourceOf(msg); !ok || read != source {
+				t.Errorf("SteerSourceOf(MidTurnSteerSource(%q, %v)) = %v, want the same speaker", in, source, read)
 			}
 		}
 	}
@@ -122,7 +130,7 @@ func TestMidTurnSteerMessageRoundTrip(t *testing.T) {
 // Recovery guidance rides the steer path but must never present itself as the
 // user speaking: a model told the user interrupted answers a person who did not.
 func TestHostNoticeDoesNotClaimTheUserSpoke(t *testing.T) {
-	msg := sessionstore.MidTurnSteerMessage("a tool failed", true)
+	msg := sessionstore.MidTurnSteerSource("a tool failed", sessionstore.SteerByHost)
 	if strings.Contains(msg, sessionstore.MidTurnSteerPrefix) {
 		t.Fatalf("host notice = %q, want no user-steer prefix", msg)
 	}

@@ -1,6 +1,10 @@
 package agent
 
-import "testing"
+import (
+	"testing"
+
+	"reasonix/internal/state/sessionstore"
+)
 
 // The queue's own lock is what makes a cancel an answer rather than a guess: an
 // entry is either still here to be taken back or already read, and there is no
@@ -34,7 +38,7 @@ func TestSteerQueueGivesBackOnlyWhatItStillHolds(t *testing.T) {
 func TestSteerQueueLeavesHostNoticesAlone(t *testing.T) {
 	var q steerInbox
 	q.open()
-	q.admit(steerEntry{host: true, load: func() (string, []string, error) { return "context is tight", nil, nil }})
+	q.admit(steerEntry{source: sessionstore.SteerByHost, load: func() (string, []string, error) { return "context is tight", nil, nil }})
 	if q.remove("") {
 		t.Fatal("a host notice was removed by an empty id")
 	}

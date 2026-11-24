@@ -353,12 +353,12 @@ func (s *updateSink) replay(msgs []provider.Message) {
 	for _, m := range msgs {
 		switch m.Role {
 		case provider.RoleUser:
-			// Replay the user-authored view, not the persisted wire form:
-			// UserMessageText strips injected transient blocks (<response-language>
-			// etc.) and unwraps memory-compiler contracts, same as every other
-			// surface (#6882). A turn that was pure injection replays as nothing.
+			// Replay what the person authored; another speaker is not theirs.
 			text := m.Content
-			if steer, ok := sessionstore.SteerText(text); ok {
+			if steer, source, ok := sessionstore.SteerSourceOf(text); ok {
+				if source != sessionstore.SteerByUser {
+					continue
+				}
 				text = steer
 			} else {
 				text = sessionstore.UserMessageText(m)

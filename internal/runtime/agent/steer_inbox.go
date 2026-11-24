@@ -9,9 +9,9 @@ import (
 	"reasonix/internal/contract/provider"
 )
 
-// steerEntry is one mid-turn guidance admission. host marks the ones the
-// runtime queued for itself, which the model must not read as the user
-// speaking.
+// steerEntry is one mid-turn guidance admission. source names which of the
+// three speakers queued it, because the wrapper the model reads is the only
+// thing that tells them apart and the user's own words must not be borrowed.
 type steerEntry struct {
 	display string
 	itemID  string
@@ -23,7 +23,7 @@ type steerEntry struct {
 	text string
 	// images carries the legacy Steer(string) path's images (always nil today).
 	images []string
-	host   bool
+	source sessionstore.SteerSource
 	// via is the paired device the guidance was sent from; nil is the window.
 	via *provider.Via
 }
@@ -147,17 +147,24 @@ func (s *steerInbox) close() []steerEntry {
 // attribution travels with the entry rather than with the call site, so every
 // path that renders or persists it later says the same thing about who spoke.
 func (a *Agent) SteerHostItem(itemID string, load func() (string, []string, error)) bool {
-	return a.queueSteer(steerEntry{itemID: itemID, load: load, host: true})
+	return a.queueSteer(steerEntry{itemID: itemID, load: load, source: sessionstore.SteerByHost})
+}
+
+// SteerPeerItem is SteerHostItem for guidance another session sent. It is not
+// the runtime's own advice either: the model has to read it as that session's
+// data, so the wrapper says so rather than borrowing a speaker that was silent.
+func (a *Agent) SteerPeerItem(itemID string, load func() (string, []string, error), display string) bool {
+	return a.queueSteer(steerEntry{itemID: itemID, load: load, source: sessionstore.SteerByPeer, display: display})
 }
 
 // RecordUnappliedHostSteer is RecordUnappliedSteer for runtime-authored
 // guidance. Recording it as the user's would put words in their mouth in the
 // one transcript a later turn reads back.
 func (a *Agent) RecordUnappliedHostSteer(text string, itemID ...string) {
-	a.recordUnappliedSteer(text, true, itemID...)
+	a.recordUnappliedSteer(text, sessionstore.SteerByHost, itemID...)
 }
 
-func (a *Agent) recordUnappliedSteer(text string, host bool, itemID ...string) {
+func (a *Agent) recordUnappliedSteer(text string, source sessionstore.SteerSource, itemID ...string) {
 	if a == nil || a.sess.conversation == nil {
 		return
 	}
@@ -167,7 +174,7 @@ func (a *Agent) recordUnappliedSteer(text string, host bool, itemID ...string) {
 	}
 	a.sess.conversation.Add(provider.Message{
 		Role:       provider.RoleTool,
-		Content:    a.withTurnPreferences(sessionstore.MidTurnSteerMessage(text, host)),
+		Content:    a.withTurnPreferences(sessionstore.MidTurnSteerSource(text, source)),
 		ToolCallID: provider.LocalOnlyToolID,
 		Name:       provider.LocalOnlyToolName,
 		LocalOnly:  true,
@@ -193,7 +200,7 @@ func (a *Agent) Steer(text string) bool {
 // SteerHostNotice queues runtime-authored guidance on the same path as Steer,
 // attributed to the host instead of the user.
 func (a *Agent) SteerHostNotice(text string) bool {
-	return a.queueSteer(steerEntry{load: func() (string, []string, error) { return text, nil, nil }, host: true})
+	return a.queueSteer(steerEntry{load: func() (string, []string, error) { return text, nil, nil }, source: sessionstore.SteerByHost})
 }
 
 // SteerItem queues durable-inbox guidance identified by itemID. load is called
@@ -258,7 +265,7 @@ func (a *Agent) flushSteerQueue() {
 				text = t
 			}
 		}
-		a.recordUnappliedSteer(text, e.host, e.itemID)
+		a.recordUnappliedSteer(text, e.source, e.itemID)
 	}
 }
 
@@ -274,18 +281,21 @@ func UnappliedSteerNotice(text string) string {
 // before every provider request. itemID correlates the notice with the durable
 // session inbox entry when one exists.
 func (a *Agent) RecordUnappliedSteer(text string, itemID ...string) {
-	a.recordUnappliedSteer(text, false, itemID...)
+	a.recordUnappliedSteer(text, sessionstore.SteerByUser, itemID...)
 }
 
 func (a *Agent) steerQueueLen() int {
 	return a.steer.pending()
 }
 
+// landSteer records the guidance and tells the window who spoke. HostAuthored
+// covers both the runtime's own advice and another session's message: neither
+// is the person, and a screen that drew one as their words would invent speech.
 func (a *Agent) landSteer(text string, entry steerEntry) {
-	a.sess.conversation.Add(provider.Message{Role: provider.RoleUser, Content: a.withTurnPreferences(sessionstore.MidTurnSteerMessage(text, entry.host)), RawContent: entry.display, Images: entry.images, Via: entry.via})
+	a.sess.conversation.Add(provider.Message{Role: provider.RoleUser, Content: a.withTurnPreferences(sessionstore.MidTurnSteerSource(text, entry.source)), RawContent: entry.display, Images: entry.images, Via: entry.via})
 	display := entry.display
 	if display == "" {
 		display = text
 	}
-	a.svc.sink.Emit(event.Event{Kind: event.Steer, Text: display, ItemID: entry.itemID, Via: entry.via, HostAuthored: entry.host})
+	a.svc.sink.Emit(event.Event{Kind: event.Steer, Text: display, ItemID: entry.itemID, Via: entry.via, HostAuthored: entry.source != sessionstore.SteerByUser})
 }

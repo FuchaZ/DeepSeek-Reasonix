@@ -144,7 +144,7 @@ func TestSteerTextSurvivesTurnPreferenceWrapping(t *testing.T) {
 		{"exact text preserved", plain, "  spaced\ttext  "},
 	}
 	for _, tc := range cases {
-		persisted := tc.agent.withTurnPreferences(sessionstore.MidTurnSteerMessage(tc.text, false))
+		persisted := tc.agent.withTurnPreferences(sessionstore.MidTurnSteerSource(tc.text, sessionstore.SteerByUser))
 		got, ok := sessionstore.SteerText(persisted)
 		if !ok {
 			t.Fatalf("%s: SteerText failed to recognize the persisted steer (head %.80q)", tc.name, persisted)

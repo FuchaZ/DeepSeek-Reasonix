@@ -204,7 +204,7 @@ func (a *Agent) runToolLoop(ctx context.Context, state *turnRuntime) error {
 		} else if entry.itemID != "" {
 			// Loader failed after dequeue: durable entry stays for inspection
 			// (unapplied path marks uncertain + pause via the notice sink).
-			a.recordUnappliedSteer("(body load failed)", entry.host, entry.itemID)
+			a.recordUnappliedSteer("(body load failed)", entry.source, entry.itemID)
 		}
 		a.appendTurnTailNotices()
 

@@ -99,19 +99,19 @@ func historyMessageWindow(msgs []provider.Message, attachments func(string) []ev
 		if m.LocalOnly && m.Name == surfacespec.ActionMessageName {
 			continue
 		}
-		// A steer is the person speaking into a running turn, so it stays a
-		// user message and carries what it was. The host's own mid-turn notice
-		// rides the same prefix and is not theirs to have said.
+		// A steer stays a user message; one the runtime wrote or another
+		// session sent carries the marker that keeps it off their side.
 		if m.Role == provider.RoleUser {
-			if steerText, host, isSteer := sessionstore.SteerKind(m.Content); isSteer {
+			if steerText, source, isSteer := sessionstore.SteerSourceOf(m.Content); isSteer {
+				byPerson := source == sessionstore.SteerByUser && !m.HostAuthored
 				if m.RawContent != "" {
 					steerText = m.RawContent
 				}
 				out = append(out, historyMessage{
 					Role: string(provider.RoleUser), Content: steerText, Steer: true,
-					HostAuthored: host || m.HostAuthored, MsgIndex: offset + i, Via: eventwire.ToWireVia(m.Via),
+					HostAuthored: !byPerson, MsgIndex: offset + i, Via: eventwire.ToWireVia(m.Via),
 				})
-				if !host && !m.HostAuthored {
+				if byPerson {
 					out[len(out)-1].Attachments = attached(steerText)
 				}
 				continue

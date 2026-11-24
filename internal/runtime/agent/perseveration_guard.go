@@ -232,7 +232,7 @@ func (a *Agent) handlePerseverationAbort(state *turnRuntime) (cont bool, err err
 		nudge := perseverationRetryMessage(state.perseverationStrikes)
 		a.sess.conversation.Add(provider.Message{
 			Role:         provider.RoleUser,
-			Content:      a.withTurnPreferences(sessionstore.MidTurnSteerMessage(nudge, true)),
+			Content:      a.withTurnPreferences(sessionstore.MidTurnSteerSource(nudge, sessionstore.SteerByHost)),
 			HostAuthored: true,
 		})
 		a.svc.sink.Emit(event.Event{Kind: event.Steer, Text: nudge, HostAuthored: true})

@@ -22,7 +22,7 @@ func TestStatusCountsOnlyAuthoredTurns(t *testing.T) {
 	sess.Add(provider.Message{Role: provider.RoleUser, Content: "first"})
 	sess.Add(provider.Message{Role: provider.RoleAssistant, Content: "ok"})
 	sess.Add(provider.Message{Role: provider.RoleUser, Content: "second"})
-	sess.Add(provider.Message{Role: provider.RoleUser, Content: sessionstore.MidTurnSteerMessage("keep going", false)})
+	sess.Add(provider.Message{Role: provider.RoleUser, Content: sessionstore.MidTurnSteerSource("keep going", sessionstore.SteerByUser)})
 	sess.Add(provider.Message{Role: provider.RoleUser, Content: "<compaction-summary>\ndigest\n</compaction-summary>"})
 	sess.Add(provider.Message{Role: provider.RoleUser, Content: "third"})
 	executor := agent.New(nil, nil, sess, agent.Options{}, event.Discard)

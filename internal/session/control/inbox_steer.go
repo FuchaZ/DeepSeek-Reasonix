@@ -171,7 +171,7 @@ func (c *Controller) steerInboxItem(id string, holdIfPaused bool) (sessioninbox.
 		return sessioninbox.InboxReceipt{}, err
 	}
 	c.mu.Lock()
-	accepted := !c.gate.closed && !c.gate.rotating && c.gate.running && c.executor != nil && c.steerItemAs(meta.Origin, id, loader, env.Via, env.DisplayText)
+	accepted := !c.gate.closed && !c.gate.rotating && c.gate.running && c.executor != nil && c.steerItemAs(meta, id, loader, env.Via, env.DisplayText)
 	if accepted {
 		c.inbox.mu.Lock()
 		c.inbox.trackActive(id)
@@ -206,12 +206,17 @@ func (c *Controller) steerInboxItem(id string, holdIfPaused bool) (sessioninbox.
 }
 
 // steerItemAs queues the item under the attribution the manifest recorded, so a
-// host-authored item is never delivered as something the user said. Holds c.mu.
-func (c *Controller) steerItemAs(origin sessioninbox.PromptOrigin, id string, loader func() (string, []string, error), via *provider.Via, display string) bool {
-	if origin.IsHost() {
+// host-authored item is never delivered as something the user said and a peer
+// message is never delivered as the runtime's own advice. Holds c.mu.
+func (c *Controller) steerItemAs(meta sessioninbox.InboxItemMeta, id string, loader func() (string, []string, error), via *provider.Via, display string) bool {
+	switch {
+	case strings.HasPrefix(meta.Source, peerSourcePrefix):
+		return c.executor.SteerPeerItem(id, loader, display)
+	case meta.Origin.IsHost():
 		return c.executor.SteerHostItem(id, loader)
+	default:
+		return c.executor.SteerDisplayedItemFrom(id, loader, display, via)
 	}
-	return c.executor.SteerDisplayedItemFrom(id, loader, display, via)
 }
 
 // TrySteer queues mid-turn guidance only when the active agent turn accepts it.

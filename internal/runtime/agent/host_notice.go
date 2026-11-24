@@ -62,7 +62,7 @@ func (a *Agent) takeHostFacts() []string {
 // cache miss.
 func (a *Agent) appendTurnTailNotices() {
 	for _, fact := range a.takeHostFacts() {
-		a.sess.conversation.Add(provider.Message{Role: provider.RoleUser, Content: sessionstore.MidTurnSteerMessage(fact, true)})
+		a.sess.conversation.Add(provider.Message{Role: provider.RoleUser, Content: sessionstore.MidTurnSteerSource(fact, sessionstore.SteerByHost)})
 		a.svc.sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: fact})
 	}
 }

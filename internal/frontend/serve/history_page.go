@@ -164,8 +164,8 @@ func pageAttachments(ctrl control.SessionAPI, messages []provider.Message) (map[
 			continue
 		}
 		text := sessionstore.UserMessageText(message)
-		if steer, host, ok := sessionstore.SteerKind(message.Content); ok {
-			if host {
+		if steer, source, ok := sessionstore.SteerSourceOf(message.Content); ok {
+			if source != sessionstore.SteerByUser {
 				continue
 			}
 			text = steer
