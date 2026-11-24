@@ -90,6 +90,12 @@ type SubagentArtifact struct {
 	Meta        SubagentMeta
 }
 
+// subagentsTreeName is the folder one session's worker transcripts live in,
+// beside that session's own transcript. A walk over a sessions directory skips
+// it whole: those transcripts are reached through the session that spawned
+// them, never as conversations of their own.
+const subagentsTreeName = "subagents"
+
 // ListSubagentsByParent returns persisted sub-agent artifacts whose metadata
 // declares the given parent session owner.
 func ListSubagentsByParent(sessionDir, parentSession string) ([]SubagentArtifact, error) {
@@ -97,7 +103,7 @@ func ListSubagentsByParent(sessionDir, parentSession string) ([]SubagentArtifact
 	if strings.TrimSpace(sessionDir) == "" || parentSession == "" {
 		return nil, nil
 	}
-	dir := filepath.Join(sessionDir, "subagents")
+	dir := filepath.Join(sessionDir, subagentsTreeName)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {

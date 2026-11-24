@@ -13,7 +13,9 @@ import (
 
 // eachSessionDir visits dir and every directory inside it with that folder's
 // own listing: the task area nests transcripts by date (…/2026/11/14), and a
-// top-level-only read would lose them. The error is the root folder's alone.
+// top-level-only read would lose them. A subagents/ tree is skipped whole: its
+// transcripts mean nothing except through the session that spawned them. The
+// error is the root folder's alone.
 func eachSessionDir(dir string, visit func(sub string, entries []os.DirEntry)) error {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -26,6 +28,9 @@ func eachSessionDir(dir string, visit func(sub string, entries []os.DirEntry)) e
 	_ = filepath.WalkDir(dir, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil || !d.IsDir() || path == dir {
 			return nil
+		}
+		if d.Name() == subagentsTreeName {
+			return fs.SkipDir
 		}
 		sub, readErr := os.ReadDir(path)
 		if readErr != nil {
