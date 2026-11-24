@@ -22,32 +22,70 @@ function tookWidth(ms: number) {
 // counts on the window's own clock from the moment the window saw the call
 // running, and says nothing about a call that was already running when it
 // arrived, because that is a duration this window does not know.
-export function useWatched(running: boolean): number {
-  const from = useRef(0);
-  const [now, setNow] = useState(0);
-  useEffect(() => {
-    if (!running) {
-      from.current = 0;
-      setNow(0);
-      return;
-    }
-    from.current = Date.now();
-    setNow(Date.now());
-    // One second is the resolution a reader acts on; anything finer is a digit
-    // changing for its own sake.
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [running]);
-  return from.current && now ? now - from.current : 0;
+
+// The watch belongs to the call, not to the card drawing it: a session switch
+// rebinds the pane through a new key, which unmounts the transcript and draws it
+// again, and only the call's own id carries across that redraw.
+const watching = new Map<string, { since: number; seen: number }>();
+const WATCHED_CAP = 512;
+
+function watchedSince(key: string): number {
+  const at = Date.now();
+  const held = watching.get(key);
+  if (held) {
+    held.seen = at;
+    return held.since;
+  }
+  // Entries for calls whose card went away mid-call never reach forgetWatched,
+  // so past the cap the least recently watched half goes.
+  if (watching.size >= WATCHED_CAP) {
+    const byAge = [...watching].sort((a, b) => a[1].seen - b[1].seen);
+    for (const [stale] of byAge.slice(0, WATCHED_CAP / 2)) watching.delete(stale);
+  }
+  watching.set(key, { since: at, seen: at });
+  return at;
 }
 
-export function Cost({ tools, running = false }: { tools: Tool[]; running?: boolean }) {
-  const ms = tools.reduce((n, t) => n + (t.durationMs ?? 0), 0);
-  const left = tools.reduce((n, t) => n + (t.contextTokens ?? 0), 0);
-  const watched = useWatched(running);
+let anonymous = 0;
+
+/** How long this window has watched the call run. The clock belongs to the
+ *  window rather than the kernel — see above — and to the call rather than the
+ *  card, so a redraw reads the count already recorded. */
+export function useWatched(running: boolean, callId?: string): number {
+  // A call the wire never named still gets a reading, on the card's own life
+  // rather than the call's: nothing else would tell two unnamed calls apart.
+  const anon = useRef("");
+  if (!anon.current) anon.current = `card:${++anonymous}`;
+  const key = running ? callId || anon.current : "";
+  // Read during render, not in an effect: a redrawn card must say the length at
+  // once, and starting at zero would be the restart this avoids.
+  const from = useRef({ key: "", since: 0 });
+  if (from.current.key !== key) from.current = { key, since: key ? watchedSince(key) : 0 };
+  const since = from.current.since;
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!running) {
+      if (key) watching.delete(key);
+      return;
+    }
+    // One second is the resolution a reader acts on; anything finer is a digit
+    // changing for its own sake.
+    const timer = setInterval(() => {
+      if (key) watchedSince(key);
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [running, key]);
   // Under a second there is nothing to report: a call that answers that fast
   // never looked stuck, and a digit appearing and going is its own noise.
-  const live = watched >= 1000 ? watched : 0;
+  const ms = since && now ? Math.max(0, now - since) : 0;
+  return ms >= 1000 ? ms : 0;
+}
+
+export function Cost({ tools, running = false, callId }: { tools: Tool[]; running?: boolean; callId?: string }) {
+  const ms = tools.reduce((n, t) => n + (t.durationMs ?? 0), 0);
+  const left = tools.reduce((n, t) => n + (t.contextTokens ?? 0), 0);
+  const live = useWatched(running, callId);
   if (!ms && !left && !live) return null;
   return (
     <span className="cost">

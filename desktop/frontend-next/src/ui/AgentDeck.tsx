@@ -30,7 +30,7 @@ export function AgentDeck({ tasks, onOpen, onStop }: { tasks: Task[]; onOpen: (t
 }
 
 function DeckRow({ task, status, onOpen }: { task: Task; status: DelegateStatus; onOpen: (taskId: string) => void }) {
-  const watched = useWatched(status === "running");
+  const watched = useWatched(status === "running", task.tool.id);
   const name = nameOf(task);
   const took = task.tool.durationMs ? elapsed(task.tool.durationMs) : "";
   const reading = status === "running" ? [t("subagent.step", { n: Math.max(task.children.length, 1) }), watched ? elapsed(watched) : ""]

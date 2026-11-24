@@ -4,6 +4,7 @@ import type { Item } from "../state/session";
 import { activityVerb } from "./activityEarlier";
 import { shortArgs } from "./args";
 import { StudioIcon } from "./StudioIcon";
+import { useWatched } from "./Cost";
 
 type Tool = Extract<Item, { t: "tool" }>["tool"];
 
@@ -19,14 +20,16 @@ export function groupSpan(items: readonly Item[]): number {
   return tools.reduce((n, x) => n + (x.durationMs ?? 0), 0);
 }
 
-function useTicking(since: number | undefined): number {
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!since) return;
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [since]);
-  return since ? Math.max(0, now - since) : 0;
+function Now({ tool }: { tool: Tool }) {
+  const watched = useWatched(true, tool.id);
+  const ms = tool.startedAt ? Math.max(0, Date.now() - tool.startedAt) : watched;
+  const verb = activityVerb(tool.resolvedName || tool.name);
+  return (
+    <span className="activity-now">
+      <i className="step-spin" aria-hidden="true" />
+      {verb ? t(verb) : tool.name} <code>{shortArgs(tool.args ?? "")}</code> · {t("common.n_s", { n: Math.floor(ms / 1000) })}
+    </span>
+  );
 }
 
 /** A count that rolls up when it changes under the reader, and simply is
@@ -45,18 +48,6 @@ export function Bump({ value, children }: { value: number; children: string }) {
   );
 }
 
-function Now({ tool, startedAt }: { tool: Tool; startedAt?: number }) {
-  const since = useRef(startedAt ?? Date.now()).current;
-  const ms = useTicking(since);
-  const verb = activityVerb(tool.resolvedName || tool.name);
-  return (
-    <span className="activity-now">
-      <i className="step-spin" aria-hidden="true" />
-      {verb ? t(verb) : tool.name} <code>{shortArgs(tool.args ?? "")}</code> · {t("common.n_s", { n: Math.floor(ms / 1000) })}
-    </span>
-  );
-}
-
 /** The group's title line: what it is doing now while it runs folded, how many
  *  run or failed while open, and once it is done what it came to. */
 export function ActivityHead({ items, open, runs, failures, calls }: { items: Item[]; open: boolean; runs: number; failures: number; calls: number }) {
@@ -69,7 +60,7 @@ export function ActivityHead({ items, open, runs, failures, calls }: { items: It
     <summary>
       <StudioIcon name="down" className="activity-fold-icon" />
       <span className="activity-title">{t("chat.activity")}</span>
-      {now && !open && <Now tool={now.tool} startedAt={now.tool.startedAt} />}
+      {now && !open && <Now tool={now.tool} />}
       {running && open && <span className="activity-running">{t("chat.n_running", { n: runs })}</span>}
       {failures > 0 && <span className="activity-errors">{t("chat.n_failed", { n: failures })}</span>}
       {done && <StudioIcon name="check" className="activity-ok" />}

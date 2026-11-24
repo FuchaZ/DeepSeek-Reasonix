@@ -107,7 +107,7 @@ export function SubagentGroup({ tasks, port }: { tasks: Task[]; port?: Stopper }
 
 function AgentRow({ task, status, onStop }: { task: Task; status: DelegateStatus; onStop?: (x: Task) => void }) {
   const open = useContext(AgentRunOpener);
-  const watched = useWatched(status === "running");
+  const watched = useWatched(status === "running", task.tool.id);
   const name = nameOf(task);
   const steps = task.children.length;
   const now = status === "running" ? task.children[task.children.length - 1] : undefined;

@@ -9,7 +9,7 @@ import { categoryOf, labelFor, mcpOrigin, runLabelFor } from "../icons";
 import { Sym, iconFor } from "../Sym";
 import { activityVerb } from "../activityEarlier";
 import { GOAL_STATUS, argOf, goalUpdate, shortArgs } from "../args";
-import { Cost } from "../Cost";
+import { Cost, useWatched } from "../Cost";
 import { bytes, count, seconds, tokens } from "../../i18n/format";
 import { currentStep, parsePlan, stepDone } from "../../state/session";
 import { DiffView } from "./DiffView";
@@ -48,18 +48,12 @@ const shortCallId = (id?: string) => id ? id.replace(/^call_/, "").slice(-8) : "
 const lastLine = (text?: string) => text?.split("\n").map((l) => l.trim()).filter(Boolean).at(-1) ?? "";
 
 // How long an activity step has run or took, in whole seconds; nothing under one.
-// A running step counts from when the kernel says it started, so a row drawn
-// late does not restart the clock; a call with no start counts from its row.
+// A running step counts from the kernel's own start when the frame carries one,
+// and otherwise from the window's first sighting of the call — the same record
+// WaitNote reads, so a card drawn again for a session switch keeps its count.
 function StepTime({ tool, running }: { tool: StateTool; running: boolean }) {
-  const drawnAt = useRef(Date.now()).current;
-  const [now, setNow] = useState(() => Date.now());
-  useEffect(() => {
-    if (!running) return;
-    setNow(Date.now());
-    const id = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(id);
-  }, [running]);
-  const ms = running ? Math.max(0, now - (tool.startedAt || drawnAt)) : tool.durationMs ?? 0;
+  const watched = useWatched(running, tool.id);
+  const ms = running ? (tool.startedAt ? Math.max(0, Date.now() - tool.startedAt) : watched) : tool.durationMs ?? 0;
   if (ms < 1000) return null;
   return <span className="step-sum">{t("common.n_s", { n: Math.round(ms / 1000) })}</span>;
 }
@@ -228,7 +222,7 @@ export function ToolCard({
       )}
       {bad && !sum && <span className="fail">{badLabel}</span>}
       {bgJob && <BackgroundReading id={bgJob} />}
-      {sum ? <span className="step-sum">{sum}</span> : activity ? !changes && <StepTime tool={tool} running={running} /> : <Cost tools={[tool]} running={running} />}
+      {sum ? <span className="step-sum">{sum}</span> : activity ? !changes && <StepTime tool={tool} running={running} /> : <Cost tools={[tool]} running={running} callId={tool.id} />}
       <span
         className="tool-state"
         data-state={running ? "running" : bad ? "failed" : "done"}
@@ -265,7 +259,7 @@ export function ToolCard({
               <pre><JsonText text={activityArgs} /></pre>
             </section>
           )}
-          {running && !tool.output && !tool.err && children.length === 0 && <WaitNote args={tool.args} />}
+          {running && !tool.output && !tool.err && children.length === 0 && <WaitNote args={tool.args} callId={tool.id} />}
           {activityResult && (
             <div className="activity-call-result">
               <b>{t("chat.result")}</b>
@@ -392,8 +386,8 @@ export function ToolCard({
             {hasBody && !open && <button type="button" className="step-stop" data-action="tool.full-output" onClick={() => setOpen(true)}>{t("chat.see_full_output")}</button>}
           </div>
         )}
-        {running && activity && <StepWait onStop={onStop && tool.id ? onStop : undefined} quiet={!!tool.output || children.length > 0} />}
-        {running && !activity && onStop && tool.id && <StopCall onStop={onStop} />}
+        {running && activity && <StepWait onStop={onStop && tool.id ? onStop : undefined} quiet={!!tool.output || children.length > 0} callId={tool.id} />}
+        {running && !activity && onStop && tool.id && <StopCall onStop={onStop} callId={tool.id} />}
         {bgJob && <BackgroundNote id={bgJob} />}
       </div>
     </div>

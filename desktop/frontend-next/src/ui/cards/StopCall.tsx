@@ -5,8 +5,8 @@ const AFTER_MS = 10_000;
 
 /** One call, stopped alone. It appears only once a call has run long enough to
  *  look stuck, so a quick call never offers it. */
-export function StopCall({ onStop }: { onStop: () => void }) {
-  const watched = useWatched(true);
+export function StopCall({ onStop, callId }: { onStop: () => void; callId?: string }) {
+  const watched = useWatched(true, callId);
   if (watched < AFTER_MS) return null;
   return (
     <button type="button" className="stop-call" data-action="tool.stop" onClick={onStop}>
@@ -17,8 +17,8 @@ export function StopCall({ onStop }: { onStop: () => void }) {
 
 /** The line under a running step in the activity group, on the same clock as
  *  StopCall: what it has produced so far, and a way to stop it alone. */
-export function StepWait({ onStop, quiet }: { onStop?: () => void; quiet: boolean }) {
-  const watched = useWatched(true);
+export function StepWait({ onStop, quiet, callId }: { onStop?: () => void; quiet: boolean; callId?: string }) {
+  const watched = useWatched(true, callId);
   if (watched < AFTER_MS || (quiet && !onStop)) return null;
   return (
     <div className="step-wait">

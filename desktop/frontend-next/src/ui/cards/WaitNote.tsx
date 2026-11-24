@@ -15,8 +15,8 @@ function ownTimeout(args: string | undefined): number {
 
 /** What a running call with no output yet says about itself, so a card that sits
  *  still reads as "still running, nothing printed" rather than as stuck. */
-export function WaitNote({ args }: { args?: string }) {
-  const watched = useWatched(true);
+export function WaitNote({ args, callId }: { args?: string; callId?: string }) {
+  const watched = useWatched(true, callId);
   const limit = ownTimeout(args);
   return (
     <div className="activity-call-wait" role="status">
