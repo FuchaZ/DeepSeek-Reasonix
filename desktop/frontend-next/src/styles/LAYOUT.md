@@ -596,15 +596,6 @@ the picker and keyboard navigation.
   disclosure: it is what the call produced, not a detail about the call. Seeing
   the agent's own evidence never costs a reader a debug panel, and a call whose
   row stays folded is the normal state for one that finished.
-- A call that produced nothing but a picture has no row at all: "viewed an
-  image, shots/w280.png" over a visible shots/w280.png is one fact printed
-  twice. What the row would have carried keeps it — a failure, work still
-  running, or any other body — and the path moves onto the picture, which is
-  where a reader looks for it once the caption is gone. The gutter's icon goes
-  with the row, since it was that row's.
-- A gate that decides on a tool's name is the tool's contract, not a phrase
-  table: `view_image`'s answer is a receipt for the model, never text a person
-  reads, so it is not a body.
 - A thumbnail is `contain`ed, never cropped, and capped at 260 × 104: the edges
   of a screenshot are the part being judged, while the ceiling keeps a run of
   pictures from pushing the next step off the screen. Its border is a hairline —
