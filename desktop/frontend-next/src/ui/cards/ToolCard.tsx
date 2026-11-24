@@ -142,7 +142,12 @@ export function ToolCard({
   // Showing that count is the difference between a card that is visibly filling
   // and one that sits blank until the whole file arrives at once.
   const streaming = running && !tool.args && (tool.argChars ?? 0) > 0;
-  const arg = tool.name === "todo_write" ? "" : streaming ? `${tokens(tool.argChars!)} 字符` : shortArgs(tool.args ?? "");
+  // A shell command is not a label: it is truncated at 96 characters, so what
+  // shows is half a heredoc rather than what the call did, and the row's own
+  // "ran a command" already says the rest. The command stays one press away in
+  // the body. The streaming count is kept — it is how a card visibly fills.
+  const hidesCommand = categoryOf(shown) === "bash" && !streaming;
+  const arg = tool.name === "todo_write" || hidesCommand ? "" : streaming ? `${tokens(tool.argChars!)} 字符` : shortArgs(tool.args ?? "");
   const bad = toolFailed(tool);
   // The number is the actionable half; the state only says that something went
   // wrong, which the colour already says.

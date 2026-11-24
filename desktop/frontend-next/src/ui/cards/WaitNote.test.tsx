@@ -57,9 +57,14 @@ describe("a running call that has printed nothing", () => {
     expect(render(<ToolCard tool={bash()} running />).container.querySelector("details")).toBeNull();
   });
 
-  it("puts the whole command in the row's hover text, since the row clips it to one line", () => {
+  // The row no longer carries the command — a 96-character clip of a heredoc
+  // says less than "ran a command" does — so the whole of it is what the body
+  // holds, one press away.
+  it("keeps the whole command in the body the row opens", () => {
     const long = "cd /a/very/long/path && for f in *.md; do wc -l \"$f\"; done; find . -maxdepth 3";
     const { container } = render(<ToolCard tool={bash({ args: JSON.stringify({ command: long }) })} running activity />);
-    expect(container.querySelector(".arg")?.getAttribute("title")).toContain("maxdepth 3");
+    expect(container.querySelector(".arg")).toBeNull();
+    open(container);
+    expect(container.querySelector(".activity-call-input")?.textContent).toContain("maxdepth 3");
   });
 });
