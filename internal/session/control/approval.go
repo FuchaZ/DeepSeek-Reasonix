@@ -174,9 +174,12 @@ func (a *approvalManager) preApprovedForRequiredHuman(tool, subject string) bool
 }
 
 // requiredHumanAnsweredLocked is whether YOLO or a session grant stands in for
-// the person on a call that needs one. A fresh-human tool is never answered that
-// way: its card says so, and a grant for it is not something the host records.
+// the person. Full access answers the two tools that speak in their name
+// elsewhere; every other fresh-human tool keeps its card under every posture.
 func (a *approvalManager) requiredHumanAnsweredLocked(tool, subject string) bool {
+	if a.posture.mode == ToolApprovalYolo && postureAnswersTool(tool) {
+		return true
+	}
 	if requiresFreshApprovalTool(tool) {
 		return false
 	}
@@ -596,11 +599,14 @@ type drainedApproval struct {
 
 // drainLocked removes every pending approval the new posture should auto-allow
 // and returns them; caller holds a.mu and sends {allow:true} after unlocking.
+// Full access also answers a pending fresh-human peer card.
 func (a *approvalManager) drainLocked(includeExplicitAsk bool) []drainedApproval {
 	pending := make([]drainedApproval, 0, len(a.approvals))
 	for id, approval := range a.approvals {
 		if approval.fresh || requiresFreshApprovalTool(approval.tool) {
-			continue
+			if !(includeExplicitAsk && postureAnswersTool(approval.tool)) {
+				continue
+			}
 		}
 		if approval.requireHuman && !includeExplicitAsk {
 			continue
@@ -661,6 +667,18 @@ func RequiresFreshHumanApprovalTool(tool string) bool {
 
 func requiresFreshApprovalTool(tool string) bool {
 	return RequiresFreshHumanApprovalTool(tool)
+}
+
+// postureAnswersTool reports a fresh-human decision that "full access" itself
+// answers: the two tools that speak in the person's name elsewhere. Every other
+// one keeps its card, and no session grant answers either of them.
+func postureAnswersTool(tool string) bool {
+	switch tool {
+	case permission.SendPeerMessage, permission.DispatchToProject:
+		return true
+	default:
+		return false
+	}
 }
 
 // ApprovalGrants says which answers beyond "once" the host will honour for this

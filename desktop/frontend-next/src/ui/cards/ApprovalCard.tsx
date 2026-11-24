@@ -129,10 +129,9 @@ export function ApprovalCard({ item, onApprove, onFullAccess, onPlan }: Props) {
     if (switchingFullAccess) return;
     setSwitchingFullAccess(true);
     try {
-      // False means the posture moved but this card was left out of it: the
-      // call acts in the person's name on something else, so it still needs an
-      // answer. Saying so is the whole point — the button must not return to
-      // the label that invited the same click again.
+      // False means the posture moved but this card was left out of it, so it
+      // still needs an answer. Saying so is the whole point — the button must
+      // not return to the label that invited the same click again.
       const settled = await onFullAccess(item.id, item.a.id);
       setConfirmFullAccess(false);
       setFullAccessNotice(!settled);

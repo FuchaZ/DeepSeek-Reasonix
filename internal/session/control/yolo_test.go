@@ -1235,29 +1235,46 @@ func TestSetToolApprovalModeReportsDrainedIDs(t *testing.T) {
 	}
 }
 
-// A dispatch and a peer message are fresh decisions by design: full access is
-// the person's yes to tool calls, not to writing into another session on their
-// behalf. The switch must leave both cards pending, because a window that hid
-// one would leave the turn waiting for an answer nobody can give.
-func TestFullAccessLeavesThePeerCardsPending(t *testing.T) {
+// Full access answers a dispatch and a peer card: the posture is the person's
+// standing yes to this session acting, and speaking to another of their
+// sessions is that same act. A card the switch leaves behind is one they
+// already answered by switching. Every other fresh decision — a plan, a
+// sandbox escape, a config write — stays pending, because no posture answers it.
+func TestFullAccessLeavesThePeerCardsAnsweredAndNothingElse(t *testing.T) {
 	c := New(Options{})
 	dispatchID, dispatchReply := c.approval.registerDecision(permission.DispatchToProject, "b", "", true, false)
 	peerID, peerReply := c.approval.registerDecision(permission.SendPeerMessage, "s-1", "", true, false)
+	escapeID, escapeReply := c.approval.registerDecision(SandboxEscapeApprovalTool, "w", "", true, false)
 
 	drained := c.SetToolApprovalMode(ToolApprovalYolo)
+	got := map[string]bool{}
 	for _, id := range drained {
-		if id == dispatchID || id == peerID {
-			t.Fatalf("full access drained %s, which nobody answered", id)
+		got[id] = true
+	}
+	for name, id := range map[string]string{"dispatch": dispatchID, "peer": peerID} {
+		if !got[id] {
+			t.Fatalf("%s card stayed pending through full access", name)
 		}
+	}
+	if got[escapeID] {
+		t.Fatal("full access drained a sandbox escape, which no posture may decide")
 	}
 	for name, reply := range map[string]chan approvalReply{"dispatch": dispatchReply, "peer": peerReply} {
 		select {
-		case <-reply:
-			t.Fatalf("%s card was answered by the posture switch", name)
+		case r := <-reply:
+			if !r.allow {
+				t.Fatalf("%s card was answered by the posture switch and refused", name)
+			}
 		default:
+			t.Fatalf("%s card was reported drained without being signalled", name)
 		}
 	}
+	select {
+	case <-escapeReply:
+		t.Fatal("the escape card was answered by the posture switch")
+	default:
+	}
 	if !c.approval.hasPending() {
-		t.Fatal("both cards should still be pending")
+		t.Fatal("the escape card should still be pending")
 	}
 }

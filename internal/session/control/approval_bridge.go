@@ -160,8 +160,8 @@ var explicitApprovalTexts = map[string]string{
 	computerPointerApproval:  "This takes the pointer the person is holding — it moves their cursor, clicks with it, and brings the application forward — rather than asking an element to act. Auto, the application's own grant and broad allow rules do not answer it; approve it or use YOLO.",
 	computerUseApproval:      "This reads or operates another application on the computer, with whatever access that application has. Auto and broad allow rules do not answer it; approve it for this application or use YOLO.",
 	originTextApproval:       "This call repeats text that came from outside, such as a web page or a tool result. Auto, YOLO and remembered answers do not answer it; approve this one call or decline.",
-	peerMessageApproval:      "This sends a message to another of the user's sessions on their behalf; the receiver and every word of it are on this card. Auto, YOLO and remembered answers do not answer it; approve this one call or decline.",
-	dispatchTaskApproval:     "This opens a session in another of the user's projects and hands it a task; the project and the whole task are on this card. Auto, YOLO and remembered answers do not answer it; approve this one call or decline.",
+	peerMessageApproval:      "This sends a message to another of the user's sessions on their behalf; the receiver and every word of it are on this card. Auto and remembered answers do not answer it; full access does, or answer it here.",
+	dispatchTaskApproval:     "This opens a session in another of the user's projects and hands it a task; the project and the whole task are on this card. Auto and remembered answers do not answer it; full access does, or answer it here.",
 	computerFrontApproval:    "This operates another application on the computer, with whatever access that application has. Windows sends keys only to the window in front, so typing, key presses and pastes bring that application forward first. Auto and broad allow rules do not answer it; approve it for this application or use YOLO.",
 }
 

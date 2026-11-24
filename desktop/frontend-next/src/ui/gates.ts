@@ -35,12 +35,11 @@ export function useGateActions({ port, dispatch, refreshStatus, fail, onRevise }
     async (itemId: string, id?: string): Promise<boolean> => {
       try {
         const drained = await port.setApprovalMode("yolo");
-        // A card the new posture covers is already answered by the switch. One
-        // it does not — a dispatch, a peer message, a command that runs another
-        // command — still waits, and the person who clicked "confirm full
-        // access" meant this call too: that is what the button says. So the
-        // card is answered here as well, once, rather than left for a second
-        // click that reads as the first one having failed.
+        // A card the new posture covers is already answered by the switch —
+        // dispatches and peer messages included, since full access is the
+        // person's standing yes to this session acting. One it does not cover,
+        // such as a command that runs another command, is answered here as
+        // well, once, because the button says this click means this call too.
         if (drained.includes(itemId)) {
           dispatch({ kind: "__decided", id: itemId, verdict: "yolo" } as never);
         } else if (id) {

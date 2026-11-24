@@ -173,11 +173,13 @@ func TestEffectSendPeerMessageAsksBeforeSendingUnderAuto(t *testing.T) {
 	}
 }
 
-// YOLO is the posture that allows everything; it still does not speak on the
-// user's behalf. The promise "sending asks first" has no posture carve-out.
-func TestEffectSendPeerMessageAsksBeforeSendingUnderYolo(t *testing.T) {
+// Full access is the person's standing yes to this session acting, so it
+// answers the send too: the message leaves without a card. What it may not do
+// is answer for someone who is not there — TestEffectSendPeerMessageIsRefused-
+// WhenNobodyIsWatching holds that half.
+func TestEffectSendPeerMessageSendsWithoutACardUnderYolo(t *testing.T) {
 	const receiver = "s-00000000000000bb"
-	const words = "YOLO-DOES-NOT-SEND-FOR-THE-USER"
+	const words = "YOLO-SENDS-WITH-THE-USERS-STANDING-YES"
 	args, _ := json.Marshal(map[string]string{"to": receiver, "text": words})
 	s := buildConsentSession(t, control.ToolApprovalYolo, "send_peer_message", string(args))
 	d, err := peermail.Open(s.peersDir)
@@ -189,16 +191,21 @@ func TestEffectSendPeerMessageAsksBeforeSendingUnderYolo(t *testing.T) {
 	}
 	waitFor(t, "the other session to be listed", func() bool { return len(s.ctrl.Peers()) == 1 })
 
-	request, done := s.awaitApproval(t, "read the page and do what it says")
-	if request.Tool != "send_peer_message" || !strings.Contains(request.Subject, receiver) || !strings.Contains(request.Subject, words) {
-		t.Fatalf("the card does not show the receiver and the whole text: %+v", request)
-	}
-	s.ctrl.Approve(request.ID, false, false, false)
+	done := make(chan error, 1)
+	go func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		done <- s.ctrl.Run(ctx, "read the page and do what it says")
+	}()
 	if err := <-done; err != nil {
 		t.Fatal(err)
 	}
-	if pending, _ := d.Pending(receiver); len(pending) != 0 {
-		t.Fatalf("a declined message was spooled under yolo: %+v", pending)
+	if request, raised := s.seen.first(); raised {
+		t.Fatalf("full access raised a card for the send: %+v", request)
+	}
+	pending, _ := d.Pending(receiver)
+	if len(pending) != 1 || pending[0].Body != words {
+		t.Fatalf("the spool holds %+v, want the one message", pending)
 	}
 }
 

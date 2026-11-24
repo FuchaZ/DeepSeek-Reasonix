@@ -4,10 +4,10 @@ import { renderHook } from "@testing-library/react";
 import { useGateActions } from "./gates";
 
 // "Confirm full access" is one decision, not two. The switch covers the cards
-// the new posture allows; a card it does not cover — a dispatch, a peer
-// message, a command that runs another command — is answered by the same click,
-// because that is what the button says it does. Leaving it for a second click
-// read as the first one having failed.
+// the new posture allows; a card it does not cover — a command that runs
+// another command — is answered by the same click, because that is what the
+// button says it does. Leaving it for a second click read as the first one
+// having failed.
 
 const setup = (drained: string[] | undefined) => {
   const port = {

@@ -479,10 +479,9 @@ func (c *Controller) SetToolApprovalMode(mode string) []string {
 	if c.observe != nil {
 		return nil
 	}
-	// Prompts NOT in the returned set are still pending here — fresh user
-	// decisions (plan, memory, sandbox escape, dispatch, a peer message) never
-	// drain — so a frontend must keep showing them instead of assuming the
-	// posture switch resolved everything (#6432).
+	// Prompts not returned here are still pending — a plan, a memory write, a
+	// sandbox escape — so a frontend keeps showing them rather than assuming the
+	// switch resolved everything (#6432). Full access drains a peer card too.
 	mode = normalizeToolApprovalMode(mode)
 	drained, _ := c.switchApprovalMode(mode, func() ([]drainedApproval, bool) { return c.approval.setMode(mode), true })
 	return drained
