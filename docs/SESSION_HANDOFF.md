@@ -724,3 +724,168 @@ PE32 / NSIS self-extracting，未签名（首次运行按系统提示放行）�
 `test (macos-15)` / `sdk (macos-15)` / `desktop-macos` 全部 `cancelled`：runner 排队
 超时，与代码无关。免费额度下这一轮的 job 调度普遍偏慢（run 级状态长时间停在
 `pending`，而 job 级其实已在跑——**查 CI 进度要看 job 级**）。
+
+## 12. 会话互聊：全放行代答 + 投递时机（2026-11-24）
+
+用户用了上一轮的互聊功能后报了两件事：点了「完全放行」之后互相发消息**仍然每次弹卡**；
+以及 A 会话跑任务时收到 B 的消息，**要等整个任务结束才看到**，造成两边对进度的认知
+不同步。两条都不是 bug，是当初的设计取舍写反了预期。
+
+### 12.1 全放行为什么还在出卡
+
+`approval.go` 的 `requiredHumanAnsweredLocked` 一遇 `requiresFreshApprovalTool(tool)`
+就直接返回 `false`，而 `RequiresFreshHumanApprovalTool`（同文件）把
+`SendPeerMessage` / `DispatchToProject` 列在那个集合里——设计意图是「yolo 不代你说话」，
+卡片文案也写死了 *"Auto, YOLO and remembered answers do not answer it"*。
+
+**修法（`postureAnswersTool`）**：只对 YOLO 档位放行这两个工具。关键分层是——
+
+- 交互式会话走 `approvalManager`，改动在这里生效。
+- **headless 走的是 `permission.NewGate(policy, nil)`**，`Approver == nil` 时由
+  `permission.unattendedAsk` 拒绝，根本不经过 `approvalManager`。
+- 所以 `permission.subjectSensitiveTools` 里那两个条目**原样保留**，无人值守仍然
+  `RefusalUnattended`。这是本次能被安全放宽的唯一原因，别把它们从 `Policy` 层移走。
+
+`drainLocked` 同步放宽：切到全放行时，已弹出的 peer 卡一并结算（否则卡会留在屏幕上，
+用户会以为切换没生效）。`approval_bridge.go` 与前端 `chat.ts` 的卡片文案改为
+*"Auto and remembered answers do not answer it; full access does"*。
+
+### 12.2 消息为什么等到 turn 结束
+
+`resolvePeerMessage` 用的是 `IntentFollowup`，而 `startPeerItem` 只在
+`!c.Running()` 时才启动队列——跑着的会话只入队，等这一轮跑完才取。
+
+**修法**：`c.Running()` 为真时先试 `steerInboxItem(id, true)`，被接受
+（`DispositionSteerAccepted`）就是中途注入。三个条件都会回退到 `startPeerItem`：
+
+- 队列处于暂停；
+- 会话正在轮转；
+- 在 `Running()` 检查与 steer 调用之间 turn 已经结束。
+
+注入走的是用户插话同一条通道（`SteerHostItem` 那一套），所以固有边界照旧：消息在
+**下一个 provider 请求**被消费，不是立刻打断。模型正在跑一条长命令时仍要等那条命令
+结束，但不再等整个任务。
+
+### 12.3 三态来源：模型必须知道是谁在说话
+
+原来 steer 只有 `host bool` 两态。peer 消息借这条通道进来后，如果不加区分，模型会把它
+读成「host 运行时自己的提醒」（`HostNoticePrefix` 明说 *the user did not send this*），
+和「另一个会话发来的数据」是两回事。
+
+`sessionstore` 新增 `PeerNoticePrefix` 与 `SteerSource`（`SteerByUser` / `SteerByHost` /
+`SteerByPeer`）+ `SteerSourceOf`。`steerEntry.host` 换成 `source`；新增
+`Agent.SteerPeerItem`；`steerItemAs` 按 `InboxItemMeta.Source` 的 `peer:` 前缀分流。
+
+**连带修掉一处自己引入的退化**：peer 消息落进对话后 `HostAuthored=false`，而
+`history.go` 用 `SteerKind` 只回 `host` 布尔——重开会话时那条消息会被画成**用户自己
+说的插话**。
+
+三处呈现改用 `SteerSourceOf`：`serve/history.go`、`serve/history_page.go`、
+`acp/dispatch.go`。`history.go` 保留记录并置 `HostAuthored: !byPerson`，不是直接
+丢弃，因为 `TestHistoryDoesNotCreditTheHostsOwnSteerToThePerson` 押着这个形状。
+
+顺手删掉两态 `MidTurnSteerMessage(text, host bool)`：它已是双轨 API，正是这轮要拆掉的
+东西（`repolint` 的 orphan 规则也拦下了它——只剩测试引用）。所有调用点改走
+`MidTurnSteerSource`。
+
+### 12.4 验证
+
+| 项 | 结果 |
+| --- | --- |
+| `go test ./internal/session/control/` | **ok 311.0s**（整包） |
+| `go test ./internal/state/sessionstore/` | **ok 104.4s** |
+| `go test ./internal/runtime/agent/` | 3 条失败，见下 |
+| `go test ./internal/frontend/serve -run 'TestHistory\|TestHostAuthored\|TestPeer\|TestLocate'` | ok 2.6s |
+| `go test ./internal/frontend/acp/` | ok 28.8s |
+| `go test ./internal/assembly/boot -run TestEffectSendPeerMessage\|TestEffectDispatchToProject` | ok 7.9s |
+| 前端 `gates` + `full-access-card` + `ApprovalCard` | 20 条全过 |
+| `tsc --noEmit` / `go vet ./...` / `gofmt -l internal/` | 全部无输出 |
+| `repolint -changed` | clean（2330 baselined） |
+
+失败的 3 条是 `receipt_host_owned_test.go` 的符号链接用例，报错原文
+`A required privilege is not held by the client`——本机没给创建 symlink 的特权，测试
+自己就打印 *"this runner cannot create symlinks, so the protection is untested"*。
+该文件本轮未改动。
+
+`review` 与 `security_review` 都跑过（`approval.go` / `approval_bridge.go` 在
+`REASONIX.md` 的 sensitive 清单里）：结论都是不阻塞发布，security 侧确认 headless
+仍然拒绝、其余 fresh-human 决策未受影响、peer 正文的框架未被削弱。
+
+### 12.5 教训
+
+1. **一处放宽要问「另一个入口怎么走」**：交互式与 headless 是两条不同的 gate 构造
+   路径，只看 `approvalManager` 会以为放宽覆盖了全部。
+2. **改一条通道的语义，要跟着看它的呈现层**：peer 消息借 steer 进来，模型侧加了
+   前缀就以为完事，实际上 `history.go` 还在按两态渲染，重开会话就会把别人的话算到
+   用户头上。
+3. **两态 API 与三态并存是债**：`MidTurnSteerMessage(text, bool)` 留着的唯一结果，
+   是后来人传 `false` 想表达 peer 时写错。删掉比留着便宜。
+
+## 13. 子代理转录混进会话列表（2026-11-24，`4da06df36`）
+
+用户在自己工作区的会话列表里看到三个标题为「继续」的会话，ID 形如
+`sa_20261124_115222_000000000_35529d6d4160`，问这是不是 bug。**是。**
+
+那三个是本次会话调 `review` / `security-review` 产生的子代理转录，`meta.json` 里
+`kind=skill`、`parentSession` 指向当前会话、`parentToolCallId` 就是那次工具调用。
+它们本该只通过父会话访问，却作为独立会话出现在侧栏。
+
+### 13.1 根因：过滤器只认旧命名
+
+| 层 | 位置 | 事实 |
+| --- | --- | --- |
+| 生成 | `delegation/subagent_store.go` `newRef()` | `sa_<时间戳>_<hex>` |
+| 落盘 | `<sessionDir>/subagents/<ref>.jsonl` | 现代布局，独立子树 |
+| 扫描 | `sessionstore/session_order.go` `eachSessionDir` | `filepath.WalkDir` 递归进**所有**子目录 |
+| 过滤 | `store/session.go` `IsSubagentTranscriptName` | 只认 `subagent-` 前缀（旧扁平命名） |
+
+`IsSubagentTranscriptName` 的注释自己就写着 *"reports a flat legacy subagent
+transcript, which the current layout keeps under a subagents/ tree instead"*——它管的是
+旧命名，新布局的 `sa_` 它认不出，于是 `false`。
+
+而调用点都指望它兜底：
+
+- `serve/sessions_list.go`
+- `serve/hub_tree_page.go`（两处）
+- `sessionstore/auto_archive.go`
+- `sessionstore/empty_session_gc.go`
+
+**`branch.go` 的 `ListBranches` 连调都没调。**
+
+探针实测（修复前）：
+
+```
+IsSubagentTranscriptName("sa_20261124_115222_….jsonl") = false
+ListSessions leaked: …\subagents\sa_20261124_115222_….jsonl
+```
+
+### 13.2 修法：在扫描层排除，不靠名字
+
+`eachSessionDir` 对 `subagentsTreeName` 返回 `fs.SkipDir`。这与
+`migrate_passes.go` 里已有的 `if e.Name() == "subagents" { continue }` 一致。
+
+**没有**改成让 `IsSubagentTranscriptName` 认 `sa_` 前缀，理由：那个函数名义上是
+「扁平旧命名的识别器」，改它的语义会把两件事混在一起；而且让 walk 进入一个内容永远
+不是会话的目录，下一次命名改变又会重开这个洞。一处 `SkipDir` 让四个调用点同时受益。
+
+子代理目录名收进常量 `subagentsTreeName`，放在读那些记录的 `subagent_records.go` 里。
+
+### 13.3 与互聊新建会话的区别（用户问的第二半）
+
+两者在磁盘上本来就分得开，只是列表没收对：
+
+- **子代理**：`sa_` 前缀 + `subagents/` 子树 + meta 有 `parentSession`。只对父会话
+  有意义，不进列表。
+- **互聊 dispatch 新建的会话**：正常 `2026…-<model>.jsonl`，在会话目录下。那是用户
+  真拥有的独立会话，**该出现**。
+
+### 13.4 验证与收尾
+
+- 新增 `subagent_tree_test.go` 两条：walk 不进 `subagents/` 但仍进日期目录；
+  `ListSessions` 只回用户自己的会话。先红后绿。
+- `sessionstore` 整包 **ok 107.032s**；`serve`（列表/树/归档/分支）**ok 158.870s**；
+  `repolint -changed` clean。
+- 列表索引无需清理：`subagents/` 不再被扫，旧条目自然不输出；`saveListIndex` 见条目
+  变少也会重写索引。
+- 已存在的 `sa_` 文件留在磁盘上无害，可自行删除。
+- **需要重启客户端**才能看到列表变干净。
