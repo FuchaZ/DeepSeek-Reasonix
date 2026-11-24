@@ -778,6 +778,8 @@
   .traj .num { color: var(--text); font-variant-numeric: tabular-nums }
 
   .call { display: grid; grid-template-columns: var(--call-sym) minmax(0, 1fr); gap: var(--call-gap); }
+  .call[data-bare] { grid-template-columns: minmax(0, 1fr); }
+  .call[data-bare] > .g { display: none; }
   .call > .g { display: flex; flex-direction: column; align-items: center }
   .call > .g .sym {
     width: var(--call-sym); height: var(--call-sym); margin-top: 5px; display: grid; place-items: center;

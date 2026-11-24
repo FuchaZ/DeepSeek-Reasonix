@@ -179,6 +179,7 @@ export function ToolCard({
     if (bad) setOpen(null);
   }, [bad]);
   const open = touched ?? start;
+  const shots = (tool.images?.length ?? 0) > 0;
   // The body of a finished, closed card is most of what a long session holds in
   // the page, so such a card does not mount it; once opened it stays, so what the
   // reader did inside (show all) survives closing it again.
@@ -197,15 +198,28 @@ export function ToolCard({
   // more than the generic error that it exited; any other tool's output is not about its failure.
   const failLine = activity && bad ? (refusal || (tool.refusalCode && errorDetail) || (tool.execution ? lastLine(tool.output) : "") || errorDetail || tool.err || lastLine(tool.output) || "") : "";
   const activityArgs = activity ? prettyArgs(tool.args) : "";
+  // view_image answers with a receipt for the model — the path, the type and
+  // the byte count of the picture already decodable from `images`. It is not
+  // text a person reads, so it is not a body: counting it as one would keep a
+  // row whose whole content is the picture standing beside it.
+  const receiptOnly = shown === "view_image";
   // A call being watched in the activity group opens to its input even with no
   // output yet: a row that cannot open is the one that looks stuck.
   const hasBody = Boolean(
     takeover || tool.diff || goal || tool.argumentNormalization || tool.name === "todo_write" ||
-    (tool.output && !echoed && children.length === 0) || tool.err || children.length || (activity && running && activityArgs),
+    (tool.output && !echoed && !receiptOnly && children.length === 0) || tool.err || children.length || (activity && running && activityArgs),
   );
   const activityResult = Boolean(
     takeover || tool.diff || goal || tool.name === "todo_write" || tool.output || tool.err || children.length,
   );
+  // A call that only produced a picture says nothing in its row that the
+  // picture does not: "looked at image, shots/w280.png" is the caption of the
+  // thing already on screen. The row goes, and the picture stands alone. What
+  // it would have carried is kept: a failure, work still running, or any other
+  // body (a diff, a delegate, another tool's output) keeps the row, and the
+  // path moves onto the picture, which is where a reader looks for it once the
+  // caption is gone.
+  const bareShots = shots && !bad && !running && !hasBody && !children.length && !tool.videos?.length;
   const heading = (
     <>
       {/* 名字是给人读的，id 是给人查的。标签只在它说了名字没说的事时才占地方
@@ -361,6 +375,7 @@ export function ToolCard({
       className="call"
       data-call={tool.id || undefined}
       data-k={KINDED.has(categoryOf(shown)) ? categoryOf(shown) : undefined}
+      data-bare={bareShots ? "" : undefined}
       data-running={running ? "" : undefined}
       data-shake={shaking ? "" : undefined}
     >
@@ -368,7 +383,7 @@ export function ToolCard({
         <Sym icon={iconFor(shown)} done={settling.pop && !bad} />
       </div>
       <div className="c">
-        {hasBody ? (
+        {bareShots ? null : hasBody ? (
           <details className="tool-disclosure" data-lazy={nestMounted ? undefined : ""} open={open} onToggle={(event) => event.currentTarget.open !== open && setOpen(event.currentTarget.open)}>
             <summary className="hl" data-swap={settling.swap ? "" : undefined}>{heading}</summary>
             {nestMounted ? body : null}
@@ -376,10 +391,10 @@ export function ToolCard({
         ) : (
           <div className="hl" data-swap={settling.swap ? "" : undefined}>{heading}</div>
         )}
-        {/* What the call handed the model to look at sits outside the
-            disclosure: a picture nobody can see without opening a debug panel
-            is not the call's result, it is a detail about it. */}
-        <ToolShots images={tool.images} />
+        {/* What the call handed the model to look at, drawn outside the
+            disclosure and, when it is all the call produced, with no row above
+            it: the picture is the result, not a detail about it. */}
+        <ToolShots images={tool.images} label={shots ? pathOf(tool) : undefined} />
         <ToolVideos videos={tool.videos} />
         {failLine && (
           <div className="step-err" role="status">
@@ -412,13 +427,13 @@ function ToolVideos({ videos }: { videos?: NonNullable<Tool["videos"]> }) {
   );
 }
 
-function ToolShots({ images }: { images?: string[] }) {
+function ToolShots({ images, label }: { images?: string[]; label?: string }) {
   if (!images?.length) return null;
   return (
     <div className="tshots">
       {images.map((src, i) => (
-        <ImagePreview key={src + i} src={src} name={t("chat.tool_screenshot_n", { n: i + 1 })} className="tshot">
-          <img src={src} alt={t("chat.tool_screenshot_n", { n: i + 1 })} loading="lazy" />
+        <ImagePreview key={src + i} src={src} name={label || t("chat.tool_screenshot_n", { n: i + 1 })} className="tshot">
+          <img src={src} alt={label || t("chat.tool_screenshot_n", { n: i + 1 })} loading="lazy" />
         </ImagePreview>
       ))}
     </div>
@@ -507,6 +522,10 @@ function Steps({ tool }: { tool: Tool }) {
 }
 
 const childTokens = (kids: Tool[]) => kids.reduce((n, k) => n + (k.contextTokens ?? 0), 0);
+
+// The file a picture call names, for the one place the row that carried it is
+// gone: a bare picture is its own label, so its path is what a reader hovers.
+const pathOf = (tool: Tool): string => argOf(tool.args, "path", "file_path");
 
 
 // An identifier reads correctly in the mono tag and nowhere else, so this is the

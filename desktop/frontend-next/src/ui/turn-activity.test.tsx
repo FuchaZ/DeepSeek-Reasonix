@@ -66,10 +66,11 @@ describe("the work under a turn's sentences", () => {
     expect(groups[1].querySelector('.nm[title="edit_file"]')).not.toBeNull();
   });
 
-  // A picture is drawn beside its row rather than inside it (ToolCard), so a
-  // group that folds would take it out of the flow entirely — the turn's own
+  // A picture is drawn beside its row rather than inside it (ToolCard), and a
+  // call that produced nothing but a picture has no row at all — so a group
+  // that folds would take the picture out of the flow entirely. The turn's own
   // frame stays open for it until the reader closes it.
-  it("holds a group open while it holds a picture, and leaves the row folded", () => {
+  it("holds a group open while it holds a picture, and draws the picture with no row of its own", () => {
     const view: Item = { t: "tool", id: "v1", running: false, children: [],
       tool: { id: "v1", name: "view_image", readOnly: true, args: '{"path":"shots/w280.png"}',
         output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: ["data:image/png;base64,AAAA"] } };
@@ -77,11 +78,11 @@ describe("the work under a turn's sentences", () => {
     const groups = [...chunk.querySelectorAll("details.activity-group")] as HTMLDetailsElement[];
     expect(groups).toHaveLength(2);
     expect(groups[1].open).toBe(true);
-    const row = groups[1].querySelector("details.tool-disclosure") as HTMLDetailsElement;
-    expect(row.open).toBe(false);
-    const shot = groups[1].querySelector(".tshots img");
-    expect(shot).not.toBeNull();
-    expect(row.contains(shot)).toBe(false);
+    const bare = groups[1].querySelector('.call[data-bare]');
+    expect(bare).not.toBeNull();
+    expect(bare!.querySelector(".hl")).toBeNull();
+    expect(bare!.querySelector("details")).toBeNull();
+    expect(bare!.querySelector(".tshots img")).not.toBeNull();
     expect(groups[0].open).toBe(false);
   });
 

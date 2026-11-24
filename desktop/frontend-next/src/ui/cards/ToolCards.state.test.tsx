@@ -47,13 +47,12 @@ describe("tool outcome cards", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  // A picture a call handed back is the one thing that call existed to show, so
-  // it is drawn beside the row rather than inside its details: no reader has to
-  // open a debug panel to see what the agent saw. The row itself stays folded,
-  // as every other finished call's does.
+  // A call that also produced text keeps its row, and the picture is drawn
+  // beside the row rather than inside its details: no reader opens a debug
+  // panel to see what the agent looked at, and the row stays folded.
   it("shows a call's picture without unfolding its row", () => {
     const { container } = render(
-      <ToolCard tool={{ id: "vi", name: "view_image", args: '{"path":"shots/w280.png"}', output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: ["data:image/png;base64,AAAA"], readOnly: true }} running={false} />,
+      <ToolCard tool={{ id: "cr2", name: "computer_read", args: '{"path":"screen"}', output: "Notes: front window", images: ["data:image/png;base64,AAAA"], readOnly: false }} running={false} />,
     );
     const disclosure = container.querySelector("details.tool-disclosure") as HTMLDetailsElement;
     expect(disclosure.open).toBe(false);
@@ -63,6 +62,48 @@ describe("tool outcome cards", () => {
     fireEvent.click(disclosure.querySelector("summary")!);
     expect(disclosure.open).toBe(true);
     expect(container.querySelector(".tshots img")).not.toBeNull();
+  });
+
+  // With nothing but a picture to show, the row is the picture's caption and
+  // the picture is already on screen: "looked at image, shots/w280.png" over a
+  // visible shots/w280.png is one fact printed twice. The row goes, and the
+  // file's name moves onto the picture — that is what a reader hovers to know
+  // which file they are looking at.
+  it("drops the row entirely when the call produced nothing but a picture", () => {
+    const { container } = render(
+      <ToolCard tool={{ id: "vi2", name: "view_image", args: '{"path":"shots/w280.png"}', output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: ["data:image/png;base64,AAAA"], readOnly: true }} running={false} />,
+    );
+    expect(container.querySelector(".hl")).toBeNull();
+    expect(container.querySelector("details")).toBeNull();
+    expect(container.querySelector('[data-bare]')).not.toBeNull();
+    const thumb = screen.getByRole("button", { name: "查看图片 shots/w280.png" });
+    expect(thumb.querySelector("img")?.getAttribute("src")).toBe("data:image/png;base64,AAAA");
+  });
+
+  // What the row would have said is not dropped with it: a call that failed or
+  // is still running keeps its row, because that is the part a reader needs.
+  it("keeps the row for a picture call that failed or is still running", () => {
+    const shot = "data:image/png;base64,AAAA";
+    const { container: failed } = render(
+      <ToolCard tool={{ id: "f", name: "view_image", args: '{"path":"a.png"}', images: [shot], err: "a.png is not an image", readOnly: true }} running={false} />,
+    );
+    expect(failed.querySelector(".hl")).not.toBeNull();
+    expect(failed.querySelector(".fail, .txt.bad")).not.toBeNull();
+    cleanup();
+    const { container: live } = render(
+      <ToolCard tool={{ id: "l", name: "view_image", args: '{"path":"a.png"}', images: [shot], readOnly: true }} running />,
+    );
+    expect(live.querySelector(".hl")).not.toBeNull();
+  });
+
+  // A call that ran a command and also handed back a picture is not "only a
+  // picture": the text is what the model read, and it is why the row stays.
+  it("keeps the row when the call also produced text", () => {
+    const { container } = render(
+      <ToolCard tool={{ id: "cr", name: "computer_read", args: '{"path":"screen"}', images: ["data:image/png;base64,AAAA"], output: "Notes: front window", readOnly: false }} running={false} />,
+    );
+    expect(container.querySelector(".hl")).not.toBeNull();
+    expect(container.querySelector('[data-bare]')).toBeNull();
   });
 
   // A video handed to the model natively is a file the person cannot see in the
