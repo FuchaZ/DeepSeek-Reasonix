@@ -1009,7 +1009,7 @@
   .rgroup .more { padding-left: 12px; font: var(--w-reg) var(--fs-meta) var(--ui); color: var(--ghost) }
 
   .subrow { margin-left: 20px; padding-left: 14px; border-left: 1px solid var(--hair) }
-  .subrow[data-off] { opacity: .5 }
+  .subrow[data-off] .lb { color: var(--muted) }
 
   .cfgbad { margin: 10px 16px 0 }
   .cfgbad .term { margin-top: 8px }

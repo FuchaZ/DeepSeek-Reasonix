@@ -999,6 +999,10 @@ to absorb horizontal overflow.
   says the state, with the accent left for things that actually need you.
 - Remove is the one irreversible action in a row, so it does not look like the
   other buttons and appears only on hover.
+- An off branch softens its label to `--muted` and leaves the row's opacity
+  alone. Fading the whole row composites the label and its description toward
+  the card, which drops both under AA in every theme; the disabled switch beside
+  them already says the branch is inert.
 
 ## Scope pill and picker
 

@@ -36,3 +36,10 @@ it("keeps the selected settings section's icon ink under the pointer", () => {
   expect(rule).not.toBeNull();
   expect(rule![1]).toMatch(/color:\s*var\(--text\)/);
 });
+
+it("dims an off settings branch with ink, not a translucent row", () => {
+  // A faded row lands under AA in every theme; perf/contrast.mjs measures the
+  // composite, and this holds the rule that keeps the composite readable.
+  expect(css.match(/\.subrow\[data-off\]\s*\{[^}]*opacity/)).toBeNull();
+  expect(css).toMatch(/\.subrow\[data-off\] \.lb\s*\{[^}]*color:\s*var\(--muted\)/);
+});
