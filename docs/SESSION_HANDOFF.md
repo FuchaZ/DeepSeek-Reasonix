@@ -2,13 +2,30 @@
 owner: @FuChaZ
 backup: @esengine
 status: active
-reviewed: 2026-11-24
+reviewed: 2026-11-26
 ---
 
-# 会话交付图片预览 · 相对路径定位 · 构建提速 — 交接
+# Studio 会话交接：从图片预览到 2.69.3（第 1–15 节）
 
-主体三件事（1–3 节）已完成并有测试。2026-11-22 凌晨追加一轮（4–6 节的状态都是那轮
-写定的），四件事：
+**先读这一节。** 文档按轮次累积，早期的节保留当时的判断（包括被推翻的），
+越往后越新。当前状态以第 14、15 节为准：
+
+- **已发布**：2.69.3（`z2.69.3` = `ef3952f97` = HEAD）。2.67.1 之后没有单独发布过
+  2.68 与 2.69.x，这一版是手动汇总（第 14.1 节）。
+- **分支**：`studio`，与 `origin/studio` 同步。早期节里提到的
+  `work/studio-session-20261121` 已不存在，那些改动都已进 `studio`。
+- **`oliver` / `torch` 远端是独立历史**（无共同祖先，用它们自己的
+  `TORCH_HANDOFF.md`），本文档的判断一律以 `origin` 线为准。
+- **serve 慢但有解**：`go test ./...` 仍约 700s（最慢的包就是它，`-p` 只管包之间）。
+  只验证 serve 用 `make test-serve`，三片并行实测 5m8s（第 16 节）。
+- **本机环境限制**：没有创建符号链接的特权，`TestCompositionLinkedExtensionResources`
+  等少数用例因此失败，与代码无关（第 15.4 节）。
+
+以下是按轮次累积的历史记录，**出发点是 2026-11-21 那一轮**（当前的版本与分支状态见
+文首那一节，不要以这里的数字为准）。
+
+起点是主体三件事（1–3 节），已完成并有测试。2026-11-22 凌晨追加一轮（4–6 节的状态都是
+那轮写定的），四件事：
 
 - reveal 通道（`/workspace/locate`）补上同一个尾部定位，点「打开」不再对拼写路径 404。
 - 底栏「会话互聊」chip 与悬停卡成套摘除（第 6 节）。
@@ -18,11 +35,10 @@ reviewed: 2026-11-24
   第 4 条。
 - 从 torch 线移植 ghost row（第 7 节）。
 
-**当前两条套件 0 败**：serve 1483 过 / 31 skip，frontend-next 934 文件 / 6911 测试
-全过（ghost row 移植后的复核见第 7 节）。改动全部提交在
-`work/studio-session-20261121`；未纳入的是本地 pnpm 11 造成的
-`desktop/frontend-next/pnpm-lock.yaml` 漂移，以及它生成的
-`desktop/electron/pnpm-workspace.yaml` 占位文件。
+> 那一轮当时的记录：serve 1483 过 / 31 skip，frontend-next 934 文件 / 6911 测试全过；
+> 改动提交在 `work/studio-session-20261121`（**该分支已删除**，改动均已进 `studio`）；
+> 未纳入的是本地 pnpm 11 造成的 lockfile 漂移与它生成的
+> `desktop/electron/pnpm-workspace.yaml` 占位文件（现已无漂移）。
 
 2026-11-23 追加一轮：卡顿排查与修复（第 8 节，`156561e9c`），以及打包版本号
 教训（§3.1 命令块已更正——版本必须在 `--dir` 步注入，`--prepackaged` 补不了；
@@ -236,6 +252,20 @@ node_modules/.bin/electron-builder --prepackaged ../../dist/win-unpacked \
      （进程级环境变量，与 `t.Parallel` 互斥）。
    - 根治方向：拆包多二进制并行（`go test -p`），或把 `t.Setenv` 隔离改成注入式。
      本机安全跑法：`-timeout 18m`。
+   - **2026-11-26 定位：不是挂死，是串行求和。** `-timeout 20m` 跑完整包退出码 0、
+     全绿 749s；1921 个测试里最慢的只有 13.2 秒，**没有一个超过 30 秒**。1713 个
+     测试各 0.14s 的平均值加起来就是 235s，198 个 1–5s 的再加 470s。此前
+     `stats.dispatcherFor` 的 goroutine 栈只是超时那一刻的快照，不是原因（那个泄漏
+     另见下条，已修）。
+   - **已加本地分片 `make test-serve`**：按 CI `test-windows-shards` 同一套
+     `-run`/`-skip` 拆三片并行，实测 5m8s（259s / 304s / 185s）。三片用集合运算
+     验证过：`^Test[A-E]` ∪ `^Test[F-R]` 与 `^Test[A-R]` 完全相同（1065 个）且零
+     重叠，第三片补足其余 459 个，1524 个测试无重复无遗漏。
+   - **`go test ./...` 本身没有变快**，这是有意保留的。`-p 20` 是包之间并行，
+     整包耗时约等于最慢那个包——就是 serve 的 ~703s。要让整包变快只能把 serve 从
+     `./...` 里摘出去，那会让「整包」不再等于全量，本轮没做。
+   - `stats` 的 goroutine 泄漏已修：`recorderDispatchers.byDir` 是永不清理的全局
+     map，`CloseUsageCatalogs` 现在先停全部 dispatcher 再关 catalog。
 4. ~~frontend-next 全量 7 条既有失败~~ **已修（2026-11-22），全是测试押着旧形状，
    无产品 bug**：
    - navrail 3 条：设置落点还押着已废除的「plain open 落 session」规则。改为新规则：
@@ -251,8 +281,16 @@ node_modules/.bin/electron-builder --prepackaged ../../dist/win-unpacked \
    遗留的三项仓库总量超限已修掉：`studio.css` 合并两行回到预算内、`SESSION_HANDOFF.md`
    补 `backup` 并在 CODEOWNERS 登记、四处超长块拆成列表。顺手修掉树上 gofmt 漂移的
    `internal/platform/update/release_unit_test.go`（`52ede7a97`）。
-6. **已提交**到 `work/studio-session-20261121`。上一轮清单见第 5 节；追加轮清单见
-   第 5.1 节。
+6. ~~已提交到 `work/studio-session-20261121`~~ **该分支已删除**，改动均已进
+   `studio`（第 5 节与第 5.1 节是当时那一轮的清单）。
+7. **`testenv.TempDir` 的失败仍然静默**（2026-11-26 记录，未修）。`tempdir.go` 在
+   100 次重试耗尽后只 `t.Logf` 一行，不失败也不重试更多次；磁盘上 1772 个
+   `reasonix-test-*` 就是这样堆起来的（第 15.5 节）。改成可观测事件牵动「记录但不
+   失败」这个既有取舍，留给下一轮判断。
+8. **其余 TestMain 未加 `GO_WANT_HELPER_PROCESS` 门控**（卫生项，非主因）。11 个走
+   `RunWithIsolatedUserState` 的包里只有 `internal/ext/plugin` 做了门控；boot 只门控了
+   `fakeComputerHelperEnv`。2026-11-26 实测该路径下子进程会自行清理（嵌套内层为 0），
+   所以它不解释残留，只是让子进程多分配一个 home 再删掉。
 
 ## 5. 本轮改到的文件
 
@@ -890,3 +928,295 @@ ListSessions leaked: …\subagents\sa_20261124_115222_….jsonl
   变少也会重写索引。
 - 已存在的 `sa_` 文件留在磁盘上无害，可自行删除。
 - **需要重启客户端**才能看到列表变干净。
+
+## 14. 2.69.x 汇总发布 + 调用分组（2026-11-25 → 11-26，`ef3952f97`）
+
+这一轮把 2.67.1 之后积攒的东西一次性发了出去，并在发布前修完 Studio 侧的分组与回归。
+
+### 14.1 发布线的实际情况（下一轮先看这条）
+
+**2.67.1 是最后一个正式发布的版本**；2.68 与 2.69.x 当初只打了 tag，没走发布流程。
+2.69.3 因此是**手动汇总发布**，`release-notes/studio/2.69.3.md` 把 peer、工作台页签、
+浏览器批注、分组展示连同 2.69.3 的收尾修复全部写进去，并明说「装本版即可补齐」。
+
+当前 tag 与提交的位置：
+
+| tag | 指向 | 说明 |
+| --- | --- | --- |
+| `z2.69.3` | `ef3952f97` | 等于 HEAD，只提供安装包，无便携版 |
+| `studio-v2.69.2` | `91cca35a9` | 只打 tag，未发布 |
+| `studio-v2.69.1` | `5ecafc8df` | 只打 tag，未发布 |
+
+`studio` 与 `origin/studio` 已完全同步。另有 `oliver` / `torch` 两个远端，是**独立历史**
+（无共同祖先，交接文档叫 `TORCH_HANDOFF.md`），本节的判断一律以 `origin` 线为准。
+
+### 14.2 调用分组：住在渲染层，不在 item list
+
+连续四次 `view_image` 原来是四张卡——四个图标、四个标题、四段耗时，换四行内容。
+`ff0715cfc` 把**同一类的连续调用**收进一条 lane：图片读作「查看图片 N 张」，
+命令读作「运行命令 N 条」。组内每一项保留自己原本卡上的东西：缩略图仍带路径、
+点开是大图；命令行点开是完整命令与输出，仍能带到末尾。
+
+**关键约束：分组在渲染层 `turnrows.callLanes`，不写进 item list。** 存储里仍然是一次
+一次调用，怎么画是一个模块的事——这样实时与重开会话读到的转录是同一个形状。
+下一轮若要改分组规则，改的是这个模块，不要往存储里加「组」的概念。
+
+三条边界同时立住：只合并**已结束**的调用（失败的要显示退出码、运行中的是读者正在等的
+那条、后台任务保留自己的状态入口）；单张图/单条命令不成组，不额外加标题；「执行过程」
+不再因为遇到图片就无视折叠设置强行展开。
+
+同批 `5ecafc8df` 把 shell 行从「裁到 96 字符的半句话」改成「运行了一条命令」——
+原来的做法让 heredoc 读起来像断掉的句子，还看不出这次调用到底做了什么。只改展示文本，
+行本身的折叠、耗时、状态都留着。
+
+### 14.3 计时账本按 call id 键控，因为换会话会重挂载
+
+`d1e65859e`：切换会话时 transcript 用新 key 重挂载，而计时表活在画出它的那张卡里，
+一重画就归零——跑了半分钟的 wait 工具又显示「已运行 5 秒」，单独调用的停止按钮还会
+消失十秒。
+
+改成**模块级、按 call id 键控**的账本，这正是能活过重画的东西。所有读这个时钟的地方
+都传 id：wait 提示、步骤耗时、成本位、停止按钮、子代理行、折叠组的标题。线上从未命名
+过的调用按卡片自身寿命键控，不会丢读数。不足一秒不绘制，且这个门限放在 hook 里，
+让所有读者给出同一个答案。
+
+### 14.4 图片画在行旁，不画在调试面板里（含一次误判与回滚）
+
+`8789ca825`：一张图曾是那次调用存在的唯一理由，于是旧实现为它自动展开整张卡，代价是
+把调用 id、输入 JSON、结果回执一起摊开——那是出错时才读的东西，不是看图时读的。
+
+- 图片最后落在那个面板底部，还缩进 31px。
+- 现在图片画在 disclosure **外面**：行照常折叠，`ToolShots` / `ToolVideos` 挂在它下面，
+  随时可见。
+- 图片不再让任何行自己展开。
+
+**紧接着的 `24fda1f8a` 判断错了，当天被 `d2829e67e` 回滚**。它以为「查看了一张图片, path」
+这行与下方可见的图片是同一件事印了两遍，于是删掉整行。
+
+- 实际被问的那行是图片**上面那条 bash 调用**的行，不是 `view_image` 自己的。
+- 删掉之后，「看了哪个文件」这唯一的说明从屏幕上消失了。
+
+教训：**动手删之前先确认那一行是哪次调用画的**，尤其当同一片区域里有多张卡片时。
+
+### 14.5 其余修复
+
+- `13fb649c8` **peer 消息留下可见痕迹**：放行或常设同意放行的消息现在发一条 Notice，
+  人能看到是谁在说话，而不是转录默默改向。
+  - Notice 带内核自带的显示「来自另一个会话：<发送者>」，走既有事件通路，没有前端需要
+    新行类型。
+  - 重开会话同样要看得到：`/history` 用 `peerSteer` 标记，桌面与 TUI 重建为同一条
+    Notice，同时仍拒绝把它画成人自己说的话。
+- `de444bb17` **窗口按钮被页签槽罩住**：停靠工作台的页签条被 portal 进窗标题栏的槽位，
+  槽位跑到窗口右沿，把按钮宽度当内边距——padding box 仍属于标题栏提交的拖拽区域，且槽位
+  画在按钮之上，于是那个角落每次点击都变成拖窗口。槽位现在停在按钮左沿，并减去同样的
+  预留宽度。
+- `75dce43e8` **通知关闭态对比度**：整行 `opacity: .5` 把标签和说明一起稀释到 AA 以下
+  （各主题 2.08–4.39 对 4.5）。只把标签降到 `--muted`，其余保持全强度——旁边那个
+  disabled 开关已经说明了状态。
+- `76a5e517a` **两行溢出**：分组的披露曾是 flex 容器，展开一条命令把输出挤到内容宽度
+  （2101px 对 677px 的卡），现在披露是 block、摘要承担 flex 行，输出按组宽换行并在内部
+  横向滚动；四段式选择器保持 `flex: none` 时在窄设置行里按自身宽度溢出 43px，基类控件
+  现在按行宽收缩并换行，不该收缩的地方已各自覆盖。
+- `0e5345afb` **`gorilla/websocket` 改用 crypto/rand**：GO-2026-6278（弱 PRNG 生成
+  WebSocket mask key）**没有已发布的修复**，`v1.5.3` 仍是最后一个 tag；公告点名
+  `d67f41855da4`，该 commit 的全部内容就是这处修复，所以升到它的伪版本，而不是停在
+  漏洞库判定为受影响的版本。`govulncheck ./...` 报 0。
+- `4ed970c9b` **批次回归修复**：2.69.1/2.69.2 的说明按发布说明形状重写并换上正确的
+  commit 引用；`Transcript.tsx` 的 `Row` 拆出去以守住 800 行；成功但无输出的命令仍把
+  命令留在活动正文里；分组的命令保留自己的锚点与完整输出读回；后台启动仍是一行并指向
+  它的任务入口。
+
+### 14.6 serve 全套超时的真正原因：串行求和，不是挂死
+
+`go test ./internal/frontend/serve/` 在 600s 处 `panic: test timed out`，但这不是
+哪个测试卡住了。`-timeout 20m` 跑完整包 **退出码 0、全绿 749s**，1921 个测试里最慢
+的只有 13.2 秒，**超过 30 秒的一个都没有**——749s 是它们串行相加的结果。
+
+超时那一刻栈里的 `stats.dispatcherFor` 只是快照，不是原因。那个真问题（
+`recorderDispatchers.byDir` 永不清理）已在本轮修掉，见第 16 节。
+
+**CI 早就知道**：`ci.yml` 的 `test-windows-shards`（push-only）把 serve 按测试名切成
+`^Test[A-E]` / `^Test[F-R]` / 其余三片，跑在不同 runner 上。`-p 4` 只并行包之间，
+对单包无效，所以本机撞墙而 CI 不撞。
+
+**本机现在的跑法**：`make test-serve`（三片并行，实测 5m8s）。注意
+`go test ./...` **没有变快**——238 个包里最慢的就是 serve（~703s），这是有意保留的
+取舍（见第 4 节第 3 条）。
+
+## 15. 测试隔离 home 残留：根因是进程级 SQLite 目录（2026-11-26）
+
+起因是一份溯源报告：`C:\Users\<user>\.reasonix-test-home-*` 下堆了 99 个目录、66 MB，
+`%LOCALAPPDATA%\Temp\reasonix-test-*` 另有 1772 个。报告的机制是「cleanup 跑了，但
+`RemoveAll` 撞上还没释放的句柄，错误被 `_ =` 吞掉」。**方向对，根因归错了**，两条建议
+实测都无效，这条记下来是因为「重试」看起来太像答案。
+
+### 15.1 为什么不是「句柄稍后才释放」
+
+按报告的建议把 `home.go` 的 `_ = os.RemoveAll(home)` 换成 `tempdir.go` 那套
+100 次 × 20ms 重试，跑 `TestBuildExtraPluginProbeKeepsSessionProcessAlive` 三次：
+
+| | 耗时/次 | 残留 |
+| --- | --- | --- |
+| 原样（单次 `RemoveAll`） | 0.8s | 每次 +1 |
+| 加 100 次×20ms 重试（累计 2s） | 3.4s | **仍然每次 +1** |
+
+耗时涨了四倍，说明重试确实跑满并耗尽了 2 秒——然后仍然删不掉一个只含
+`v1.sqlite{,-shm,-wal}` 的目录。另一方面，对残留目录事后 `rmtree` **立即成功**。
+两句合起来的结论是：句柄不是「稍后释放」，而是**在 cleanup 那一刻由本进程持有，
+进程退出后消失**。重试等的是一个不会在进程内发生的释放。
+
+真正的持有着是进程级单例：
+
+```go
+// internal/state/history/indexed.go
+var processHistoryCatalog indexedCatalogManager
+```
+
+SQLite 连接建在它上面，而 `IsolateUserState` 的 cleanup 从不关它。boot 包早已知道
+这件事，`config_home_test.go` 里写着 *"Windows cannot remove a temporary REASONIX_HOME
+while SQLite still owns it"*，那个包提供了 `closeBootTestHistoryCatalog` 在**单个测试**
+层面关它——但 `TestMain` 层从来没有调用。
+
+### 15.2 修法：cleanup 钩子，而不是让 testenv 认识 history
+
+`testenv` 在分层上只依赖 `testscope`（`internal/base` 的叶子层），**不能**反向 import
+`internal/state/history`。所以修复落在「调用方注册」这一侧：
+
+- 新增 `internal/base/testenv/cleanup.go`，暴露
+  `OnCleanup(fn func(context.Context) error)`。钩子在 `RemoveAll` **之前**、且每一个
+  cleanup 都跑（不是消费一次），因此钩子必须容忍被调用两次。
+- `home.go` 的 cleanup 变成：`runCleanupHooks()` → `restoreScope()` → `restore()` →
+  `RemoveAll`。
+- 钩子失败只写 stderr、不 fatal：它保护的目录随后照样会删，而那时已经没有 `*testing.T`
+  可以 fail。
+
+注册点两处：
+
+| 包 | 注册内容 | 为什么这样写 |
+| --- | --- | --- |
+| `internal/assembly/boot` | 新建 `closeProcessCatalogs`（关 history + stats） | `clisession` 直接 import `boot`，boot 反向复用它**会成环**，必须自己实现 |
+| `internal/frontend/serve` | 直接复用 `clisession.CloseUsageCatalogs()` | 依赖方向允许（`clisession` 不依赖 `serve`），生产侧已有这个统一入口 |
+
+`config` / `acp` 经核实**不创建**进程级 catalog（`config` 那处 `stats` 只是注释里的词，
+`acp` 的 `history` 是 session history 不是 catalog），未加钩子。
+
+### 15.3 我自己引入又修掉的一个真 bug
+
+第一版把 `runCleanupHooks()` 写在 `restore()` **之后**。那时 `HOME` / `USERPROFILE`
+已经恢复成真实用户目录，而 `clisession.CloseUsageCatalogs()` 内部会
+`stats.Flush(ctx, config.StatsDir())`——**会把测试数据 flush 进用户真实的 stats 目录**。
+
+修正为钩子先于 `restore()`，并补了一条断言把顺序钉死：
+
+```go
+if envHome != home {
+    t.Fatalf("HOME inside cleanup hook = %q, want the isolated home %q", envHome, home)
+}
+```
+
+反向验证过：把顺序改回去，测试精确报
+`HOME inside cleanup hook = "C:\Users\<user>"` 而失败。
+
+### 15.4 验证
+
+| 项 | 结果 |
+| --- | --- |
+| 修复前 boot 单测 ×3 | 稳定每次 +1 |
+| 修复后 boot 单测 ×3 | 两侧残留 **0** |
+| 修复后 boot 整包（399s） | 两侧残留 **0** |
+| `internal/base/testenv` 测试 | 全过；移除 `runCleanupHooks()` 时前两条会红 |
+| `gofmt -l internal/` / `go vet ./...` / `repolint` | 全部干净（2330 baselined） |
+| `golangci-lint` v2.15.0（三个改动包） | 0 issues |
+
+boot 整包另有 3 条失败，把本轮改动全部 stash 后**以完全相同的错误失败**，均非本轮引入：
+
+- `TestCompositionLinkedExtensionResources` 与
+  `TestEffectSessionScratchIsReachableByItsSpelling`：这台机器没有创建符号链接的特权
+  （`A required privilege is not held by the client` / `os.LinkError`）。
+- `TestBuildNoticesMissingAPIKey`：单跑是 PASS，属测试间干扰。
+
+### 15.5 三类残留的成因，与报告分类的出入
+
+清点 100 个残留目录的实际构成后，报告的「A 型 = history-search 三件套，80 个」不准确：
+
+| 形态 | 数量 | 成因 |
+| --- | --- | --- |
+| 有 sqlite（含或不含 lock） | 41 | 15.1 的进程级 catalog |
+| 只有 lock、无嵌套 | 42 | 多为**中断**（Ctrl-C / `-timeout` / IDE 停测试），cleanup 没跑 |
+| 只有 lock、有嵌套内层 | 11 | 同上，内层由子进程建 |
+| 其余 | 6 | 空目录 |
+
+`*.lock` 在全部 15085 个残留文件里占 13722 个（91%），是 `config-edits-*` 与
+`memory-store-locks/` 下的正常产物——**它们留在磁盘只说明目录没被删掉**，不说明锁机制有问题。
+
+「内层成功清理、外层被中断」的解释也被推翻：19 个带嵌套的目录里 17 个内层是 **0 文件**，
+而内层 mtime（12:24–12:28）早于外层（12:37）——内层**目录本身**同样没删掉，只是内容
+删空了。子进程走 `os.Exit` 会跳过所有 defer，这是它自己的那半个洞。
+
+### 15.6 教训
+
+1. **「重试」不是万灵药**：它只解「短暂占用」，不解「本进程持续持有」。判断属于哪种，
+   看两个事实就够——加重试后是否仍然残留，以及事后能否立即删除。
+2. **顺序本身就是语义**：钩子写在 `restore()` 前后，一个写临时 home、一个写用户真实
+   目录，而两者都能跑完、都能「成功」。这种 bug 只能靠断言运行时的环境值抓住。
+3. **报告的分类不等于数据**：17 个内层 0 文件这个事实，直接推翻了「内层清理成功」的
+   推断，而它比结论更容易核对。
+
+## 16. serve 分片落地 + stats goroutine 泄漏（2026-11-26）
+
+接着第 14.6 节。这一轮把「定位」变成了「可跑」，并修掉顺带查出的一个真泄漏。
+
+### 16.1 分片：`make test-serve`
+
+新增 `scripts/test-serve-shards.sh` 与 Makefile 目标，分片规则与 CI 的
+`test-windows-shards` 逐字一致（`^Test[A-E]` / `^Test[F-R]` / 其余）。实测：
+
+| 分片 | 耗时 |
+| --- | --- |
+| serve-1 `^Test[A-E]` | 259s |
+| serve-2 `^Test[F-R]` | 304s |
+| serve-3 其余 | 185s |
+| **三片并行** | **5m8s** |
+
+划分用集合运算验证，不只靠「跑通了」：`^Test[A-E]` ∪ `^Test[F-R]` 与 `^Test[A-R]`
+完全相同（1065 个）且零重叠，第三片补足其余 459 个，1524 个测试无重复无遗漏。
+
+**脚本拒绝 `-run` / `-skip` 参数**：Go 只取最后一个，传进去会顶掉分片自己的划分，
+三片同时变成「no tests to run」。这条是冒烟时真踩到的，不是预防性设计。
+
+**整包 `go test ./...` 没有变快，且这是有意的。** 238 个包里最慢的就是 serve
+（单跑实测 703s），`-p 20` 只并行包之间。要让整包变快只能把 serve 从 `./...` 摘出去，
+那会让「整包」不再等于全量——本轮决定保留原样。
+
+### 16.2 stats 的 goroutine 泄漏
+
+`recorderDispatchers.byDir` 是按状态目录键控的进程级 map，`dispatcherFor` 每遇到新
+目录就 `go dispatcher.run()`，而 `CloseUsageCatalogs` 只清 `usageManagers.byDir`，
+**从不碰它**。一个走几百个 home 的测试二进制就留下几百个 goroutine。
+
+修法：
+
+- `recordDispatcher` 加 `stop()`：`close(queue)` 让 `for range` 自然结束，队列里已
+  接受的记录**仍然写完**，然后 `<-done` 等 goroutine 退出。
+- `CloseUsageCatalogs` 先 `stopRecordDispatchers()`（清 map 并逐个 stop），**再**关
+  catalog。顺序有理由：append 会喂给 catalog，先关 catalog 会丢写。
+- `enqueue` 在 closed 时直接丢弃、`flush` 返回 nil、`stop` 幂等——关闭后不会有 panic。
+
+### 16.3 测试里两次自我修正
+
+1. **假设全局独占**：`waitForDispatchers(t, 0)` 单跑通过、跑整包失败
+   （`tracked = 4, want 0`），因为包内另有 19 处 `NewRecorder` 留下 dispatcher。
+   改成每个用例先 `drainDispatchers` 清场，再断言自己创建的对象。
+2. **注释超预算**：`CloseUsageCatalogs` 的注释写到 9 行，repolint 按 5 行上限拦下。
+   压缩而不是 `-update` 放宽。
+
+反向验证做了两次：禁用 `stopRecordDispatchers()` 后 4 个用例全红
+（`tracked = 6, want 0`），恢复后整包 ok。
+
+### 16.4 一个容易记错的对应关系
+
+| 想跑什么 | 用哪个 |
+| --- | --- |
+| 只验证 serve | `make test-serve`（5m8s） |
+| 全量（含 serve，慢） | `make test` / `go test ./...`（~703s+） |
+| 单跑某个 serve 测试 | 直接 `go test ./internal/frontend/serve/ -run X` |
