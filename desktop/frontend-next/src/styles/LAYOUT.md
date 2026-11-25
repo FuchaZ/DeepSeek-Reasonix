@@ -166,6 +166,17 @@ the picker and keyboard navigation.
   z-index only ranks it inside the bar, and the panes after it in the DOM take
   the hits it paints over. While a card is open the bar itself is lifted; a
   press on the card otherwise lands on the pane and closes it.
+- The docked workbench draws its tab strip in `.wb-dock-head` on the window
+  bar: the slot starts at the dock column's seam and reserves the window
+  controls' width. Undocked or stacked, the slot is empty and the strip stays
+  in the panel.
+- `--dock-col` is `min(--dock-open, 100% - --side-w - --dock-left-min)`; the
+  icon group reads it in the content box, so `--chrome-pad-sum` is added back
+  there.
+- The strip is stretched to the slot (`flex: 1 1 auto; min-width: 0`) so a
+  crowded row scrolls inside it; docked it keeps the bar's 4px rhythm,
+  undocked the panel's 6px. The picker at its head reaches every tab and
+  carries the count.
 
 ## Pickers and menus
 
@@ -190,6 +201,9 @@ the picker and keyboard navigation.
   inline and nothing above it in the tree can clip it. The composer's policy menu
   is not a Picker either, and it now renders into the body through the same
   placement (`beside` + pin).
+- The tab picker is fixed and portalled to the body: on the window bar a list
+  inside its trigger would be clipped and would take drag presses.
+  `pinToViewport` writes the coordinates.
 - An in-place policy menu is trapped at the shelf row's rank and loses to the
   meter rail, and on a short window its flip fallback could not engage — the
   menu clipped out of the window top instead.
@@ -343,6 +357,11 @@ the picker and keyboard navigation.
   whole column and folds it. Below 760px the same rule holds with the tree folded by default.
 - The docked workbench uses the divider's remembered width. Pointer dragging and
   keyboard resizing share that width; there is no intermediate width preset.
+- The dock column is `min(--dock-open, 100% - side width - the conversation's
+  floor)`, from the pane grid's arithmetic.
+- `--dock-stacked` is set by the conversation container query and the scene
+  fold, on the column rather than the pane: a container query cannot match its
+  own container. The panel reads it and keeps its strip home.
 - Full-workbench view preserves the divider width and keeps the conversation and
   composer mounted. Its button and Ctrl/Cmd+Shift+F share `browser.full`.
 - Escape restores split view before the window can close the workbench or stop
@@ -596,11 +615,10 @@ the picker and keyboard navigation.
   disclosure: it is what the call produced, not a detail about the call. Seeing
   the agent's own evidence never costs a reader a debug panel, and a call whose
   row stays folded is the normal state for one that finished.
-- A thumbnail is `contain`ed, never cropped, and capped at 260 × 104: the edges
-  of a screenshot are the part being judged, while the ceiling keeps a run of
-  pictures from pushing the next step off the screen. Its border is a hairline —
-  a picture is not a surface — and the ground behind it is `--face-sunk`, since
-  the transparent letterbox is read as a failed load.
+- A thumbnail is `contain`ed, never cropped, and capped at 260 × 104; a run of
+  pictures uses 148 × 84 so the next step stays on screen. The border is a
+  hairline — a picture is not a surface — and the ground is `--face-sunk`,
+  since a transparent letterbox is read as a failed load.
 - Inside `.activity-body` the row's text starts at 10px (the row's own padding),
   while outside it the summary's negative margin puts text at 0; a thumbnail
   follows whichever it stands under, so it lines up with the words above it in
@@ -608,6 +626,9 @@ the picker and keyboard navigation.
 - A step count that folds older calls never takes one that showed a picture:
   what the count swallows leaves the flow, which is the same as the call having
   shown nothing.
+- A run of calls of one kind is one row: consecutive pictures sit side by side
+  at 148 × 84, consecutive commands are one count plus a line each. A single
+  call has no group heading.
 
 ## Four weights
 

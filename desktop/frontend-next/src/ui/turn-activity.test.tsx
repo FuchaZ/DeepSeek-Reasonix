@@ -169,3 +169,32 @@ describe("the reply's actions while its own work is still running", () => {
     expect(actsOf(chunk)).toBe(1);
   });
 });
+
+// callLanes decides the run; these prove the wiring into the two cards that
+// draw it, which the pure lane tests cannot see.
+describe("runs of calls drawn as one row", () => {
+  const bash = (id: string, command: string): Item => ({
+    t: "tool", id, running: false, children: [],
+    tool: { id, name: "bash", readOnly: false, args: JSON.stringify({ command }), output: `out-${id}` },
+  });
+  const picture = (id: string): Item => ({
+    t: "tool", id, running: false, children: [],
+    tool: { id, name: "view_image", readOnly: true, args: JSON.stringify({ path: `${id}.png` }), images: [`data:image/png;base64,${id}`] },
+  });
+
+  it("gathers consecutive commands and keeps each call's anchor", () => {
+    const chunk = draw([user("u", "跑"), say("s", "开始"), bash("b1", "echo one"), bash("b2", "echo two"), say("s2", "好了")]);
+    const group = chunk.querySelector(".cmdgroup") as HTMLElement;
+    expect(group).not.toBeNull();
+    expect(group.querySelector("summary")?.textContent).toContain("运行命令 2 条");
+    expect([...group.querySelectorAll(".cmdline")].map((line) => line.getAttribute("data-item"))).toEqual(["b1", "b2"]);
+  });
+
+  it("gathers consecutive pictures into one row of thumbnails", () => {
+    const chunk = draw([user("u", "看图"), say("s", "两张"), picture("p1"), picture("p2"), say("s2", "好了")]);
+    const group = chunk.querySelector(".picgroup") as HTMLElement;
+    expect(group).not.toBeNull();
+    expect(group.querySelector("summary")?.textContent).toContain("查看图片 2 张");
+    expect(group.querySelectorAll(".tshots img")).toHaveLength(2);
+  });
+});

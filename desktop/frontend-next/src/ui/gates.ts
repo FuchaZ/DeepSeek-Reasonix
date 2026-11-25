@@ -40,7 +40,9 @@ export function useGateActions({ port, dispatch, refreshStatus, fail, onRevise }
         // person's standing yes to this session acting. One it does not cover,
         // such as a command that runs another command, is answered here as
         // well, once, because the button says this click means this call too.
-        if (drained.includes(itemId)) {
+        // `drained` carries approval ids; the transcript row's id is local, so
+        // matching it there never hit the card the switch had settled.
+        if (id && drained.includes(id)) {
           dispatch({ kind: "__decided", id: itemId, verdict: "yolo" } as never);
         } else if (id) {
           await port.approve(id, "once");

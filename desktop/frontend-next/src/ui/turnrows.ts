@@ -33,17 +33,18 @@ const showsPicture = (item: Item): item is Extract<Item, { t: "tool" }> =>
   item.t === "tool" && item.tool.name === "view_image" && (item.tool.images?.length ?? 0) > 0 && !item.tool.err && !item.running;
 
 /** A command that ran and said how it ended. A running one is what a reader is
- *  waiting on, and a failed one carries the exit status its row exists to say;
- *  neither is one line of a count. */
+ *  waiting on, a failed one carries the exit status its row exists to say, and
+ *  a background start is a live job whose row holds the way to its output;
+ *  none is one line of a count. */
 const ranCommand = (item: Item): item is Extract<Item, { t: "tool" }> =>
-  item.t === "tool" && item.tool.name === "bash" && !item.tool.err && !item.running && !item.tool.parentId;
+  item.t === "tool" && item.tool.name === "bash" && !item.tool.err && !item.running && !item.tool.parentId &&
+  item.tool.execution?.state !== "background_started";
 
 /** A lane of the execution group: one row, or a run of calls drawn as one. Runs
- *  of one kind are gathered where they touch — pictures shown back to back, or
- *  commands run back to back — and the step between them is what each was for.
- *  Grouping happens here rather than in the item list, so the same transcript
- *  reads the same live and after a reopen: the stored record holds calls, and
- *  how they are drawn is this module's whole job. */
+ *  of one kind gather where they touch, and the step between them is what each
+ *  was for. Grouping happens here rather than in the item list, so the live
+ *  and reopened transcripts are read the same way: the record holds calls, and
+ *  how they are drawn is this module's job. */
 export type Lane =
   | { kind: "pictures"; calls: Extract<Item, { t: "tool" }>[]; id: string }
   | { kind: "commands"; calls: Extract<Item, { t: "tool" }>[]; id: string }

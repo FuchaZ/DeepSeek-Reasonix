@@ -49,15 +49,11 @@
 .activity-body .tool-fold { order: 10; }
 .activity-body .tool-disclosure > .out { margin: 2px 10px 6px 32px; padding: 6px 10px 8px; border: 1px solid var(--hair); border-radius: var(--r-sm); }
 .activity-body :is(.tshots, .tvideos) { padding-inline-start: 10px; }
-/* A run of picture calls is one row, and its pictures sit side by side rather
-   than stacking: four shots on four lines is four times the height for the same
-   four pictures. The ceiling drops with the group so a held row stays a row. */
+
 .activity-body .pichrow { padding-inline-start: 0; gap: 6px; flex-wrap: nowrap; overflow-x: auto; }
 .activity-body .pichrow .tshot img { max-width: 148px; max-height: 84px }
 .picgroup > .out { margin-top: 2px }
-/* A run of commands is one row plus its lines: the command itself is already
-   clipped to one line on each, and four headers for four lines is four times
-   the height for the same four commands. */
+
 .cmdgroup > .out { margin-top: 2px }
 .cmdrow { display: flex; flex-direction: column; gap: 1px }
 .cmdline {

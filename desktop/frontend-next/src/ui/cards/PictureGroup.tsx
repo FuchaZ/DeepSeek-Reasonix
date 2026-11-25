@@ -5,7 +5,6 @@ import { useStartsOpen } from "../../state/foldpref";
 import type { StateTool } from "../../state/outputcap";
 import { StudioIcon } from "../StudioIcon";
 import { ShotThumb, pathOf } from "./ToolCard";
-import { toolFailed } from "./outcome";
 
 type Call = Extract<Item, { t: "tool" }>;
 
@@ -16,8 +15,7 @@ const shotsOf = (tool: StateTool): string[] => tool.images ?? [];
  *  side, as many as the window holds — and a call's own path stays on its
  *  thumbnail where a reader looks for it. */
 export function PictureGroup({ items }: { items: Call[] }) {
-  const failed = items.filter((item) => toolFailed(item.tool)).length;
-  const start = useStartsOpen("steps", false, failed > 0);
+  const start = useStartsOpen("steps", false);
   const [touched, setOpen] = useState<boolean | null>(null);
   const open = touched ?? start;
   const total = items.reduce((n, item) => n + shotsOf(item.tool).length, 0);
@@ -29,14 +27,8 @@ export function PictureGroup({ items }: { items: Call[] }) {
     >
       <summary className="hl">
         <span className="nm" title={items.map((item) => item.tool.name).join(" · ")}>{t("chat.viewed_images_n", { n: total })}</span>
-        {failed > 0 && <span className="fail">{t("chat.n_failed", { n: failed })}</span>}
-        <span
-          className="tool-state"
-          data-state={failed ? "failed" : "done"}
-          aria-label={t(failed ? "common.failed" : "common.done_2")}
-          title={t(failed ? "common.failed" : "common.done_2")}
-        >
-          <StudioIcon name={failed ? "warning" : "check"} />
+        <span className="tool-state" data-state="done" aria-label={t("common.done_2")} title={t("common.done_2")}>
+          <StudioIcon name="check" />
         </span>
         <span className="tool-fold" aria-hidden="true" />
       </summary>

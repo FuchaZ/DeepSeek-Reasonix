@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
 import { StudioIcon } from "./StudioIcon";
@@ -7,25 +7,23 @@ import { useDismiss } from "./dismiss";
 import { menuKeys, useMenuFocus } from "./menufocus";
 import { useFollow, pinToViewport } from "./place";
 
-/** Every tab the workbench has open, at the front of its strip, as one list to
- *  jump from. The strip itself scrolls and the tail of it can be hidden; this
- *  is the way to reach a tab without scrolling or closing anything, and it is
- *  drawn whether or not anything is hidden — a strip that fits today does not,
- *  once two files are opened beside it.
- *
- *  The list is portalled to the body and fixed, like the overflow menu and for
- *  the same reason: docked, this button is drawn on the window bar, which is
- *  the shell's title bar, so a list inside it would take drag-the-window
- *  presses instead of clicks and be clipped to one bar's height. */
-export function WorkbenchTabPicker({ tabs, active, onPick }: {
+/** Every tab the workbench has open, as one list to jump from. The strip
+ *  scrolls and its tail can be hidden; this reaches a tab without scrolling or
+ *  closing anything, and is drawn whether or not anything is hidden. The list
+ *  is portalled to the body and fixed: docked, the button sits on the window
+ *  bar, where a list inside it would be clipped and take drag presses. */
+export function WorkbenchTabPicker({ tabs, active, onPick, shown = true }: {
   tabs: { key: string; label: string }[];
   active: string;
   onPick: (key: string) => void;
+  shown?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const trigger = useRef<HTMLButtonElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const shut = useCallback(() => setOpen(false), []);
+  // The menu is portalled, so hiding the workbench does not unmount it.
+  useEffect(() => { if (!shown) setOpen(false); }, [shown]);
   // The menu is not a DOM descendant of its button, so the button is named as a
   // second inside box; without it a press on the list would read as a press
   // away and close the list being pressed.

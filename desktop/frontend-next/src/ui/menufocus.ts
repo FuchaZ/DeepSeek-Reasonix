@@ -1,15 +1,10 @@
 import { useLayoutEffect, useRef, type RefObject } from "react";
 
-/** Makes a portalled menu usable from the keyboard: the rows are focused when
- *  it opens, and focus goes back to the button that opened it when it closes.
- *
- *  A portal takes the list out of the trigger's DOM subtree, so without this
- *  the tab order runs past it at the end of the document — the rows sit after
- *  everything else — and the arrow keys, whose handler lives on the list, never
- *  receive a key: focus never entered it.
- *
- *  The showing row is where focus starts when the list names one, so opening it
- *  says which tab you are on rather than which is first. */
+/** Makes a portalled menu usable from the keyboard: rows take focus when it
+ *  opens and the trigger takes it back when it closes. A portal leaves the tab
+ *  order at the document's end, so without this the arrow-key handler never
+ *  receives a key. The showing row is where focus starts when the list names
+ *  one, so opening it says which tab you are on rather than which is first. */
 export function useMenuFocus(open: boolean, menu: RefObject<HTMLElement | null>, trigger: RefObject<HTMLElement | null>) {
   const was = useRef(false);
   useLayoutEffect(() => {

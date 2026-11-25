@@ -652,10 +652,10 @@ func ParseToolApprovalMode(mode string) (string, bool) {
 }
 
 // RequiresFreshHumanApprovalTool reports whether a tool's unsafe variants must
-// be answered by a human decision, not by YOLO/auto approval, Guardian, or a
-// non-interactive nil approver. A controller that owns the scoped memory store
-// may still classify a bounded new project memory as create-only and allow that
-// narrow operation in interactive or headless mode.
+// be answered by a human decision, not by auto approval, Guardian, or a
+// non-interactive nil approver. Full access answers only the two peer tools
+// (postureAnswersTool); every other tool listed here keeps its card under every
+// posture. A scoped memory store may still allow a bounded create-only write.
 func RequiresFreshHumanApprovalTool(tool string) bool {
 	switch tool {
 	case planApprovalTool, memoryRememberTool, memoryForgetTool, permission.ConfirmTool, permission.OriginConfirmTool, SandboxEscapeApprovalTool, ManagedConfigWriteApprovalTool, NetworkEgressApprovalTool, PaidSearchApprovalTool, MCPSignInApprovalTool, MCPScopeUpgradeApprovalTool, SettingApprovalTool, SettingElevatedApprovalTool, permission.SendPeerMessage, permission.DispatchToProject:

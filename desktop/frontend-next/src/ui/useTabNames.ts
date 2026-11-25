@@ -7,7 +7,14 @@ import { keyOf, type Surface } from "./workbench_tabs";
 export function useTabNames(ownLabel: (surface: Surface) => string) {
   const [names, setNames] = useState<Record<string, string>>({});
   const [renaming, setRenaming] = useState("");
+  // The draft lives here, not in the input: the header is remounted when it
+  // changes home, and an uncontrolled field would lose what was typed.
+  const [renameDraft, setRenameDraft] = useState("");
   const labelFor = (surface: Surface) => names[keyOf(surface)] || ownLabel(surface);
+  const startRename = (surface: Surface) => {
+    setRenameDraft(labelFor(surface));
+    setRenaming(keyOf(surface));
+  };
   const nameTab = (surface: Surface, value: string) => {
     const key = keyOf(surface);
     const next = value.trim();
@@ -15,5 +22,5 @@ export function useTabNames(ownLabel: (surface: Surface) => string) {
     setNames((cur) => { const { [key]: _gone, ...rest } = cur; return keep ? { ...rest, [key]: next } : rest; });
     setRenaming("");
   };
-  return { renaming, setRenaming, labelFor, nameTab };
+  return { renaming, setRenaming, labelFor, nameTab, renameDraft, setRenameDraft, startRename };
 }

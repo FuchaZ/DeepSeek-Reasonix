@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { Item } from "../state/session_types";
+import type { HistoryMessage } from "../port/session";
+import { fromHistory } from "../state/session";
 import { foldStats, callLanes, repeatedSpeakers, sameMembers, transcriptRows } from "./turnrows";
 
 const me = (id: string, text: string, pending?: boolean): Item => ({ t: "user", id, text, pending });
@@ -222,6 +224,16 @@ describe("a run of commands drawn as one row", () => {
       .toEqual(["row:r", "row:f", "commands:2"]);
   });
 
+  // A background start is a live job, not a finished command: its row carries
+  // the job's status and the way to its output, and a count of commands run
+  // would say the work was over while it still runs.
+  it("keeps a background start out of the group", () => {
+    const bg = cmd("bg", { execution: { kind: "shell", state: "background_started", jobId: "j1" } });
+    const lanes = callLanes([bg, cmd("a"), cmd("b")]);
+    expect(lanes.map((l) => (l.kind === "item" ? `row:${l.item.id}` : `${l.kind}:${l.calls.length}`)))
+      .toEqual(["row:bg", "commands:2"]);
+  });
+
   // A subagent's calls belong inside the delegate that made them.
   it("keeps a subagent's command out of the main flow's group", () => {
     const child = cmd("c", { parentId: "p" });
@@ -241,9 +253,10 @@ describe("a run of commands drawn as one row", () => {
   });
 });
 
-// Grouping lives above the stored record: the fixture below is what a reload
-// rebuilds from, and the lanes it draws have to be the lanes the live stream
-// drew. Anything that merged calls into the item list would break this pair.
+// Grouping lives above the stored record, so the lanes a reopen draws are the
+// lanes the live stream drew. The rebuild below is the production path
+// (fromHistory); a shallow copy of live items would only prove the pure
+// function against itself.
 describe("the same transcript before and after a reopen", () => {
   const call = (id: string, name: string, over: Record<string, unknown> = {}): Item => ({
     t: "tool", id, running: false, children: [],
@@ -251,18 +264,36 @@ describe("the same transcript before and after a reopen", () => {
   });
   const lanes = (items: Item[]) =>
     callLanes(items).map((l) => (l.kind === "item" ? `row:${l.item.id}` : `${l.kind}:${l.calls.map((c) => c.id).join(",")}`));
+  // The rebuild allocates its own item ids; a lane's calls are named by the
+  // tool call id, which is the id the store wrote.
+  const rebuiltLanes = (items: Item[]) =>
+    callLanes(items).map((l) => l.kind === "item"
+      ? `row:${l.item.t === "tool" ? l.item.tool.id : l.item.id}`
+      : `${l.kind}:${l.calls.map((c) => c.tool.id).join(",")}`);
 
-  it("gathers by what each call did, whatever order the record lists them in", () => {
+  it("gathers the stored calls by what each did, pictures included", () => {
+    const messages: HistoryMessage[] = [
+      {
+        role: "assistant", content: "", msgIndex: 0,
+        toolCalls: [
+          { id: "p1", name: "view_image", arguments: JSON.stringify({ path: "p1.png" }) },
+          { id: "p2", name: "view_image", arguments: JSON.stringify({ path: "p2.png" }) },
+          { id: "b1", name: "bash", arguments: JSON.stringify({ command: "a" }) },
+          { id: "b2", name: "bash", arguments: JSON.stringify({ command: "b" }) },
+        ],
+      },
+      { role: "tool", content: "[image]", toolCallId: "p1", msgIndex: 1, toolImages: ["data:image/png;base64,AA"] },
+      { role: "tool", content: "[image]", toolCallId: "p2", msgIndex: 2, toolImages: ["data:image/png;base64,BB"] },
+      { role: "tool", content: "a", toolCallId: "b1", msgIndex: 3 },
+      { role: "tool", content: "b", toolCallId: "b2", msgIndex: 4 },
+    ];
     const live = [
       call("p1", "view_image", { images: ["data:image/png;base64,AA"] }),
       call("p2", "view_image", { images: ["data:image/png;base64,BB"] }),
       call("b1", "bash", { args: JSON.stringify({ command: "a" }) }),
       call("b2", "bash", { args: JSON.stringify({ command: "b" }) }),
     ];
-    // A rebuild hands the same calls back as separate items: the grouping is a
-    // reading of them, so the two lists draw identically.
-    const rebuilt = live.map((i) => ({ ...i }));
-    expect(lanes(rebuilt)).toEqual(lanes(live));
+    expect(rebuiltLanes(fromHistory(messages).items)).toEqual(["pictures:p1,p2", "commands:b1,b2"]);
     expect(lanes(live)).toEqual(["pictures:p1,p2", "commands:b1,b2"]);
   });
 

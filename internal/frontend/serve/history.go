@@ -71,6 +71,9 @@ type historyMessage struct {
 	ToolFailed      bool   `json:"toolFailed,omitempty"`
 	ToolRefusalCode string `json:"toolRefusalCode,omitempty"`
 	ToolName        string `json:"toolName,omitempty"`
+	// ToolImages are the pictures a tool result showed, as data URLs. Without
+	// them a reopened view_image card can only say a picture was seen.
+	ToolImages []string `json:"toolImages,omitempty"`
 	// OutputDiff marks a rebuilt shell result whose whole output is a unified
 	// diff, so a reopened session renders it the way the live sink did. It is
 	// re-derived here because the event stream is live-only.
@@ -151,6 +154,7 @@ func historyMessageWindow(msgs []provider.Message, attachments func(string) []ev
 			hm.Deliveries = delivery.Decode(call.ResolvedName, call.CapabilityID, m.ToolFailure != nil, manifest)
 			hm.ToolCallID = m.ToolCallID
 			hm.ToolName = m.Name
+			hm.ToolImages = append([]string(nil), m.Images...)
 			if m.ToolFailure != nil {
 				hm.ToolFailed = true
 				hm.ToolRefusalCode = m.ToolFailure.RefusalCode

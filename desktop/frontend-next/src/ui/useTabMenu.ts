@@ -8,6 +8,7 @@ interface Deps {
   // would drop an edit is offered.
   unsaved: string[];
   closing: boolean;
+  shown: boolean;
   // Where focus goes back to when the menu closes and nothing else took it.
   newTab: RefObject<HTMLButtonElement | null>;
   close: (targets: Surface[]) => unknown;
@@ -15,15 +16,11 @@ interface Deps {
 }
 
 /** The strip's own right-press menu: which tab it speaks for, what each bulk
- *  choice would really close, and the focus it hands back afterwards.
- *
- *  A file is a tab here — closing one from the menu is what its × does, and the
- *  strip is the only way to reach a tab the pointer is not over. A file whose
- *  text is unsaved is left out of every count, because `close` drops the
- *  targets it is given without asking: a menu may not offer a press that would
- *  throw an edit away, and what it says it will close has to be what it closes.
- */
-export function useTabMenu({ surfaces, unsaved, closing, newTab, close, askAbout }: Deps) {
+ *  choice would really close, and the focus it hands back afterwards. A file is
+ *  a tab here; one whose text is unsaved is left out of every count, because
+ *  `close` drops the targets it is given without asking. What the menu says it
+ *  will close has to be what it closes. */
+export function useTabMenu({ surfaces, unsaved, closing, shown, newTab, close, askAbout }: Deps) {
   const [tabMenu, setTabMenu] = useState<{ surface: Surface; x: number; y: number; anchor: HTMLElement } | null>(null);
   const dismiss = useCallback(() => setTabMenu(null), []);
   const tabAt = tabMenu ? surfaces.findIndex((s) => keyOf(s) === keyOf(tabMenu.surface)) : -1;
@@ -34,13 +31,14 @@ export function useTabMenu({ surfaces, unsaved, closing, newTab, close, askAbout
   const all = closable(surfaces);
   const returning = useRef("");
   useEffect(() => {
-    if (tabMenu && tabAt < 0) setTabMenu(null);
+    // The menu is portalled, so hiding the workbench does not unmount it.
+    if (tabMenu && (!shown || tabAt < 0)) setTabMenu(null);
     if (tabMenu || closing || !returning.current) return;
     const picks = [...document.querySelectorAll<HTMLButtonElement>(".workbench-tab-pick")];
     const back = picks.find((b) => b.dataset.target === returning.current) ?? picks.find((b) => b.closest('[aria-selected="true"]'));
     returning.current = "";
     (back ?? newTab.current)?.focus();
-  }, [tabMenu, tabAt, surfaces, closing, newTab]);
+  }, [tabMenu, tabAt, surfaces, closing, shown, newTab]);
   const offer = (e: MouseEvent<HTMLElement> | KeyboardEvent<HTMLElement>, surface: Surface) => {
     if (closing || document.getSelection()?.isCollapsed === false) return;
     e.preventDefault();

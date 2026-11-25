@@ -1746,7 +1746,6 @@ button, input, textarea { font-size: var(--fs-ui); }
 }
 .view-action { position: relative; }
 .view-action[aria-pressed="true"] { background: var(--overlay); color: var(--text); }
-.view-count { position: absolute; top: -2px; right: -2px; min-width: 14px; padding: 0 3px; border-radius: var(--r-sm); background: var(--accent-ink); color: var(--page); font: var(--w-med) var(--fs-micro)/var(--fs-lead) var(--ui); text-align: center; font-variant-numeric: tabular-nums; }
 .studio-todo-usage { display: grid; gap: 4px; margin: 0 0 12px; color: var(--muted); font: var(--w-reg) var(--fs-meta)/1.5 var(--ui); }
 .studio-todo-usage > p { margin: 0; overflow-wrap: anywhere; }
 .studio-todo-goal { margin: 12px 0; color: var(--muted); font: var(--w-reg) var(--fs-ui)/1.6 var(--ui); overflow-wrap: anywhere; white-space: pre-wrap; }

@@ -1,11 +1,4 @@
-/* Stacked, the workbench takes the pane's whole width and there is no second
-   column for the window bar to mirror. This flag is what the panel reads to
-   keep its strip at home instead of moving it onto a bar with nothing under it:
-   the condition lives here once, and JavaScript consumes it rather than
-   spelling the same width out again.
-   The flag sits on the column rather than on the pane because a container query
-   never matches its own container — only its descendants — so a declaration on
-   `.pane` inside this query would never apply. */
+
 @container conversation (max-width: 555px) {
   .app[data-browser="on"] .pane:has(> .pbody[data-dock]) > .findhost { grid-area: 1 / 1 / 2 / 3 }
   .app[data-browser="on"] .pane:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] {
@@ -17,64 +10,28 @@
 .app[data-browser="off"] .pane:has(> .pbody[data-dock]) { --dock-w: 0px }
 .app[data-drag] .pane:has(> .pbody[data-dock]) { transition: none }
 
-/* A docked workbench owns the right of the window bar: the five pane icons
-   park at the seam (the conversation column's right edge) and the portalled
-   tab strip spans the dock column, mirroring the panes below. The window
-   controls stay at the window's right edge either way. Undocked, the slot
-   is empty and the icon group keeps its usual right-aligned place. */
 .app[data-browser="on"] .chrome {
-  /* The dock column's width, from the same arithmetic the pane's grid does
-     below: what is left of the bar after the conversation's floor, not a
-     fixed width. Reading --dock-open alone put both the strip and the icons
-     past the hairline whenever the bar was too narrow to give the column its
-     full share. Both readers below resolve this percentage in the bar's
-     padding box, so the two edges it produces stay one seam. */
+
   --dock-col: min(var(--dock-open), calc(100% - var(--side-w) - var(--dock-left-min)));
 }
 .app[data-browser="on"] .chrome .wb-dock-head:not(:empty) {
   position: absolute; left: auto;
-  /* The strip starts where the dock column does, because one hairline has to
-     run the window's whole height. Its width is `--dock-col` above, so the
-     icons and the strip cannot disagree about where the seam is. */
+
   right: var(--side-w);
   width: var(--dock-col);
-  /* Full height of the bar rather than a vertically-centred band, so the
-     hairline meets the bar's top and bottom edges instead of stopping short
-     of them. The strip inside is centred by flex. */
+
   top: 0; height: var(--chrome-h); transform: none;
   display: flex; align-items: center;
-  /* The hairline the conversation and the workbench share below continues
-     through the window bar, so the two columns read as one split. */
+
   border-left: 1px solid var(--hair);
   box-sizing: border-box;
   padding-left: 10px;
-  /* The slot spans to the window's edge, but its contents stop where the
-     window controls become visible, so a strip with many tabs does not draw
-     its last ones underneath them. `--winctl-w` counts the bar's padding and
-     gap in front of the controls, and neither of those is between the slot's
-     right edge and the controls, so both come back out. `max()` guards the
-     shell that draws no controls: there the variable is only the bar's 12px
-     padding, the subtraction goes negative, and the strip wants its own 6px
-     and no more. The slot's right edge sits at `right: var(--side-w)`, not at
-     the window's own edge, so the side panel's width is already outside this
-     box and comes out of the reservation as well. */
+
   padding-right: max(6px, calc(var(--winctl-w) - var(--chrome-gap) - var(--winctl-lead) - var(--side-w)));
 }
 .app[data-browser="on"] .chrome .r:has(.wb-dock-head:not(:empty)) {
-  /* A margin's percentage resolves against the bar's *content* box, while the
-     slot's width above resolves against its *padding* box: the same
-     `--dock-col` read here would come out short by the bar's insets. The sum
-     is added back so both readings land on one width. */
+
   --dock-col-c: min(var(--dock-open), calc(100% + var(--chrome-pad-sum) - var(--side-w) - var(--dock-left-min)));
-  /* Then the group ends 11px before the seam. `--winctl-w` is how far the
-     bar's right end already reaches back from the window's edge — the window
-     controls where the shell draws them, the bare padding where it does not —
-     so subtracting it is what turns "the end of the row" into "the seam".
-     One expression, both platforms: without it the icons stop a whole control
-     group short and float in the middle of the bar. */
+
   margin-right: calc(var(--dock-col-c) + var(--side-w) + 11px - var(--winctl-w));
 }
-
-/* There is no separate narrow breakpoint here: when the dock stacks, the
-   panel keeps its strip at home and the slot stays empty, so the rules above
-   never match. One threshold, in dock.css. */

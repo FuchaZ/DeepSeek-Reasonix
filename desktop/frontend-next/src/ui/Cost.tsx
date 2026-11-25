@@ -36,7 +36,7 @@ function watchedSince(key: string): number {
     held.seen = at;
     return held.since;
   }
-  // Entries for calls whose card went away mid-call never reach forgetWatched,
+  // Entries for calls whose card went away mid-call never reach the cleanup,
   // so past the cap the least recently watched half goes.
   if (watching.size >= WATCHED_CAP) {
     const byAge = [...watching].sort((a, b) => a[1].seen - b[1].seen);
@@ -62,12 +62,15 @@ export function useWatched(running: boolean, callId?: string): number {
   const from = useRef({ key: "", since: 0 });
   if (from.current.key !== key) from.current = { key, since: key ? watchedSince(key) : 0 };
   const since = from.current.since;
+  const active = useRef("");
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     if (!running) {
-      if (key) watching.delete(key);
+      if (active.current) watching.delete(active.current);
+      active.current = "";
       return;
     }
+    active.current = key;
     // One second is the resolution a reader acts on; anything finer is a digit
     // changing for its own sake.
     const timer = setInterval(() => {

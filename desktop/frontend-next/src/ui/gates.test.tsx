@@ -25,7 +25,8 @@ const setup = (drained: string[] | undefined) => {
 
 describe("full access", () => {
   it("marks a card the switch itself covered", async () => {
-    const { actions, port, dispatch } = setup(["i1"]);
+    // The switch answers by approval id; the row's id is a local one.
+    const { actions, port, dispatch } = setup(["a1"]);
     await expect(actions.onFullAccess("i1", "a1")).resolves.toBe(true);
     expect(dispatch).toHaveBeenCalledWith(expect.objectContaining({ id: "i1", verdict: "yolo" }));
     expect(port.approve).not.toHaveBeenCalled();

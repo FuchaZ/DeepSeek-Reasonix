@@ -85,6 +85,17 @@ it("keeps focus on the full-width control across the move between its two homes"
   await waitFor(() => expect(document.activeElement?.getAttribute("aria-label")).toBe("退出工作台全屏"));
 });
 
+it("returns focus to the control when it goes back to the window bar", async () => {
+  await mount();
+  act(() => { fireEvent.click(screen.getByRole("button", { name: "全屏工作台" })); });
+  const exit = await screen.findByRole("button", { name: "退出工作台全屏" });
+  exit.focus();
+  act(() => { fireEvent.click(exit); });
+  // Expanding put the button in the panel; collapsing mounts it in the dock
+  // head, which the panel's own frame no longer contains.
+  await waitFor(() => expect(document.activeElement?.getAttribute("aria-label")).toBe("全屏工作台"));
+});
+
 it("leaves focus alone when the workbench opened by mouse, whichever home the strip is in", async () => {
   // The hand-off belongs to a press, not to mounting: a panel put on screen by
   // a click must not pull focus away from wherever the person is.

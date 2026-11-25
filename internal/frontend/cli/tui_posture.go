@@ -46,7 +46,7 @@ func settleTUIPosture(ctrl postureHost, mode cliPermissionMode, named bool, home
 }
 
 func confirmYolo(home string, in *bufio.Scanner, out io.Writer) error {
-	fmt.Fprintln(out, "YOLO runs file edits and shell commands without asking first.")
+	fmt.Fprintln(out, "YOLO runs file edits and shell commands without asking first, and answers peer messages and dispatches sent in your name.")
 	fmt.Fprintln(out, "The sandbox, network policy and deny rules still apply. This is asked once.")
 	if !strings.EqualFold(ask(in, out, "Enable YOLO?", "y/N"), "y") {
 		return errYoloNotConfirmed

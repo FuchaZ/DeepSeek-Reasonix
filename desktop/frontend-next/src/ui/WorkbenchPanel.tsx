@@ -182,7 +182,7 @@ export function WorkbenchPanel({
     [hosts, setHosts] = useState<Record<string, string>>({});
   const minted = useRef(0);
   const [mode, setMode] = useState<FileMode>("file");
-  const { renaming, setRenaming, labelFor, nameTab } = useTabNames((surface) => labelOf(surface, hosts));
+  const { renaming, setRenaming, labelFor, nameTab, renameDraft, setRenameDraft, startRename } = useTabNames((surface) => labelOf(surface, hosts));
   const [failed, setFailed] = useState("");
   const terminals = useTerminalTabs({ port, shown, pick, setDismissed, onExternal, onError: setFailed, request: terminalRequest });
   // Showing a file where it lives needs a shell on the kernel's own machine.
@@ -464,7 +464,7 @@ export function WorkbenchPanel({
   const { close: closeTabs, closing, closeFailure } = useTabClose({ port, surfaces, selected, showFiles: showFiles || launcher, setBrowsers, setOpenFiles, setAgents, setDismissed, setSelected, setLauncher, onCloseManual, onCloseSelected: () => setFailed("") });
   const close = (targets: Surface[]) => { supersede(); return terminals.guard(targets, closeTabs); };
   const tabMenu = useTabMenu({
-    surfaces, unsaved, closing, newTab, close,
+    surfaces, unsaved, closing, shown, newTab, close,
     askAbout: (at) => setAsking(at),
   });
   // The docked workbench shares the window bar: its tab strip lives in the
@@ -482,6 +482,7 @@ export function WorkbenchPanel({
         <WorkbenchTabPicker
           tabs={surfaces.map((surface) => ({ key: keyOf(surface), label: labelFor(surface) }))}
           active={launcher ? "" : activeKey}
+          shown={shown}
           onPick={(k) => { pick(k); strip.current?.querySelector(`[data-key="${CSS.escape(k)}"]`)?.scrollIntoView({ inline: "nearest" }); }}
         />
         <TooltipButton
@@ -522,13 +523,14 @@ export function WorkbenchPanel({
                   className="workbench-tab-in"
                   aria-label={t("workbench.rename_tab")}
                   autoFocus
-                  defaultValue={labelFor(surface)}
-                  ref={(el) => el?.select()}
+                  value={renameDraft}
+                  onChange={(e) => setRenameDraft(e.currentTarget.value)}
+                  ref={(el) => { if (el && el.value === labelFor(surface)) el.select(); }}
                   data-action-blur="workbench.rename-tab" data-action-keydown="workbench.rename-tab" data-target={keyOf(surface)}
-                  onBlur={(e) => nameTab(surface, e.currentTarget.value)}
+                  onBlur={() => nameTab(surface, renameDraft)}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") { e.preventDefault(); e.currentTarget.blur(); }
-                    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); e.currentTarget.value = labelFor(surface); setRenaming(""); }
+                    else if (e.key === "Escape") { e.preventDefault(); e.stopPropagation(); setRenameDraft(labelFor(surface)); setRenaming(""); }
                   }}
                 />
               </span>
@@ -547,11 +549,11 @@ export function WorkbenchPanel({
               aria-haspopup="menu"
               aria-expanded={tabMenu.menu !== null && keyOf(tabMenu.menu.surface) === keyOf(surface)}
               onClick={() => pick(keyOf(surface))}
-              onDoubleClick={surface.kind === "browser" ? () => setRenaming(keyOf(surface)) : undefined}
+              onDoubleClick={surface.kind === "browser" ? () => startRename(surface) : undefined}
               data-action-dblclick="workbench.rename-tab"
               onKeyDown={(e) => {
                 if (e.key === "ContextMenu" || (e.shiftKey && e.key === "F10")) tabMenu.offer(e, surface);
-                else if (e.key === "F2" && surface.kind === "browser") { e.preventDefault(); setRenaming(keyOf(surface)); }
+                else if (e.key === "F2" && surface.kind === "browser") { e.preventDefault(); startRename(surface); }
               }}
             >
               <WorkbenchTabIcon surface={surface} />

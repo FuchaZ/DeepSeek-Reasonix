@@ -163,7 +163,8 @@ export const SCRIPT: Beat[] = [
     },
   },
   // view_image: the one call whose entire purpose is a picture the person can
-  // look at; its card opens itself (see ToolCard) and the group holds with it.
+  // look at; the picture is drawn outside the row, and a run of them gathers
+  // into one lane.
   { wait: 400, ev: { kind: "tool_dispatch", tool: tool("view_image", { id: "vi1", args: JSON.stringify({ path: "shots/w280.png" }) }) } },
   {
     wait: 600,

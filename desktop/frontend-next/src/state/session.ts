@@ -787,7 +787,7 @@ export function fromHistory(msgs: HistoryMessage[], options: { snapshot?: string
             ...prev.tool,
             output: m.content,
             deliveries: m.deliveries,
-            ...(m.outputDiff ? { outputDiff: true } : {}),
+            ...(m.toolImages?.length ? { images: m.toolImages } : {}), ...(m.outputDiff ? { outputDiff: true } : {}),
             ...(m.toolFailed ? { err: m.content, refusalCode: m.toolRefusalCode } : {}),
           }),
         };

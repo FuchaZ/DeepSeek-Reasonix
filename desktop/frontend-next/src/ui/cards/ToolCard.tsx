@@ -136,12 +136,12 @@ export function ToolCard({
   // Showing that count is the difference between a card that is visibly filling
   // and one that sits blank until the whole file arrives at once.
   const streaming = running && !tool.args && (tool.argChars ?? 0) > 0;
-  // A row names what the call touched, not the command it ran: a shell command
-  // is clipped at 96 characters, so a heredoc showed as half a sentence, and
-  // the row's own naming already says a command ran. Only that key is skipped —
-  // a path, a pattern, a query all keep their turn, so view_image's row still
-  // names the file it opened. The whole command stays in the body.
-  const arg = tool.name === "todo_write" ? "" : streaming ? `${tokens(tool.argChars!)} 字符` : shortArgs(tool.args ?? "", ROW_SKIPS);
+  // Inside the activity group a row names what the call touched, not the
+  // command it ran: a shell command is clipped at 96 characters, and the body
+  // keeps the whole of it. Outside the group there is no input body, so the
+  // row keeps the command rather than hiding its only appearance.
+  const commandHidden = activity && categoryOf(shown) === "bash" && !streaming;
+  const arg = tool.name === "todo_write" ? "" : streaming ? `${tokens(tool.argChars!)} 字符` : shortArgs(tool.args ?? "", commandHidden ? ROW_SKIPS : []);
   const bad = toolFailed(tool);
   // The number is the actionable half; the state only says that something went
   // wrong, which the colour already says.
@@ -201,7 +201,8 @@ export function ToolCard({
   // output yet: a row that cannot open is the one that looks stuck.
   const hasBody = Boolean(
     takeover || tool.diff || goal || tool.argumentNormalization || tool.name === "todo_write" ||
-    (tool.output && !echoed && children.length === 0) || tool.err || children.length || (activity && running && activityArgs),
+    (tool.output && !echoed && children.length === 0) || tool.err || children.length ||
+    (activity && running && activityArgs) || (commandHidden && !!tool.args),
   );
   const activityResult = Boolean(
     takeover || tool.diff || goal || tool.name === "todo_write" || tool.output || tool.err || children.length,

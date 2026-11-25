@@ -89,7 +89,13 @@ func TestAMessageFromAnotherSessionReachesARunningTurnWithoutWaitingForItToEnd(t
 	waitForDoneWithin(t, done, 60*time.Second)
 	delivered := 0
 	for _, m := range sess.Snapshot() {
-		delivered += strings.Count(m.Content, body)
+		if !strings.Contains(m.Content, body) {
+			continue
+		}
+		delivered++
+		if !m.HostAuthored {
+			t.Fatalf("the peer steer was persisted as the person's own message: %+v", m)
+		}
 	}
 	if delivered != 1 {
 		t.Fatalf("the message reached the model %d times, want once", delivered)

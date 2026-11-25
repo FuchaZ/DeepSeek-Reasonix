@@ -96,7 +96,16 @@ func TestLiveTurnStartAndDisplayIndexNameTheSameMessage(t *testing.T) {
 func TestMidTurnSteerMintsNoAuthoredTurn(t *testing.T) {
 	session := sessionstore.NewSession("system")
 	runTurns(t, session, "first")
-	session.Add(provider.Message{Role: provider.RoleUser, Content: sessionstore.MidTurnSteerSource("keep going", sessionstore.SteerByUser)})
+	// Every steer that lands through the inbox is persisted with the displayed
+	// text in RawContent; both speakers take that shape.
+	session.Add(provider.Message{
+		Role: provider.RoleUser, Content: sessionstore.MidTurnSteerSource("keep going", sessionstore.SteerByUser),
+		RawContent: "keep going",
+	})
+	session.Add(provider.Message{
+		Role: provider.RoleUser, Content: sessionstore.MidTurnSteerSource("peer body", sessionstore.SteerByPeer),
+		RawContent: "message from another session: docs",
+	})
 	started := runTurns(t, session, "second")
 	if len(started) != 1 {
 		t.Fatalf("turn_started events = %d, want 1", len(started))

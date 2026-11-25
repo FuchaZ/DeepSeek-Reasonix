@@ -6,34 +6,20 @@ import type { ExtensionSurface } from "../port/wire";
 import type { AgentPort, ApprovalVerdict, Checkpoint, RewindPlan, RewindResult, RewindScope } from "../port/port";
 import { Hero } from "./Hero";
 import { Await } from "./Await";
-import { ToolCard } from "./cards/ToolCardSafe";
 import { PictureGroup } from "./cards/PictureGroup";
 import { CommandGroup } from "./cards/CommandGroup";
-import { Boundary } from "./Boundary";
-import { LazyChart } from "./chart/LazyChart";
-import { chartOfTool } from "./chart/spec";
-import { GuardianCard } from "./cards/GuardianCard";
-import { ApprovalCard, type PlanAction } from "./cards/ApprovalCard";
-import { AskCard } from "./cards/AskCard";
+import { type PlanAction } from "./cards/ApprovalCard";
 import { revealNested } from "./cards/nestreveal";
-import { SurfaceCard, surfaceTool } from "./surface/SurfaceCard";
-import { ElicitCard } from "./cards/ElicitCard";
-import { SayCard, type ReplyActions } from "./cards/SayCard";
+import type { ReplyActions } from "./cards/SayCard";
 import { DeliveryCard } from "./document/DeliveryCard";
 import { deliveriesByReply } from "./document/deliveries";
-import { CompactionCard } from "./cards/CompactionCard";
-import { WorkedLine } from "./cards/WorkedLine";
-import { ReadsCard } from "./cards/ReadsCard";
-import { UserCard } from "./cards/UserCard";
-import { NoticeCard } from "./cards/NoticeCard";
-import { RememberCard } from "./cards/RememberCard";
-import { ExtensionCard } from "./cards/ExtensionCard";
 import { toolChangedFile, toolFailed } from "./cards/outcome";
 import { foldEarlier } from "./activityEarlier";
 import { ActivityHead, staggered } from "./ActivityHead";
 import { NewAnswerLine, useNewAnswerAnchor } from "./NewAnswerLine";
 import { WorkLanes } from "./cards/SubagentGroup";
-import { drawn, eachCall, foldStats, callLanes, repeatedSpeakers, sameMembers, transcriptRows, type Shown } from "./turnrows";
+import { eachCall, foldStats, callLanes, repeatedSpeakers, sameMembers, transcriptRows, type Shown } from "./turnrows";
+import { Row, type RowHandlers } from "./Row";
 import { BroughtResults } from "./BroughtResults";
 import { WorkFold } from "./WorkFold";
 import { opensTurn, useBlocks, useBlockKeys } from "./blocks";
@@ -50,7 +36,7 @@ import { landing as landingOf, type Direction } from "./jumpreach";
 import { chunkText, type Held } from "./chunk_text";
 import { useHeldSelection } from "./heldselection";
 
-interface Props {
+export interface Props {
   historyPaging?: HistoryPaging;
   items: Item[];
   port?: Pick<AgentPort, "workspaceImageURL"> & Partial<Pick<AgentPort, "surfaceAction" | "surfaceActionState" | "cancelQueued" | "engageQuestion" | "stopToolCall" | "refinePrompt" | "toolOutput">>;
@@ -598,29 +584,6 @@ const Block = memo(function Block({
   );
 });
 
-interface RowHandlers {
-  onBring?: (id: string) => void;
-  owed: Set<string>;
-  echoes: Set<string>;
-  port: Props["port"];
-  onApprove: Props["onApprove"];
-  onFullAccess: Props["onFullAccess"];
-  onPlan: Props["onPlan"];
-  onAnswer: Props["onAnswer"];
-  onForget: Props["onForget"];
-  onSettings: Props["onSettings"];
-  onExtInvoke: Props["onExtInvoke"];
-  takeovers: Record<string, ExtensionSurface>;
-  onExtSubmit: Props["onExtSubmit"];
-  onPrepareRewind: Props["onPrepareRewind"];
-  onCommitRewind: Props["onCommitRewind"];
-  onPrepareFileRevert: Props["onPrepareFileRevert"];
-  reply: Props["reply"];
-  onResend: Props["onResend"];
-  onWithdraw: Props["onWithdraw"];
-  onCommitFileRevert: Props["onCommitFileRevert"];
-}
-
 const ActivityGroup = memo(function ActivityGroup({
   items,
   checkpoints,
@@ -678,124 +641,11 @@ const ActivityGroup = memo(function ActivityGroup({
             {lane.kind === "pictures"
               ? <PictureGroup items={lane.calls} />
               : lane.kind === "commands"
-                ? <CommandGroup items={lane.calls} onBring={rowProps.onBring} />
+                ? <CommandGroup items={lane.calls} onBring={rowProps.onBring} readOutput={rowProps.port?.toolOutput?.bind(rowProps.port)} />
                 : <Row it={lane.item} activity {...rowProps} cp={checkpoints.get(lane.item.id)} />}
           </div>
         ))}
       </div>
     </details>
-  );
-});
-
-// A streamed token replaces one item and leaves the rest identical, so the rest
-// must not re-render: at a working session's length that walk cost more per
-// chunk than parsing the message did.
-const Row = memo(function Row({
-  it,
-  port,
-  onBring,
-  owed,
-  echoes,
-  onApprove,
-  onFullAccess,
-  onPlan,
-  onForget,
-  onSettings,
-  onAnswer,
-  onExtInvoke,
-  reply,
-  onResend, onWithdraw,
-  takeovers,
-  onExtSubmit,
-  cp,
-  onPrepareRewind,
-  onCommitRewind,
-  onPrepareFileRevert,
-  onCommitFileRevert,
-  afterAnswer,
-  settled,
-  activity = false,
-}: RowHandlers & { it: Item; cp?: Checkpoint; afterAnswer?: ReactNode; settled?: boolean; activity?: boolean }) {
-  // Read once, for the life of this element. The projection spends the debt as
-  // soon as this is drawn, and a card whose answer is still streaming would
-  // otherwise lose the attribute mid-animation and have it cut short. A block
-  // that scrolls back mounts a new Row, which asks again and is told no.
-  const enter = useRef(owed.has(it.id)).current;
-  // display:contents, so this frame carries the one-shot mark and the card
-  // stays exactly the child of .chunk that its layout is written against.
-  return (
-    <div className="enterbox" data-item={it.id} data-enter={enter ? "" : undefined}>
-      {(() => {
-  switch (it.t) {
-    case "user":
-      return (
-        <UserCard
-          item={it}
-          port={port}
-          cp={cp}
-          onResend={onResend}
-          onWithdraw={onWithdraw}
-          onPrepareRewind={onPrepareRewind}
-          onCommitRewind={onCommitRewind}
-        />
-      );
-    case "say":
-      // Reasoning arrives long before the first answer token on a thinking
-      // model. Gating the card on text meant all of it stayed invisible and
-      // then landed at once. An empty card is still not a message, so a turn
-      // that produced neither draws nothing.
-      return drawn(it) || afterAnswer ? <SayCard item={it} afterAnswer={afterAnswer} settled={settled} reply={reply} quiet={echoes.has(it.id)} /> : null;
-    case "tool":
-      // The ask tool also raises ask_request, which carries the id /answer
-      // needs. Drawing the tool call too put two copies of the same question on
-      // screen, each answerable.
-      if (it.tool.name === "ask") return null;
-      { const surface = surfaceTool(it.tool, it.running, port); if (surface !== undefined) return surface; }
-      return (() => {
-        const card = (
-          <ToolCard
-            tool={it.tool}
-            running={it.running}
-            activity={activity}
-            children={it.children}
-            readOutput={port?.toolOutput?.bind(port)}
-            omitted={it.omitted}
-            takeover={it.tool.id ? takeovers[`tool:${it.tool.id}`] : undefined}
-            onExtInvoke={onExtInvoke}
-            onPrepareFileRevert={onPrepareFileRevert}
-            onCommitFileRevert={onCommitFileRevert}
-            onBring={it.tool.id && onBring ? () => onBring(it.tool.id!) : undefined}
-            onStop={port?.stopToolCall && it.tool.id ? () => void port.stopToolCall!(it.tool.id!).catch(() => {}) : undefined}
-          />
-        );
-        const chart = activity ? null : chartOfTool(it.tool);
-        return chart ? (
-          <Boundary fallback={card} retryKey={it.tool.args}>
-            <LazyChart spec={chart} callId={it.tool.id} />
-          </Boundary>
-        ) : card;
-      })();
-    case "reads":
-      return <ReadsCard tools={it.tools} />;
-    case "guardian":
-      return <GuardianCard g={it.g} />;
-    case "approval":
-      return <><ApprovalCard item={it} onApprove={onApprove} onFullAccess={onFullAccess} onPlan={onPlan} />{afterAnswer}</>;
-    case "ask":
-      return it.ask.questions.some(q => q.surface) ? <SurfaceCard item={it} onAnswer={onAnswer} port={port} /> : it.ask.origin ? <ElicitCard item={it} onAnswer={onAnswer} /> : <AskCard item={it} onAnswer={onAnswer} onEngage={port?.engageQuestion?.bind(port)} refine={port?.refinePrompt?.bind(port)} />;
-    case "compaction":
-      return <CompactionCard c={it.c} done={it.done} />;
-
-    case "remember":
-      return <RememberCard m={it.m} forgotten={it.forgotten} onForget={(name) => onForget(it.id, name)} />;
-    case "worked":
-      return <WorkedLine ms={it.ms} startedAt={it.startedAt} />;
-    case "extension":
-      return <ExtensionCard ext={it.ext} onInvoke={onExtInvoke} onSubmit={onExtSubmit} />;
-    case "notice":
-      return <NoticeCard item={it} onSettings={onSettings} />;
-  }
-      })()}
-    </div>
   );
 });

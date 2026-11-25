@@ -32,6 +32,9 @@ export interface HistoryMessage {
   toolCalls?: HistoryToolCall[];
   toolCallId?: string;
   toolName?: string;
+  // A tool result's pictures, as the live sink drew them. Reopening a session
+  // otherwise loses the picture behind a view_image call.
+  toolImages?: string[];
   // The host's own account of a result that did not succeed. Without it a
   // rebuilt card has only the words, which a tool's own output can imitate.
   toolFailed?: boolean;

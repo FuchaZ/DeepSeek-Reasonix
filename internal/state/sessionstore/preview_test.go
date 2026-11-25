@@ -201,3 +201,20 @@ func mcContract(t *testing.T, sourceEvent string) string {
 	}
 	return "<memory-compiler-execution>\n" + string(body) + "\n</memory-compiler-execution>"
 }
+
+// A steer is guidance inside a turn, not a turn of its own; the displayed copy
+// in RawContent must not turn it into a second user turn in the picker.
+func TestSessionPreviewDoesNotCountASteerAsAUserTurn(t *testing.T) {
+	msgs := []provider.Message{
+		{Role: provider.RoleUser, Content: "hello"},
+		{Role: provider.RoleUser, Content: MidTurnSteerSource("peer body", SteerByPeer), RawContent: "message from another session: docs"},
+		{Role: provider.RoleUser, Content: MidTurnSteerSource("keep going", SteerByUser), RawContent: "keep going"},
+	}
+	preview, turns := SessionPreviewFromMessages(msgs)
+	if turns != 1 {
+		t.Fatalf("user turns = %d, want 1", turns)
+	}
+	if preview != "hello" {
+		t.Fatalf("preview = %q, want the person's first turn", preview)
+	}
+}

@@ -22,6 +22,12 @@ func ClassifyTurn(msg provider.Message, priorTurn int) TurnClassification {
 	if msg.Role != provider.RoleUser {
 		return class
 	}
+	// A steer's display copy sits in RawContent, so UserMessageText cannot see
+	// the wrapper that says it was not a turn. Ask the stored content first.
+	if _, _, isSteer := SteerSourceOf(msg.Content); isSteer {
+		class.Steer = true
+		return class
+	}
 	content := UserMessageText(msg)
 	if IsUserAuthoredTurn(content) {
 		class.AuthoredTurn = priorTurn + 1

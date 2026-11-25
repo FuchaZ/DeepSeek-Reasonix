@@ -39,6 +39,11 @@ async function mount(empty = false) {
 }
 const focused = () => document.querySelector<HTMLElement>(".pane[data-active]")!;
 const filesShown = (pane = focused()) => pane.querySelector(".workbench-body")!.hasAttribute("data-files");
+// Docked, the workbench draws its header on the window bar rather than inside
+// the pane; the slot holds the focused pane's strip.
+const filesButton = () =>
+  document.querySelector<HTMLElement>('.wb-dock-head [data-action="workbench.files"]') ??
+  focused().querySelector<HTMLElement>('[data-action="workbench.files"]')!;
 // A typed query ranks a settings match above an action, so Enter would take
 // whichever setting mentions the word; the action is picked by its identity.
 async function palette(query: string, action = "files") {
@@ -155,7 +160,7 @@ it("reads whether the panel is open from the workbench, so a panel closed elsewh
   await mount();
   await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(true));
-  await userEvent.click(focused().querySelector<HTMLElement>("[data-action=\"workbench.files\"]")!);
+  await userEvent.click(filesButton());
   expect(filesShown()).toBe(false);
   await userEvent.click(await railFiles());
   await waitFor(() => expect(filesShown()).toBe(true));

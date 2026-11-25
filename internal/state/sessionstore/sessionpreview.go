@@ -21,11 +21,20 @@ func SessionPreviewFromMessages(msgs []provider.Message) (string, int) {
 	first := ""
 	turns := 0
 	for _, m := range msgs {
-		if m.Role == provider.RoleUser && !m.HostAuthored && IsUserAuthoredTurn(UserMessageText(m)) {
-			turns++
-			if first == "" {
-				first = TruncatePreview(PreviewProse(UserMessageText(m)))
-			}
+		if m.Role != provider.RoleUser || m.HostAuthored {
+			continue
+		}
+		// A steer is guidance inside a turn; its displayed copy in RawContent
+		// must not make it read as a turn the person opened.
+		if _, _, isSteer := SteerSourceOf(m.Content); isSteer {
+			continue
+		}
+		if !IsUserAuthoredTurn(UserMessageText(m)) {
+			continue
+		}
+		turns++
+		if first == "" {
+			first = TruncatePreview(PreviewProse(UserMessageText(m)))
 		}
 	}
 	return first, turns

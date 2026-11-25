@@ -3,11 +3,9 @@ import { useDockHead } from "../state/dockhead";
 
 /** Where the docked workbench's tab strip is drawn: the chrome's slot when the
  *  dock has a column of its own, and null when the strip must stay home.
- *
- *  Stacking is decided in CSS — a container query and the scene fold both set
- *  `--dock-stacked` on the column — and read back here rather than guessed
- *  from the window width: two thresholds in two places is how the bar and the
- *  column came apart. */
+ *  Stacking is decided in CSS — a container query and the scene fold set
+ *  `--dock-stacked` on the column — and read back here rather than guessed from
+ *  the window width: two thresholds in two places is how the two came apart. */
 export function useWorkbenchDock(frame: RefObject<HTMLElement | null>, docked: boolean): HTMLElement | null {
   const slot = useDockHead();
   const [stacked, setStacked] = useState(false);
@@ -39,11 +37,14 @@ export function useFullToggleFocus(frame: RefObject<HTMLElement | null>, full: b
     if (was.current === full) return;
     was.current = full;
     // Judged after the frame: at this point the pressed button is still the
-    // focused node, and it only falls to the body once React detaches it.
+    // focused node, and it only falls to the body once React detaches it. It
+    // may already be in the window bar rather than the panel.
     requestAnimationFrame(() => {
       const at = document.activeElement;
       if (at && at !== document.body && at.isConnected) return;
-      frame.current?.querySelector<HTMLElement>('[data-action="browser.full"]')?.focus();
+      const button = frame.current?.querySelector<HTMLElement>('[data-action="browser.full"]') ??
+        document.querySelector<HTMLElement>('.wb-dock-head [data-action="browser.full"]');
+      button?.focus();
     });
   }, [frame, full]);
 }

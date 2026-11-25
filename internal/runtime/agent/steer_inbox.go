@@ -292,7 +292,7 @@ func (a *Agent) steerQueueLen() int {
 // covers both the runtime's own advice and another session's message: neither
 // is the person, and a screen that drew one as their words would invent speech.
 func (a *Agent) landSteer(text string, entry steerEntry) {
-	a.sess.conversation.Add(provider.Message{Role: provider.RoleUser, Content: a.withTurnPreferences(sessionstore.MidTurnSteerSource(text, entry.source)), RawContent: entry.display, Images: entry.images, Via: entry.via})
+	a.sess.conversation.Add(provider.Message{Role: provider.RoleUser, Content: a.withTurnPreferences(sessionstore.MidTurnSteerSource(text, entry.source)), RawContent: entry.display, Images: entry.images, Via: entry.via, HostAuthored: entry.source != sessionstore.SteerByUser})
 	display := entry.display
 	if display == "" {
 		display = text
