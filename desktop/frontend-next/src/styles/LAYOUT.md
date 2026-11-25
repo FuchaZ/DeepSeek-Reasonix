@@ -132,13 +132,13 @@ the picker and keyboard navigation.
   measured from their top edge, so it is that line minus half a control.
 - Windows puts its controls at the other end, hard against the corner, and they
   are the only controls here that are square.
-- The docked workbench's strip ends where the Windows controls begin: its slot's
-  right edge stops at their left edge — or short of it, inside the seam, once the
-  side column is open — never reaching the window's corner with their width as
-  padding. Padding is still part of the box submitted to the OS as draggable, and
-  that region takes the press before the button under it; `--winctl-end` is the
-  reserve moved out of the box, floored at the strip's own 6px inset for shells
-  that draw no controls.
+- The docked workbench's strip ends where the Windows controls begin: its slot
+  stops at their left edge, or short of it inside the seam when the side column
+  is open.
+- That reserve is an offset (`--winctl-end`), not padding: padding is still part
+  of the box the OS submits as a drag region, and that region takes the press
+  before the button under it. It floors at the strip's 6px inset where the shell
+  draws no controls.
 - The wordmark is masked rather than an `<img>`: the file ships one hard-coded
   blue that reads as a status colour here and goes muddy on a dark ground.
 - `.crumb` needs `flex: 1` with `min-width: 0` together, or a long target pushes
@@ -1000,9 +1000,8 @@ to absorb horizontal overflow.
 - Remove is the one irreversible action in a row, so it does not look like the
   other buttons and appears only on hover.
 - An off branch softens its label to `--muted` and leaves the row's opacity
-  alone. Fading the whole row composites the label and its description toward
-  the card, which drops both under AA in every theme; the disabled switch beside
-  them already says the branch is inert.
+  alone: fading composites both inks toward the card, under AA in every theme,
+  while the disabled switch already says the branch is inert.
 
 ## Scope pill and picker
 
