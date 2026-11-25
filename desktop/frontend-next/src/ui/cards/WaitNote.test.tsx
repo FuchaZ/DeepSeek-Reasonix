@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { act } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, render, screen } from "@testing-library/react";
 import "../testkit";
 import { ToolCard } from "./ToolCard";
 
@@ -57,14 +57,28 @@ describe("a running call that has printed nothing", () => {
     expect(render(<ToolCard tool={bash()} running />).container.querySelector("details")).toBeNull();
   });
 
-  // The row no longer carries the command — a 96-character clip of a heredoc
-  // says less than "ran a command" does — so the whole of it is what the body
-  // holds, one press away.
-  it("keeps the whole command in the body the row opens", () => {
+  // A bash row leaves the command out: it is the call's payload rather than
+  // what it touched, and a heredoc clipped at 96 characters read as half a
+  // sentence. The whole command stays one press away in the body.
+  it("leaves the command off the row and keeps it in the body", () => {
     const long = "cd /a/very/long/path && for f in *.md; do wc -l \"$f\"; done; find . -maxdepth 3";
     const { container } = render(<ToolCard tool={bash({ args: JSON.stringify({ command: long }) })} running activity />);
-    expect(container.querySelector(".arg")).toBeNull();
+    expect(container.querySelector(".hl .arg")).toBeNull();
     open(container);
     expect(container.querySelector(".activity-call-input")?.textContent).toContain("maxdepth 3");
+  });
+
+  // Only the command key is skipped. Every other argument keeps its place, so a
+  // call that opened a file still names it on the row.
+  it("keeps a path on the row", () => {
+    const shot = "data:image/png;base64,AAAA";
+    const tool = { id: "vi", name: "view_image", readOnly: true, args: '{"path":"shots/w280.png"}',
+      output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: [shot] } as Parameters<typeof ToolCard>[0]["tool"];
+    const { container: row } = render(<ToolCard tool={tool} running={false} activity />);
+    expect(row.querySelector(".hl .arg")?.textContent).toBe("shots/w280.png");
+    expect(row.querySelector(".hl .nm")?.textContent).toContain("查看");
+    cleanup();
+    render(<ToolCard tool={tool} running={false} />);
+    expect(screen.getByRole("button", { name: "查看图片 shots/w280.png" })).toBeTruthy();
   });
 });

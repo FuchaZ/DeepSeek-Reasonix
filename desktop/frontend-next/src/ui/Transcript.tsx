@@ -7,6 +7,8 @@ import type { AgentPort, ApprovalVerdict, Checkpoint, RewindPlan, RewindResult, 
 import { Hero } from "./Hero";
 import { Await } from "./Await";
 import { ToolCard } from "./cards/ToolCardSafe";
+import { PictureGroup } from "./cards/PictureGroup";
+import { CommandGroup } from "./cards/CommandGroup";
 import { Boundary } from "./Boundary";
 import { LazyChart } from "./chart/LazyChart";
 import { chartOfTool } from "./chart/spec";
@@ -31,7 +33,7 @@ import { foldEarlier } from "./activityEarlier";
 import { ActivityHead, staggered } from "./ActivityHead";
 import { NewAnswerLine, useNewAnswerAnchor } from "./NewAnswerLine";
 import { WorkLanes } from "./cards/SubagentGroup";
-import { drawn, eachCall, foldStats, repeatedSpeakers, sameMembers, transcriptRows, type Shown } from "./turnrows";
+import { drawn, eachCall, foldStats, callLanes, repeatedSpeakers, sameMembers, transcriptRows, type Shown } from "./turnrows";
 import { BroughtResults } from "./BroughtResults";
 import { WorkFold } from "./WorkFold";
 import { opensTurn, useBlocks, useBlockKeys } from "./blocks";
@@ -641,10 +643,12 @@ const ActivityGroup = memo(function ActivityGroup({
   const live = useContext(LiveWork).has(gid);
   const changed = items.some((item) => item.t === "tool" && toolChangedFile(item.tool));
   const start = useStartsOpen("activity", running || live, false, changed);
-  // The group opens for a picture for the same reason the card does (ToolCard):
-  // once the turn folds the group, that is where the picture goes unread.
-  const shot = items.some((item) => item.t === "tool" && (item.tool.images?.length ?? 0) > 0);
-  const open = opened[gid] ?? (start || shot);
+  // The group obeys the reader's folding preference. It used to open itself for
+  // a picture, because the picture lived inside it and folding would have hidden
+  // it — a preference silently overridden. A folded group now names what it
+  // holds on its own line (ActivityHead), so the picture stays findable and the
+  // preference is the reader's again.
+  const open = opened[gid] ?? start;
   const setOpen = useCallback(
     (next: boolean) => onOpened((all) => (all[gid] === next ? all : { ...all, [gid]: next })),
     [gid, onOpened],
@@ -669,8 +673,14 @@ const ActivityGroup = memo(function ActivityGroup({
             <StudioIcon name="down" />
           </button>
         )}
-        {staggered((showEarlier ? items : fold.recent).flatMap(eachCall), rowProps.owed).map(([item, k]) => (
-          <div key={item.id} className="step-slot" style={{ "--i": k } as CSSProperties}><Row it={item} activity {...rowProps} cp={checkpoints.get(item.id)} /></div>
+        {staggered(callLanes((showEarlier ? items : fold.recent).flatMap(eachCall)), rowProps.owed).map(([lane, k]) => (
+          <div key={lane.id} className="step-slot" style={{ "--i": k } as CSSProperties}>
+            {lane.kind === "pictures"
+              ? <PictureGroup items={lane.calls} />
+              : lane.kind === "commands"
+                ? <CommandGroup items={lane.calls} onBring={rowProps.onBring} />
+                : <Row it={lane.item} activity {...rowProps} cp={checkpoints.get(lane.item.id)} />}
+          </div>
         ))}
       </div>
     </details>

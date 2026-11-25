@@ -136,12 +136,12 @@ export function ToolCard({
   // Showing that count is the difference between a card that is visibly filling
   // and one that sits blank until the whole file arrives at once.
   const streaming = running && !tool.args && (tool.argChars ?? 0) > 0;
-  // A shell command is not a label: it is truncated at 96 characters, so what
-  // shows is half a heredoc rather than what the call did, and the row's own
-  // "ran a command" already says the rest. The command stays one press away in
-  // the body. The streaming count is kept — it is how a card visibly fills.
-  const hidesCommand = categoryOf(shown) === "bash" && !streaming;
-  const arg = tool.name === "todo_write" || hidesCommand ? "" : streaming ? `${tokens(tool.argChars!)} 字符` : shortArgs(tool.args ?? "");
+  // A row names what the call touched, not the command it ran: a shell command
+  // is clipped at 96 characters, so a heredoc showed as half a sentence, and
+  // the row's own naming already says a command ran. Only that key is skipped —
+  // a path, a pattern, a query all keep their turn, so view_image's row still
+  // names the file it opened. The whole command stays in the body.
+  const arg = tool.name === "todo_write" ? "" : streaming ? `${tokens(tool.argChars!)} 字符` : shortArgs(tool.args ?? "", ROW_SKIPS);
   const bad = toolFailed(tool);
   // The number is the actionable half; the state only says that something went
   // wrong, which the colour already says.
@@ -178,6 +178,7 @@ export function ToolCard({
     if (bad) setOpen(null);
   }, [bad]);
   const open = touched ?? start;
+  const shots = (tool.images?.length ?? 0) > 0;
   // The body of a finished, closed card is most of what a long session holds in
   // the page, so such a card does not mount it; once opened it stays, so what the
   // reader did inside (show all) survives closing it again.
@@ -378,7 +379,7 @@ export function ToolCard({
         {/* What the call handed the model to look at sits outside the
             disclosure: a picture nobody can see without opening a debug panel
             is not the call's result, it is a detail about it. */}
-        <ToolShots images={tool.images} />
+        <ToolShots images={tool.images} label={shots ? pathOf(tool) : undefined} />
         <ToolVideos videos={tool.videos} />
         {failLine && (
           <div className="step-err" role="status">
@@ -411,14 +412,22 @@ function ToolVideos({ videos }: { videos?: NonNullable<Tool["videos"]> }) {
   );
 }
 
-function ToolShots({ images }: { images?: string[] }) {
+/** One picture a call handed back: a thumbnail that opens the viewer. Shared by
+ *  the call's own row and by a run of picture calls drawn as one group. */
+export function ShotThumb({ src, name }: { src: string; name: string }) {
+  return (
+    <ImagePreview src={src} name={name} className="tshot">
+      <img src={src} alt={name} loading="lazy" />
+    </ImagePreview>
+  );
+}
+
+function ToolShots({ images, label }: { images?: string[]; label?: string }) {
   if (!images?.length) return null;
   return (
     <div className="tshots">
       {images.map((src, i) => (
-        <ImagePreview key={src + i} src={src} name={t("chat.tool_screenshot_n", { n: i + 1 })} className="tshot">
-          <img src={src} alt={t("chat.tool_screenshot_n", { n: i + 1 })} loading="lazy" />
-        </ImagePreview>
+        <ShotThumb key={src + i} src={src} name={label || t("chat.tool_screenshot_n", { n: i + 1 })} />
       ))}
     </div>
   );
@@ -506,6 +515,15 @@ function Steps({ tool }: { tool: Tool }) {
 }
 
 const childTokens = (kids: Tool[]) => kids.reduce((n, k) => n + (k.contextTokens ?? 0), 0);
+
+// The file a picture call names, for the picture that stands beside it: what a
+// reader hovers to know which file they are looking at, and what the viewer's
+// bar says once it opens.
+export const pathOf = (tool: Tool): string => argOf(tool.args, "path", "file_path");
+
+// The one argument a row leaves out. A command is the call's own payload rather
+// than what it touched, and it clips badly; everything else keeps its turn.
+const ROW_SKIPS = ["command"] as const;
 
 
 // An identifier reads correctly in the mono tag and nowhere else, so this is the

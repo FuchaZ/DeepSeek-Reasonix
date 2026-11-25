@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Item } from "../state/session_types";
-import { foldStats, repeatedSpeakers, sameMembers, transcriptRows } from "./turnrows";
+import { foldStats, callLanes, repeatedSpeakers, sameMembers, transcriptRows } from "./turnrows";
 
 const me = (id: string, text: string, pending?: boolean): Item => ({ t: "user", id, text, pending });
 const said = (id: string, text: string): Item => ({ t: "say", id, text, done: true });
@@ -151,4 +151,132 @@ it("keeps a completed dashboard visible and leaves failed publications as tools"
  expect(transcriptRows([item])).toEqual([{ item }]);
  const failed = { ...item, tool: { ...item.tool, err: "refused" } };
  expect(transcriptRows([failed])).toEqual([{ activity: [failed] }]);
+});
+
+describe("a run of picture calls drawn as one row", () => {
+  const shot = (id: string, over: Record<string, unknown> = {}): Item => ({
+    t: "tool", id, running: false, children: [],
+    tool: { id, name: "view_image", readOnly: true, args: JSON.stringify({ path: `${id}.png` }), images: [`data:image/png;base64,${id}`], ...over } as never,
+  });
+
+  it("gathers neighbouring pictures into one lane", () => {
+    const lanes = callLanes([shot("a"), shot("b"), shot("c")]);
+    expect(lanes).toHaveLength(1);
+    expect(lanes[0].kind).toBe("pictures");
+    expect(lanes[0].kind === "pictures" && lanes[0].calls.map((x) => x.id)).toEqual(["a", "b", "c"]);
+  });
+
+  // One picture under a heading that repeats it is a label where the picture
+  // already is, so a lone call keeps its own row.
+  it("leaves a single picture as its own row", () => {
+    const lanes = callLanes([shot("a")]);
+    expect(lanes).toHaveLength(1);
+    expect(lanes[0].kind).toBe("item");
+    expect(lanes[0].kind === "item" && lanes[0].item.id).toBe("a");
+  });
+
+  // The run is what is contiguous: a picture, then something else, then another
+  // picture is two rows, because the step between them is what each was for.
+  it("splits where another call interrupts the run", () => {
+    const middle: Item = { t: "tool", id: "m", running: false, children: [], tool: { id: "m", name: "edit_file" } as never };
+    const lanes = callLanes([shot("a"), middle, shot("b"), shot("c")]);
+    expect(lanes.map((l) => (l.kind === "item" ? `row:${l.item.id}` : `${l.kind}:${l.calls.length}`)))
+      .toEqual(["row:a", "row:m", "pictures:2"]);
+  });
+
+  // A failed call carries a reason the row exists to say, and a running one has
+  // no picture yet: neither belongs in a group whose row says it succeeded.
+  it("keeps a failed or running picture call out of a group", () => {
+    const failed = shot("f", { err: "not an image" });
+    const live = { ...shot("r"), running: true } as Item;
+    const lanes = callLanes([failed, live, shot("a"), shot("b")]);
+    expect(lanes.map((l) => (l.kind === "item" ? `row:${l.item.id}` : `${l.kind}:${l.calls.length}`)))
+      .toEqual(["row:f", "row:r", "pictures:2"]);
+  });
+});
+
+describe("a run of commands drawn as one row", () => {
+  const cmd = (id: string, over: Record<string, unknown> = {}): Item => ({
+    t: "tool", id, running: false, children: [],
+    tool: { id, name: "bash", readOnly: false, args: JSON.stringify({ command: `echo ${id}` }), ...over } as never,
+  });
+
+  it("gathers neighbouring commands into one lane", () => {
+    const lanes = callLanes([cmd("a"), cmd("b"), cmd("c"), cmd("d")]);
+    expect(lanes).toHaveLength(1);
+    expect(lanes[0].kind).toBe("commands");
+    expect(lanes[0].kind === "commands" && lanes[0].calls.map((x) => x.id)).toEqual(["a", "b", "c", "d"]);
+  });
+
+  it("leaves a single command as its own row", () => {
+    expect(callLanes([cmd("a")])[0].kind).toBe("item");
+  });
+
+  // A command still running is what the reader is waiting on, and a failed one
+  // is where the exit status is said: neither is a line of a count.
+  it("keeps a running or failed command out of a group", () => {
+    const live = { ...cmd("r"), running: true } as Item;
+    const failed = cmd("f", { err: "exit 1" });
+    const lanes = callLanes([live, failed, cmd("a"), cmd("b")]);
+    expect(lanes.map((l) => (l.kind === "item" ? `row:${l.item.id}` : `${l.kind}:${l.calls.length}`)))
+      .toEqual(["row:r", "row:f", "commands:2"]);
+  });
+
+  // A subagent's calls belong inside the delegate that made them.
+  it("keeps a subagent's command out of the main flow's group", () => {
+    const child = cmd("c", { parentId: "p" });
+    const lanes = callLanes([child, cmd("a"), cmd("b")]);
+    expect(lanes.map((l) => (l.kind === "item" ? `row:${l.item.id}` : `${l.kind}:${l.calls.length}`)))
+      .toEqual(["row:c", "commands:2"]);
+  });
+
+  // The two kinds never share a lane: a picture between two commands ends the
+  // command run, because it is a different thing that was done.
+  it("does not merge commands across a picture", () => {
+    const pic: Item = { t: "tool", id: "p", running: false, children: [],
+      tool: { id: "p", name: "view_image", readOnly: true, args: '{"path":"a.png"}', images: ["data:image/png;base64,AA"] } as never };
+    const lanes = callLanes([cmd("a"), cmd("b"), pic, cmd("c"), cmd("d")]);
+    expect(lanes.map((l) => (l.kind === "item" ? `row:${l.item.id}` : `${l.kind}:${l.calls.length}`)))
+      .toEqual(["commands:2", "row:p", "commands:2"]);
+  });
+});
+
+// Grouping lives above the stored record: the fixture below is what a reload
+// rebuilds from, and the lanes it draws have to be the lanes the live stream
+// drew. Anything that merged calls into the item list would break this pair.
+describe("the same transcript before and after a reopen", () => {
+  const call = (id: string, name: string, over: Record<string, unknown> = {}): Item => ({
+    t: "tool", id, running: false, children: [],
+    tool: { id, name, readOnly: true, args: JSON.stringify({ path: `${id}.png` }), ...over } as never,
+  });
+  const lanes = (items: Item[]) =>
+    callLanes(items).map((l) => (l.kind === "item" ? `row:${l.item.id}` : `${l.kind}:${l.calls.map((c) => c.id).join(",")}`));
+
+  it("gathers by what each call did, whatever order the record lists them in", () => {
+    const live = [
+      call("p1", "view_image", { images: ["data:image/png;base64,AA"] }),
+      call("p2", "view_image", { images: ["data:image/png;base64,BB"] }),
+      call("b1", "bash", { args: JSON.stringify({ command: "a" }) }),
+      call("b2", "bash", { args: JSON.stringify({ command: "b" }) }),
+    ];
+    // A rebuild hands the same calls back as separate items: the grouping is a
+    // reading of them, so the two lists draw identically.
+    const rebuilt = live.map((i) => ({ ...i }));
+    expect(lanes(rebuilt)).toEqual(lanes(live));
+    expect(lanes(live)).toEqual(["pictures:p1,p2", "commands:b1,b2"]);
+  });
+
+  // The rebuild path merges lookups into `reads` items. Those are not pictures
+  // or commands, so they keep their own rows and the lanes around them survive.
+  it("leaves a merged reads item where it was", () => {
+    const reads: Item = { t: "reads", id: "r1", tools: [] };
+    const items = [
+      call("b1", "bash", { args: JSON.stringify({ command: "a" }) }),
+      call("b2", "bash", { args: JSON.stringify({ command: "b" }) }),
+      reads,
+      call("p1", "view_image", { images: ["data:image/png;base64,AA"] }),
+      call("p2", "view_image", { images: ["data:image/png;base64,BB"] }),
+    ];
+    expect(lanes(items)).toEqual(["commands:b1,b2", "row:r1", "pictures:p1,p2"]);
+  });
 });

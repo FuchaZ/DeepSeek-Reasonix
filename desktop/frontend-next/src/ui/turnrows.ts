@@ -27,6 +27,53 @@ export function eachCall(item: Item): Item[] {
   return item.t === "reads" ? item.tools.map((tool, i) => ({ t: "tool", id: `${item.id}:${i}`, tool, running: false, children: [] })) : [item];
 }
 
+/** A call that showed a picture, and finished saying so. A failed one stays a
+ *  row of its own: its reason is what that row exists to carry. */
+const showsPicture = (item: Item): item is Extract<Item, { t: "tool" }> =>
+  item.t === "tool" && item.tool.name === "view_image" && (item.tool.images?.length ?? 0) > 0 && !item.tool.err && !item.running;
+
+/** A command that ran and said how it ended. A running one is what a reader is
+ *  waiting on, and a failed one carries the exit status its row exists to say;
+ *  neither is one line of a count. */
+const ranCommand = (item: Item): item is Extract<Item, { t: "tool" }> =>
+  item.t === "tool" && item.tool.name === "bash" && !item.tool.err && !item.running && !item.tool.parentId;
+
+/** A lane of the execution group: one row, or a run of calls drawn as one. Runs
+ *  of one kind are gathered where they touch — pictures shown back to back, or
+ *  commands run back to back — and the step between them is what each was for.
+ *  Grouping happens here rather than in the item list, so the same transcript
+ *  reads the same live and after a reopen: the stored record holds calls, and
+ *  how they are drawn is this module's whole job. */
+export type Lane =
+  | { kind: "pictures"; calls: Extract<Item, { t: "tool" }>[]; id: string }
+  | { kind: "commands"; calls: Extract<Item, { t: "tool" }>[]; id: string }
+  | { kind: "item"; item: Item; id: string };
+
+const laneKind = (item: Item): "pictures" | "commands" | null =>
+  showsPicture(item) ? "pictures" : ranCommand(item) ? "commands" : null;
+
+export function callLanes(items: Item[]): Lane[] {
+  const lanes: Lane[] = [];
+  let at = 0;
+  while (at < items.length) {
+    const kind = laneKind(items[at]);
+    if (!kind) {
+      lanes.push({ kind: "item", item: items[at], id: items[at].id });
+      at += 1;
+      continue;
+    }
+    let end = at;
+    while (end < items.length && laneKind(items[end]) === kind) end += 1;
+    const run = items.slice(at, end) as Extract<Item, { t: "tool" }>[];
+    // One call of its kind is its own row: a count above a single call is a
+    // heading where the call already is.
+    if (run.length === 1) lanes.push({ kind: "item", item: run[0], id: run[0].id });
+    else lanes.push({ kind, calls: run, id: run[0].id });
+    at = end;
+  }
+  return lanes;
+}
+
 /** repeatedSpeakers names the sentences that continue one the same model just
  *  said: the speaker is already on screen, so only a change of model is worth a
  *  header. A user message starts the speaker over. */

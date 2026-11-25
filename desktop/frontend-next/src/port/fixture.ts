@@ -178,7 +178,43 @@ export const SCRIPT: Beat[] = [
       }),
     },
   },
-  // An external service answering, and a named skill running as a subagent. Both
+  // A run of pictures, because a run is what a group is drawn from: one call
+  // keeps its own row, and four in a row read as one line that says how many.
+  ...["w280", "w360", "w480"].flatMap((shot, i): Beat[] => [
+    { wait: 300, ev: { kind: "tool_dispatch", tool: tool("view_image", { id: `vi${i + 2}`, args: JSON.stringify({ path: `shots/${shot}.png` }) }) } },
+    {
+      wait: 400,
+      ev: {
+        kind: "tool_result",
+        tool: tool("view_image", {
+          id: `vi${i + 2}`,
+          args: JSON.stringify({ path: `shots/${shot}.png` }),
+          output: `[image: shots/${shot}.png, image/png, 412${i}09 bytes shown]`,
+          images: [MOCK_SHOT],
+          durationMs: 28,
+        }),
+      },
+    },
+  ]),
+  // A run of commands, for the same reason: four calls that ran back to back
+  // are one line and four commands, not four headers over four commands.
+  ...["git status --short", "git diff --stat", "ls -la shots/", "wc -l src/*.ts"].flatMap((cmd, i): Beat[] => [
+    { wait: 300, ev: { kind: "tool_dispatch", tool: tool("bash", { id: `b${i + 1}`, args: JSON.stringify({ command: cmd }) }) } },
+    {
+      wait: 400,
+      ev: {
+        kind: "tool_result",
+        tool: tool("bash", {
+          id: `b${i + 1}`,
+          args: JSON.stringify({ command: cmd }),
+          output: `${cmd} ran\n`,
+          durationMs: 210 + i * 30,
+          execution: { kind: "shell", shell: "git-bash", platform: "windows", state: "completed", exitCode: 0 },
+        }),
+      },
+    },
+  ]),
+
   // render differently from a built-in call — the server badge and the nested
   // trace — and neither had a fixture, so neither was ever seen in dev.
   {
@@ -423,7 +459,15 @@ export const SCRIPT: Beat[] = [
       kind: "tool_result",
       tool: tool("bash", {
         readOnly: false,
-        args: "curl A/B · 200 次并发 · 同一个 key",
+        // The shape the kernel actually sends: bash's schema requires
+        // `command` (internal/tools/builtin/bash.go), and the row shows what the
+        // call touched rather than the command, so this is the argument a
+        // reader only meets by opening the row. No `description`: a model may
+        // write one and the row would show it, and this fixture exists to show
+        // what the row reads like when it does not.
+        args: JSON.stringify({
+          command: "for i in $(seq 200); do curl -s -o /dev/null -w '%{http_code}\\n' \"$EP\"; done | sort | uniq -c",
+        }),
         output: [
           "$ for i in $(seq 200); do curl -s -o /dev/null -w '%{http_code}\\n' \"$EP\"; done | sort | uniq -c",
           "",

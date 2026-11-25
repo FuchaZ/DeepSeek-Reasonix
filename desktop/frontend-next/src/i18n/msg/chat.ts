@@ -524,6 +524,8 @@ export const CHAT: Messages = {
   "chat.video_name_detail_sent_to": { zh: "视频 {name}（{detail}）已原生发送给 {model}", en: "Video {name} ({detail}) sent to {model} as a video file" },
   "chat.view_data": { zh: "查看数据", en: "View data" },
   "chat.view_image": { zh: "查看图片", en: "View image" },
+  "chat.viewed_images_n": { zh: "查看图片 {n} 张", en: "Viewed {n} images" },
+  "chat.ran_commands_n": { zh: "运行命令 {n} 条", en: "Ran {n} commands" },
   "chat.view_image_alt": { zh: "查看大图：{alt}", en: "View image: {alt}" },
   "chat.viewed_image": { zh: "查看了图片", en: "Viewed an image" },
   "chat.viewing": { zh: "查看中", en: "Viewing" },

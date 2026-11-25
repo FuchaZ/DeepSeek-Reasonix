@@ -49,6 +49,23 @@
 .activity-body .tool-fold { order: 10; }
 .activity-body .tool-disclosure > .out { margin: 2px 10px 6px 32px; padding: 6px 10px 8px; border: 1px solid var(--hair); border-radius: var(--r-sm); }
 .activity-body :is(.tshots, .tvideos) { padding-inline-start: 10px; }
+/* A run of picture calls is one row, and its pictures sit side by side rather
+   than stacking: four shots on four lines is four times the height for the same
+   four pictures. The ceiling drops with the group so a held row stays a row. */
+.activity-body .pichrow { padding-inline-start: 0; gap: 6px; flex-wrap: nowrap; overflow-x: auto; }
+.activity-body .pichrow .tshot img { max-width: 148px; max-height: 84px }
+.picgroup > .out { margin-top: 2px }
+/* A run of commands is one row plus its lines: the command itself is already
+   clipped to one line on each, and four headers for four lines is four times
+   the height for the same four commands. */
+.cmdgroup > .out { margin-top: 2px }
+.cmdrow { display: flex; flex-direction: column; gap: 1px }
+.cmdline {
+  display: flex; align-items: center; min-height: 24px; padding: 0 7px;
+  border-radius: var(--r-xs); font: var(--w-reg) var(--fs-micro)/1.4 var(--mono); color: var(--muted);
+}
+.cmdline:hover { background: var(--overlay); color: var(--text) }
+.cmdline-arg { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 
 .think { margin-top: 6px; }
 .think > summary .fold { gap: 6px; color: var(--muted); font: var(--w-med) var(--fs-ui)/1.4 var(--ui); }
@@ -188,6 +205,7 @@
 .note[data-gone] .note-strong { text-decoration: line-through; }
 .flow .call[data-k="host"][data-light] > .c > .hl .tag { background: none; padding: 0; color: var(--faint); font: var(--w-med) var(--fs-micro) var(--ui); }
 .activity-group .activity-errors { font-size: var(--fs-micro); }
+.activity-group .activity-thumb { color: var(--faint); font: var(--w-reg) var(--fs-meta)/1 var(--ui); white-space: nowrap; }
 .activity-body .hl .tag { display: none; }
 .activity-body .hl > .tool-fold { display: none; }
 .rc[data-worked] { display: flex; justify-content: flex-end; margin: 2px 0 0; }

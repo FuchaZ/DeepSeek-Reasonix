@@ -49,13 +49,17 @@ export function Bump({ value, children }: { value: number; children: string }) {
 }
 
 /** The group's title line: what it is doing now while it runs folded, how many
- *  run or failed while open, and once it is done what it came to. */
+ *  run or failed while open, and once it is done what it came to. A folded
+ *  group that holds pictures names one on its own line: the group obeys the
+ *  reader's folding preference, and what it holds stays findable. */
 export function ActivityHead({ items, open, runs, failures, calls }: { items: Item[]; open: boolean; runs: number; failures: number; calls: number }) {
   const running = runs > 0;
   const now = running ? [...items].reverse().find((i): i is Extract<Item, { t: "tool" }> => i.t === "tool" && i.running) : undefined;
   const done = !running && failures === 0;
   const count = t("chat.count_actions", { count: calls });
   const span = done ? groupSpan(items) : 0;
+  const folded = !open && !now;
+  const shots = folded ? items.reduce((n, i) => n + (i.t === "tool" ? (i.tool.images?.length ?? 0) : 0), 0) : 0;
   return (
     <summary>
       <StudioIcon name="down" className="activity-fold-icon" />
@@ -64,6 +68,7 @@ export function ActivityHead({ items, open, runs, failures, calls }: { items: It
       {running && open && <span className="activity-running">{t("chat.n_running", { n: runs })}</span>}
       {failures > 0 && <span className="activity-errors">{t("chat.n_failed", { n: failures })}</span>}
       {done && <StudioIcon name="check" className="activity-ok" />}
+      {shots > 0 && <span className="activity-thumb">{shots > 1 ? t("chat.viewed_images_n", { n: shots }) : t("chat.viewed_image")}</span>}
       {now && !open && <span className="activity-fill" />}
       <span className="activity-count">
         <Bump value={calls}>{count}</Bump>
@@ -75,7 +80,7 @@ export function ActivityHead({ items, open, runs, failures, calls }: { items: It
 
 /** Each call with how many entering calls came before it in this draw, capped
  *  at five, so a burst arrives one row after another rather than all at once. */
-export function staggered(items: Item[], owed: ReadonlySet<string>): [Item, number][] {
+export function staggered<T extends { id: string }>(items: T[], owed: ReadonlySet<string>): [T, number][] {
   let k = 0;
   return items.map((it) => [it, owed.has(it.id) ? Math.min(k++, 5) : 0]);
 }

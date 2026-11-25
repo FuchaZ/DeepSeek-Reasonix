@@ -1,11 +1,15 @@
 const ARG_KEYS = ["command", "path", "file_path", "pattern", "query", "url", "description", "prompt", "step_id", "name"];
 
-export function shortArgs(raw: string) {
+/** What a call touched, in one clipped line. `skip` names keys this caller has
+ *  no place for — a row that already says what happened does not repeat the
+ *  command itself, while every other key keeps its turn in the order. */
+export function shortArgs(raw: string, skip?: readonly string[]) {
   if (!raw) return "";
   const pick = (o: unknown): string => {
     if (!o || typeof o !== "object") return "";
     const rec = o as Record<string, unknown>;
     for (const k of ARG_KEYS) {
+      if (skip?.includes(k)) continue;
       const v = rec[k];
       if (typeof v === "string" && v) return v.replace(/\s+/g, " ").slice(0, 96);
     }

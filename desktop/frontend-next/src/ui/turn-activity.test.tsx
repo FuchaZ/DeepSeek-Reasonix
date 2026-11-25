@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render } from "@testing-library/react";
+import { cleanup, fireEvent, render } from "@testing-library/react";
 import "./testkit";
 import { Transcript } from "./Transcript";
 import type { Item } from "../state/session";
@@ -66,23 +66,37 @@ describe("the work under a turn's sentences", () => {
     expect(groups[1].querySelector('.nm[title="edit_file"]')).not.toBeNull();
   });
 
-  // A picture is drawn beside its row rather than inside it (ToolCard), so a
-  // group that folds would take it out of the flow entirely — the turn's own
-  // frame stays open for it until the reader closes it.
-  it("holds a group open while it holds a picture, and leaves the row folded", () => {
+  // The group used to open itself for a picture, which silently overrode the
+  // reader's folding preference. It obeys that preference now, and a folded
+  // group says on its own line what it is holding, so the picture stays
+  // findable without the group forcing itself open.
+  it("folds by preference and says what a folded group holds", () => {
     const view: Item = { t: "tool", id: "v1", running: false, children: [],
       tool: { id: "v1", name: "view_image", readOnly: true, args: '{"path":"shots/w280.png"}',
         output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: ["data:image/png;base64,AAAA"] } };
     const chunk = draw([user("u", "看看截图"), say("s1", "先跑一步"), call("t1", "bash"), say("s2", "再看一眼图"), view, say("s3", "好了")]);
     const groups = [...chunk.querySelectorAll("details.activity-group")] as HTMLDetailsElement[];
     expect(groups).toHaveLength(2);
-    expect(groups[1].open).toBe(true);
-    const row = groups[1].querySelector("details.tool-disclosure") as HTMLDetailsElement;
+    expect(groups[1].open).toBe(false);
+    expect(groups[1].querySelector(".activity-thumb")?.textContent).toContain("图片");
+    expect(groups[0].open).toBe(false);
+    expect(groups[0].querySelector(".activity-thumb")).toBeNull();
+  });
+
+  // Opening the group is what shows the picture, and the row it belongs to
+  // stays folded as every other finished call's does.
+  it("shows the picture once the group is opened", () => {
+    const view: Item = { t: "tool", id: "v1", running: false, children: [],
+      tool: { id: "v1", name: "view_image", readOnly: true, args: '{"path":"shots/w280.png"}',
+        output: "[image: shots/w280.png, image/png, 567729 bytes shown]", images: ["data:image/png;base64,AAAA"] } };
+    const chunk = draw([user("u", "看看截图"), say("s1", "先跑一步"), call("t1", "bash"), say("s2", "再看一眼图"), view, say("s3", "好了")]);
+    const group = [...chunk.querySelectorAll("details.activity-group")][1] as HTMLDetailsElement;
+    fireEvent.click(group.querySelector("summary")!);
+    const row = group.querySelector("details.tool-disclosure") as HTMLDetailsElement;
     expect(row.open).toBe(false);
-    const shot = groups[1].querySelector(".tshots img");
+    const shot = group.querySelector(".tshots img");
     expect(shot).not.toBeNull();
     expect(row.contains(shot)).toBe(false);
-    expect(groups[0].open).toBe(false);
   });
 
   it("keeps each sentence above the work that followed it", () => {
