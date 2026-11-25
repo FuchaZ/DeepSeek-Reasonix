@@ -277,7 +277,7 @@
     },
     {
       "name": "list_peers",
-      "description": "List the other Reasonix sessions on this machine that are listening for messages. Use the name or key it prints as the target of send_peer_message. A row marked busy is in the middle of a turn: its side reads your message when the turn ends. A row named role= is a session a dispatch opened to do that job.",
+      "description": "List the other Reasonix sessions on this machine that are listening for messages. Use the name or key it prints as the target of send_peer_message. A row marked busy is in the middle of a turn: its side reads your message at its next model request, not when the whole turn ends. A row named role= is a session a dispatch opened to do that job.",
       "parameters": {
         "additionalProperties": false,
         "properties": {},
@@ -366,7 +366,7 @@
     },
     {
       "name": "send_peer_message",
-      "description": "Send text to another Reasonix session on this machine, named by list_peers. While the user's dispatch switch is on (the default) its model reads it as soon as that session is free, labelled as coming from you; with the switch off it waits there for its user to approve it. Sending grants no permission and is not a way to run anything there: it is for passing information. Do not include secrets. Set reply_to to the id of the message you are answering so the sender can match your answer to its question; set wait_ms to wait for the receiver's side to decide and answer instead of returning at once.",
+      "description": "Send text to another Reasonix session on this machine, named by list_peers. While the user's dispatch switch is on (the default) its model reads it at its next model request — mid-turn if that session is working — labelled as coming from you; with the switch off it waits there for its user to approve it. Sending grants no permission and is not a way to run anything there: it is for passing information. Do not include secrets. Set reply_to to the id of the message you are answering so the sender can match your answer to its question; set wait_ms to wait for the receiver's side to decide and answer instead of returning at once.",
       "parameters": {
         "additionalProperties": false,
         "properties": {
