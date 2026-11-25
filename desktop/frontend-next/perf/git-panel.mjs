@@ -52,7 +52,7 @@ try {
       check(`${tag}: a discard asks first and says it cannot be undone`, ask.includes("无法恢复"));
       await shot(one, "discard");
       await one.getByRole("button", { name: "取消", exact: true }).first().click();
-      await one.getByRole("button", { name: "推送…" }).click();
+      await one.getByRole("button", { name: "推送", exact: true }).click();
       await one.waitForSelector(".push-card");
       const push = await one.evaluate(() => document.querySelector(".push-card").textContent);
       check(`${tag}: the push says where it goes before it goes`, push.includes("github.com") && push.includes("main → origin/main") && push.includes("从不强制推送"), push.slice(0, 120));
