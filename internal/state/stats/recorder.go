@@ -34,13 +34,20 @@ type dispatchItem struct {
 
 // recordDispatcher keeps filesystem latency off provider/UI event goroutines.
 // Dispatchers are shared per state directory, so controller rebuilds do not
-// create one goroutine per recorder instance.
+// create one goroutine per recorder instance; stop releases it at the process
+// boundary, where the shared map would otherwise keep the goroutine for good.
 type recordDispatcher struct {
 	writer *Writer
 	queue  chan dispatchItem
 	// writeErr is the first Append failure since the last flush sentinel. Only
 	// run touches it; the sentinel hands the value to the waiter.
 	writeErr error
+
+	// mu guards closed against a send into the queue it closes. Reads take it
+	// shared so concurrent enqueues keep working until the close happens.
+	mu     sync.RWMutex
+	closed bool
+	done   chan struct{}
 }
 
 var recorderDispatchers = struct {
@@ -57,7 +64,11 @@ func dispatcherFor(writer *Writer) *recordDispatcher {
 	if dispatcher := recorderDispatchers.byDir[writer.dir]; dispatcher != nil {
 		return dispatcher
 	}
-	dispatcher := &recordDispatcher{writer: writer, queue: make(chan dispatchItem, recorderQueueSize)}
+	dispatcher := &recordDispatcher{
+		writer: writer,
+		queue:  make(chan dispatchItem, recorderQueueSize),
+		done:   make(chan struct{}),
+	}
 	recorderDispatchers.byDir[writer.dir] = dispatcher
 	go dispatcher.run()
 	return dispatcher
@@ -86,6 +97,25 @@ func (d *recordDispatcher) run() {
 			d.writeErr = err
 		}
 	}
+	close(d.done)
+}
+
+// stop drains what is already queued and releases the run goroutine. Closing
+// the queue is what ends `for range`, so accepted records are still written;
+// callers that send afterwards see the closed flag instead of a panic.
+func (d *recordDispatcher) stop() {
+	if d == nil {
+		return
+	}
+	d.mu.Lock()
+	if d.closed {
+		d.mu.Unlock()
+		return
+	}
+	d.closed = true
+	close(d.queue)
+	d.mu.Unlock()
+	<-d.done
 }
 
 func (d *recordDispatcher) enqueue(rec record) {
@@ -94,6 +124,11 @@ func (d *recordDispatcher) enqueue(rec record) {
 	}
 	// Statistics are observational. A full queue may lose a record, but it must
 	// never apply backpressure to model streaming or turn completion.
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if d.closed {
+		return
+	}
 	select {
 	case d.queue <- dispatchItem{record: rec}:
 	default:
@@ -108,9 +143,18 @@ func (d *recordDispatcher) flush(ctx context.Context) error {
 		ctx = context.Background()
 	}
 	done := make(chan error, 1)
+	d.mu.RLock()
+	if d.closed {
+		d.mu.RUnlock()
+		// stop drained the queue before closing it, so every accepted record is
+		// already written and there is nothing left to wait for.
+		return nil
+	}
 	select {
 	case d.queue <- dispatchItem{flush: done}:
+		d.mu.RUnlock()
 	case <-ctx.Done():
+		d.mu.RUnlock()
 		return ctx.Err()
 	}
 	select {

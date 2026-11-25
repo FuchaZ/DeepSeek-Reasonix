@@ -132,10 +132,14 @@ func existingUsageManager(dir string) *usageManager {
 	return usageManagers.byDir[dir]
 }
 
-// CloseUsageCatalogs closes every process-local usage projection. Desktop
-// shutdown and test isolation call this so Windows can delete TempDir cache
-// files that would otherwise stay locked by open SQLite handles.
+// CloseUsageCatalogs closes every process-local usage projection, so Windows can
+// delete TempDir cache files that open SQLite handles would keep locked. The
+// record dispatchers stop first for the same reason — one goroutine per state
+// directory would outlive the binary — and before the catalogs, because an
+// append feeds them. Stopping drains the queue, so no accepted record is lost.
 func CloseUsageCatalogs(ctx context.Context) error {
+	stopRecordDispatchers()
+
 	usageManagers.Lock()
 	managers := make([]*usageManager, 0, len(usageManagers.byDir))
 	for dir, manager := range usageManagers.byDir {
@@ -150,6 +154,21 @@ func CloseUsageCatalogs(ctx context.Context) error {
 		}
 	}
 	return first
+}
+
+// stopRecordDispatchers releases every queued dispatcher goroutine and forgets
+// it, so a later recorder for the same directory starts a fresh one.
+func stopRecordDispatchers() {
+	recorderDispatchers.Lock()
+	dispatchers := make([]*recordDispatcher, 0, len(recorderDispatchers.byDir))
+	for dir, dispatcher := range recorderDispatchers.byDir {
+		dispatchers = append(dispatchers, dispatcher)
+		delete(recorderDispatchers.byDir, dir)
+	}
+	recorderDispatchers.Unlock()
+	for _, dispatcher := range dispatchers {
+		dispatcher.stop()
+	}
 }
 
 func usageEntry(day string, r record) usagecatalog.Entry {
