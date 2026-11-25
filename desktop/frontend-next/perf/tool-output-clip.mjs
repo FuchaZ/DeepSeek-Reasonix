@@ -42,8 +42,10 @@ try {
     }, calls);
     const group = page.locator("details.activity-group");
     await group.locator(":scope > summary").click();
+    // A run of commands is one folded row now; each command inside it opens after the run does.
+    for (const fold of await page.locator("details.cmdgroup:not([open])").all()) await fold.locator(":scope > summary").click();
     const card = (id) => page.locator(`[data-call="${id}"]`);
-    for (const call of calls) await card(call.id).locator("summary.hl").click();
+    for (const call of calls) await card(call.id).locator("summary.hl, summary.c").first().click();
     await page.evaluate(() => document.fonts.ready);
     const searchCard = card("clip-search");
     await searchCard.locator(".out-more").waitFor();
@@ -85,8 +87,8 @@ try {
         assert.ok((await dimensions()).left > 0, "long lines remain horizontally scrollable");
         await body.evaluate((el) => { el.scrollLeft = 0; });
       }
-      await current.locator("summary.hl").click();
-      await current.locator("summary.hl").click();
+      await current.locator("summary.hl, summary.c").first().click();
+      await current.locator("summary.hl, summary.c").first().click();
       assert.equal(await current.locator(".out-clip").getAttribute("data-open"), "", "Show all survives closing and reopening the card");
       await current.getByRole("button", { name: "Collapse", exact: true }).click();
       await current.getByRole("button", { name: "Show all", exact: true }).waitFor();

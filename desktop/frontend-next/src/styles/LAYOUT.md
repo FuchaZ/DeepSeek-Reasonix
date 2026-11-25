@@ -635,6 +635,8 @@ the picker and keyboard navigation.
 - A run of calls of one kind is one row: consecutive pictures sit side by side
   at 148 × 84, consecutive commands are one count plus a line each. A single
   call has no group heading.
+- A command line's disclosure is a block and its summary carries the flex row,
+  so an opened command's output takes the group's width, not the summary's.
 
 ## Four weights
 
@@ -1002,6 +1004,9 @@ to absorb horizontal overflow.
 - An off branch softens its label to `--muted` and leaves the row's opacity
   alone: fading composites both inks toward the card, under AA in every theme,
   while the disabled switch already says the branch is inert.
+- A segmented choice in a row shrinks to the row and wraps its options; left
+  `flex: none` it kept its own width and pushed four options past a narrow
+  setting.
 
 ## Scope pill and picker
 

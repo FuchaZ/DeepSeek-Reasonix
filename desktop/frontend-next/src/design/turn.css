@@ -56,11 +56,9 @@
 
 .cmdgroup > .out { margin-top: 2px }
 .cmdrow { display: flex; flex-direction: column; gap: 1px }
-.cmdline {
-  display: flex; align-items: center; min-height: 24px; padding: 0 7px;
-  border-radius: var(--r-xs); font: var(--w-reg) var(--fs-micro)/1.4 var(--mono); color: var(--muted);
-}
-.cmdline:hover { background: var(--overlay); color: var(--text) }
+.cmdline { font: var(--w-reg) var(--fs-micro)/1.4 var(--mono); color: var(--muted) }
+.cmdline > summary.c { display: flex; align-items: center; min-height: 24px; padding: 0 7px; border-radius: var(--r-xs) }
+.cmdline > summary.c:hover { background: var(--overlay); color: var(--text) }
 .cmdline-arg { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 
 .think { margin-top: 6px; }

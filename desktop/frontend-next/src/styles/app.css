@@ -3381,7 +3381,7 @@
   .skprofile code { display: block; font: inherit }
 
   .seg {
-    display: inline-flex; flex: none; align-self: start; flex-wrap: wrap;
+    display: inline-flex; flex: 0 1 auto; align-self: start; flex-wrap: wrap; max-width: 100%;
     padding: 2px; gap: 2px; border-radius: var(--r-sm); background: var(--overlay);
   }
 
