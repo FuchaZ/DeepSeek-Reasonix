@@ -9,7 +9,7 @@ GOEXE := $(shell go env GOEXE)
 # One pin for the Makefile and the CI lint job; see .github/workflows/ci.yml.
 GOLANGCI_VERSION := $(shell cat .golangci-version)
 
-.PHONY: build vet fmt lint lint-go lint-install lint-cross lint-update coverage-gate coverage-gate-update pricecheck acp-conformance check check-fast test studio-test sdk-test sdk-test-race hooks notes-draft cross clean studio
+.PHONY: build vet fmt lint lint-go lint-install lint-cross lint-update coverage-gate coverage-gate-update pricecheck acp-conformance check check-fast test test-serve studio-test sdk-test sdk-test-race hooks notes-draft cross clean studio
 
 build:
 	CGO_ENABLED=0 go build -ldflags "$(LDFLAGS)" -o bin/reasonix$(GOEXE) ./cmd/reasonix
@@ -93,6 +93,15 @@ lint-cross:
 # the root cannot see it.
 test: studio-test sdk-test
 	go test ./...
+
+# internal/frontend/serve in parallel, cut by test name the way CI's
+# test-windows-shards cuts it. Its ~1900 tests are all fast — the slowest is
+# ~13s — so 749s is their sum, not a hang, and one package cannot be split by
+# `-p`. Three shards bring it to ~5.5 min here. `t.Parallel` is not the answer:
+# 391 t.Setenv calls in this package make it mutually exclusive with parallel
+# tests, and the isolation would have to move to injection first.
+test-serve:
+	bash scripts/test-serve-shards.sh
 
 # Drives `reasonix acp` with the official ACP TypeScript SDK and holds every
 # message it writes to the schema that SDK ships. Needs node and network for
