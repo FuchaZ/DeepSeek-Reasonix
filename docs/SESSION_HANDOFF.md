@@ -710,14 +710,15 @@ PE32 / NSIS self-extracting，未签名（首次运行按系统提示放行）�
 教训：**instrumentation 变强会暴露既有债务**。这和 census 注释里写的 213→215 是同一类
 事件——数字变了不等于债务新增。
 
-### 11.4 剩下两项（都非本次引入，待决策）
+### 11.4 剩下两项（2026-11-26 已修）
 
-- **`govulncheck`**：`gorilla/websocket@v1.5.3` 的 GO-2026-6278（弱 PRNG 生成 WebSocket
-  mask key）。修复版本 `v1.5.4-0.20240701034025-d67f41855da4` 是**未正式发布的 commit**，
-  `go list -m -versions` 只到 v1.5.3。升上去能转绿，但引入伪版本。
-- **`browser guards`**：8 处对比度不足，全在 `Notifications.tsx` 的关闭态从属行。
-  根因 `.subrow[data-off] { opacity: .5 }`：`--text` 10.65→2.66、`--faint` 5.52→2.08。
-  实测调到 0.8 也只有 3.61，**光调透明度解决不了**，得改颜色方案。
+- **`govulncheck`**：`gorilla/websocket` 升到建议里的 commit 伪版本
+  `v1.5.4-0.20240701034025-d67f41855da4`（该 commit 的内容就是这处修复）。本机
+  `govulncheck ./...` 报 0，`browser` / `remotecloud` 包测试通过。
+- **`browser guards`**：8 处对比度不足全在 `Notifications.tsx` 的关闭态从属行。
+  根因是整行 `opacity: .5` 把正文和底一起稀释；改为只把标签降到 `--muted`，
+  开关自身的 disabled 已经说明状态。`perf/contrast.mjs` 在浅/深 × soft/unset
+  全绿，`settings-disabled.test.ts` 押住这条规则。
 
 ### 11.5 macOS 三个 job 被取消
 
