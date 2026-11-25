@@ -132,6 +132,13 @@ the picker and keyboard navigation.
   measured from their top edge, so it is that line minus half a control.
 - Windows puts its controls at the other end, hard against the corner, and they
   are the only controls here that are square.
+- The docked workbench's strip ends where the Windows controls begin: its slot's
+  right edge stops at their left edge — or short of it, inside the seam, once the
+  side column is open — never reaching the window's corner with their width as
+  padding. Padding is still part of the box submitted to the OS as draggable, and
+  that region takes the press before the button under it; `--winctl-end` is the
+  reserve moved out of the box, floored at the strip's own 6px inset for shells
+  that draw no controls.
 - The wordmark is masked rather than an `<img>`: the file ships one hard-coded
   blue that reads as a status colour here and goes muddy on a dark ground.
 - `.crumb` needs `flex: 1` with `min-width: 0` together, or a long target pushes
@@ -167,9 +174,8 @@ the picker and keyboard navigation.
   the hits it paints over. While a card is open the bar itself is lifted; a
   press on the card otherwise lands on the pane and closes it.
 - The docked workbench draws its tab strip in `.wb-dock-head` on the window
-  bar: the slot starts at the dock column's seam and reserves the window
-  controls' width. Undocked or stacked, the slot is empty and the strip stays
-  in the panel.
+  bar: the slot starts at the dock column's seam. Undocked or stacked, the slot
+  is empty and the strip stays in the panel.
 - `--dock-col` is `min(--dock-open, 100% - --side-w - --dock-left-min)`; the
   icon group reads it in the content box, so `--chrome-pad-sum` is added back
   there.

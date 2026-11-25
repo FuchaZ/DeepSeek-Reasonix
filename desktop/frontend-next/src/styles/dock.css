@@ -15,19 +15,15 @@
   --dock-col: min(var(--dock-open), calc(100% - var(--side-w) - var(--dock-left-min)));
 }
 .app[data-browser="on"] .chrome .wb-dock-head:not(:empty) {
+  --winctl-end: max(6px, calc(var(--winctl-w) - var(--chrome-gap) - var(--winctl-lead) - var(--side-w)));
   position: absolute; left: auto;
-
-  right: var(--side-w);
-  width: var(--dock-col);
-
+  right: calc(var(--side-w) + var(--winctl-end));
+  width: calc(var(--dock-col) - var(--winctl-end));
   top: 0; height: var(--chrome-h); transform: none;
   display: flex; align-items: center;
-
   border-left: 1px solid var(--hair);
   box-sizing: border-box;
   padding-left: 10px;
-
-  padding-right: max(6px, calc(var(--winctl-w) - var(--chrome-gap) - var(--winctl-lead) - var(--side-w)));
 }
 .app[data-browser="on"] .chrome .r:has(.wb-dock-head:not(:empty)) {
 
