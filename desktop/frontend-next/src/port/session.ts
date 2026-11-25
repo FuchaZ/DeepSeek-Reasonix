@@ -17,6 +17,9 @@ export interface HistoryMessage {
   // Guidance sent into a turn that was already running, rather than a turn of
   // its own. There is no checkpoint behind it, so nothing rewinds to it.
   steer?: boolean;
+  // Another session sent this steer; the kernel marks it, and content carries
+  // the display text to show instead of a user row.
+  peerSteer?: boolean;
   // The paired device a user message was sent from; absent is the window.
   via?: Via;
   // Which model wrote this assistant turn. A rebuild has no turn_started to

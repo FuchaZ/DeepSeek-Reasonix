@@ -1,4 +1,4 @@
-import { historyToolId, historyToolItem, prependHistory } from "./history_pages";
+import { historyToolId, historyToolItem, peerSteerNotice, prependHistory } from "./history_pages";
 import type { HistoryToolContext } from "../port/session";
 import { foldHistoryItems } from "./fold";
 import { measureInteractions } from "./interactions";
@@ -712,13 +712,11 @@ export function fromHistory(msgs: HistoryMessage[], options: { snapshot?: string
     if (m.role === "system") continue;
     if (m.role === "user") {
       if (!m.steer && !m.hostAuthored) turnStart = m.createdAt;
-      // An attachment rides in as the "@path" token it was referenced by, so a
-      // turn that was nothing but a dropped file still has text here. What is
-      // left with none is host chrome, and so is a line the host composed —
-      // the kernel says which, and drawing it would put words in your mouth.
-      // Older sessions predate hostAuthored on this repair prompt. It is kernel
-      // guidance, not something the person said, so keep those transcripts clean
-      // after an upgrade as well as for newly written history.
+      // Another session's steer leaves a trace, not the person's own speech.
+      if (m.peerSteer) { out.push(peerSteerNotice(m, allocate())); continue; }
+      // An attachment rides in as its "@path" token, so a turn that was only a
+      // dropped file still has text. What is left with none is host chrome;
+      // older sessions predate hostAuthored on this repair prompt too.
       const legacyHostRepair = m.content.startsWith("The following tools are unavailable in the current workflow phase:");
       const text = m.hostAuthored || legacyHostRepair ? "" : stripControl(m.content);
       if (text) out.push({ t: "user", id: allocate(), text, msgIndex: m.msgIndex, steer: m.steer, via: m.via, attachments: m.attachments, at: m.createdAt });

@@ -51,6 +51,9 @@ type historyMessage struct {
 	// Guidance sent into a turn already running, rather than a turn of its own.
 	// It has no checkpoint behind it, so nothing can be rewound to it.
 	Steer bool `json:"steer,omitempty"`
+	// PeerSteer marks a steer another session sent: a reopened transcript draws
+	// it as a notice, never as the person's own line.
+	PeerSteer bool `json:"peerSteer,omitempty"`
 	// Via is the paired device a user message was sent from; absent is the
 	// window. Written when the message landed, so a reload still says it.
 	Via *eventwire.Via `json:"via,omitempty"`
@@ -112,6 +115,7 @@ func historyMessageWindow(msgs []provider.Message, attachments func(string) []ev
 				}
 				out = append(out, historyMessage{
 					Role: string(provider.RoleUser), Content: steerText, Steer: true,
+					PeerSteer:    source == sessionstore.SteerByPeer,
 					HostAuthored: !byPerson, MsgIndex: offset + i, Via: eventwire.ToWireVia(m.Via),
 				})
 				if byPerson {

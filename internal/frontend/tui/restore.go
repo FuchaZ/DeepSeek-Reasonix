@@ -13,6 +13,10 @@ func (t *Transcript) Restore(msgs []HistoryMessage) {
 	for _, m := range msgs {
 		switch m.Role {
 		case "user":
+			if m.PeerSteer {
+				t.Items = append(t.Items, Item{ID: t.id(), Kind: ItemNotice, Level: "info", Text: m.Content})
+				continue
+			}
 			// A line the host composed is not something the person said. A turn
 			// with neither words nor an image is host chrome; one with a count
 			// is a turn that carried only an image.

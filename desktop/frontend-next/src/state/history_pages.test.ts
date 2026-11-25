@@ -32,3 +32,16 @@ it("keeps completed live replies, running output and prompts when prepending his
   expect(result.running).toBe(true);
   expect(result.metrics).toBe(state.metrics);
 });
+
+it("rebuilds another session's steer as a notice, not the person's own row", () => {
+  const peer: HistoryMessage = { role: "user", content: "message from another session: docs", steer: true, hostAuthored: true, peerSteer: true };
+  const { items } = fromHistory([peer]);
+  expect(items).toHaveLength(1);
+  expect(items[0]).toMatchObject({ t: "notice", level: "info", text: peer.content });
+  expect(items.some((item) => item.t === "user")).toBe(false);
+});
+
+it("keeps a host-authored steer without peerSteer hidden", () => {
+  const { items } = fromHistory([{ role: "user", content: "goal continuation", steer: true, hostAuthored: true }]);
+  expect(items).toEqual([]);
+});

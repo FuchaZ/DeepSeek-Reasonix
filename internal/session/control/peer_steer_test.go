@@ -19,7 +19,7 @@ import (
 // peerSteeringTurn is a controller with a turn already running and a spool it
 // reads: the one state in which "when does the message arrive" has two
 // answers.
-func peerSteeringTurn(t *testing.T) (*Controller, *agent.Agent, *sessionstore.Session, *inboxSteerProvider, chan event.Event, *peermail.Dir) {
+func peerSteeringTurn(t *testing.T) (*Controller, *agent.Agent, *sessionstore.Session, *inboxSteerProvider, chan event.Event, func() []event.Event, *peermail.Dir) {
 	t.Helper()
 	setDispatchSwitch(t, true, false)
 	dir := testenv.TempDir(t)
@@ -27,7 +27,7 @@ func peerSteeringTurn(t *testing.T) (*Controller, *agent.Agent, *sessionstore.Se
 	prov := newInboxSteerProvider()
 	sess := sessionstore.NewSession("sys")
 	exec := agent.New(prov, tool.NewRegistry(), sess, agent.Options{}, event.Discard)
-	sink, done, _ := collectSink()
+	sink, done, events := collectSink()
 	path := filepath.Join(dir, "sessions", "receiver.jsonl")
 	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
 		t.Fatal(err)
@@ -51,7 +51,7 @@ func peerSteeringTurn(t *testing.T) (*Controller, *agent.Agent, *sessionstore.Se
 	case <-time.After(testenv.Budget(t)):
 		t.Fatal("the turn never started")
 	}
-	return c, exec, sess, prov, done, peers
+	return c, exec, sess, prov, done, events, peers
 }
 
 // A message that arrives while the turn is running is the case where waiting
@@ -60,7 +60,7 @@ func peerSteeringTurn(t *testing.T) (*Controller, *agent.Agent, *sessionstore.Se
 // mid-turn guidance comes through — instead of waiting in the follow-up queue
 // for the turn to end.
 func TestAMessageFromAnotherSessionReachesARunningTurnWithoutWaitingForItToEnd(t *testing.T) {
-	c, _, sess, prov, done, peers := peerSteeringTurn(t)
+	c, _, sess, prov, done, _, peers := peerSteeringTurn(t)
 	body := "the docs target is failing the build"
 	if err := peers.Send(peermail.Message{
 		ID: "m1", SentAt: time.Now().UTC(), Body: body,
@@ -108,7 +108,7 @@ func TestAMessageFromAnotherSessionReachesARunningTurnWithoutWaitingForItToEnd(t
 // must not borrow the host's voice — that is the one label that says the user
 // said nothing.
 func TestAMessageFromAnotherSessionDoesNotClaimTheHostWroteIt(t *testing.T) {
-	c, _, sess, prov, done, peers := peerSteeringTurn(t)
+	c, _, sess, prov, done, _, peers := peerSteeringTurn(t)
 	body := "please regenerate the fixtures"
 	if err := peers.Send(peermail.Message{
 		ID: "m2", SentAt: time.Now().UTC(), Body: body,
@@ -144,11 +144,67 @@ func TestAMessageFromAnotherSessionDoesNotClaimTheHostWroteIt(t *testing.T) {
 	}
 }
 
+// The decision has to leave a mark the person can read. A steer the model
+// consumed becomes their own transcript's guidance, so without a notice an
+// approved message arrives invisibly.
+func TestAnApprovedPeerMessageLeavesAVisibleNotice(t *testing.T) {
+	c, _, _, prov, done, events, peers := peerSteeringTurn(t)
+	if err := peers.Send(peermail.Message{
+		ID: "m1", SentAt: time.Now().UTC(), Body: "the docs target is failing",
+		From: peermail.Party{SessionID: "s-0000000000000001", Title: "docs session", Project: "alpha"},
+		To:   peermail.Party{SessionID: c.peers.key},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	c.peerIngest()
+	if err := c.ResolvePeerMessage("m1", true); err != nil {
+		t.Fatalf("approve: %v", err)
+	}
+	var notices []event.Event
+	for _, e := range events() {
+		if e.Kind == event.Notice && strings.Contains(e.Text, "message from another session") {
+			notices = append(notices, e)
+		}
+	}
+	if len(notices) != 1 {
+		t.Fatalf("peer notices = %+v, want exactly one", notices)
+	}
+	if !strings.Contains(notices[0].Text, "docs session") {
+		t.Fatalf("notice text = %q, want the sender named", notices[0].Text)
+	}
+	prov.unblock()
+	waitForDoneWithin(t, done, 60*time.Second)
+}
+
+// A denial never reaches the turn, so it must not leave the notice an approval
+// would: the person already made the decision the notice reports.
+func TestADeniedPeerMessageLeavesNoNotice(t *testing.T) {
+	c, _, _, prov, done, events, peers := peerSteeringTurn(t)
+	if err := peers.Send(peermail.Message{
+		ID: "m2", SentAt: time.Now().UTC(), Body: "regenerate the fixtures",
+		From: peermail.Party{SessionID: "s-0000000000000002", Title: "docs session", Project: "beta"},
+		To:   peermail.Party{SessionID: c.peers.key},
+	}); err != nil {
+		t.Fatal(err)
+	}
+	c.peerIngest()
+	if err := c.ResolvePeerMessage("m2", false); err != nil {
+		t.Fatalf("deny: %v", err)
+	}
+	for _, e := range events() {
+		if e.Kind == event.Notice && strings.Contains(e.Text, "message from another session") {
+			t.Fatalf("a denied message left a notice: %+v", e)
+		}
+	}
+	prov.unblock()
+	waitForDoneWithin(t, done, 60*time.Second)
+}
+
 // A turn that finished between the approval and the injection keeps the
 // message: it becomes the follow-up it would have been, rather than being
 // dropped because the door it tried was already closed.
 func TestAMessageApprovedAfterTheTurnEndsStillArrives(t *testing.T) {
-	c, _, sess, prov, done, peers := peerSteeringTurn(t)
+	c, _, sess, prov, done, _, peers := peerSteeringTurn(t)
 	body := "hold the release until the migration lands"
 	if err := peers.Send(peermail.Message{
 		ID: "m3", SentAt: time.Now().UTC(), Body: body,

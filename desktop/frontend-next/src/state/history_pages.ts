@@ -1,7 +1,11 @@
-import type { HistoryToolCall } from "../port/session";
+import type { HistoryMessage, HistoryToolCall } from "../port/session";
 import type { Item, SessionState } from "./session_types";
 import type { Executions } from "./executions";
 import { foldHistoryItems } from "./fold";
+
+export function peerSteerNotice(message: HistoryMessage, id: string): Item {
+  return { t: "notice", id, level: "info", text: message.content };
+}
 
 export const historyToolId = (snapshot: string, message: number, ordinal: number) => `history:${snapshot}:${message}:tool:${ordinal}`;
 

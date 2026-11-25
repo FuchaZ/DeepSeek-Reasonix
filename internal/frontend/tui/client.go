@@ -169,6 +169,9 @@ type HistoryMessage struct {
 	MsgIndex     int    `json:"msgIndex"`
 	HostAuthored bool   `json:"hostAuthored,omitempty"`
 	Steer        bool   `json:"steer,omitempty"`
+	// PeerSteer marks a steer another session sent. Its content is the display
+	// text to show, and the line is not the person's own speech.
+	PeerSteer bool `json:"peerSteer,omitempty"`
 	// Images is how many attachments the turn carried. A turn that was only an
 	// image has no text left once the host's blocks come off, so without the
 	// count Restore cannot tell it from host chrome and drops it.

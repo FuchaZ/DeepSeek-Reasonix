@@ -486,6 +486,9 @@ func (c *Controller) resolvePeerMessage(id string, approve bool, released peerma
 		if err != nil {
 			return err
 		}
+		// The person sees it arrived even if the running turn ends before
+		// consuming it; a Notice keeps it off their own side of the transcript.
+		c.sink.Emit(event.Event{Kind: event.Notice, Level: event.LevelInfo, Text: display})
 		decision = peermail.DecisionApproved
 		if released != "" {
 			decision = peermail.DecisionReleased
