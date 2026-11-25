@@ -2,6 +2,7 @@ package boot
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"sync"
 	"testing"
@@ -44,12 +45,22 @@ func closeBootTestHistoryCatalog(t *testing.T) {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), testenv.Budget(t))
 	defer cancel()
+	if err := closeProcessCatalogs(ctx); err != nil {
+		t.Fatal(err)
+	}
+}
+
+// closeProcessCatalogs releases the process-global projections. TestMain calls
+// it before the disposable home is removed: an open SQLite handle there keeps
+// the directory undeletable on Windows, and nothing else closes it at exit.
+func closeProcessCatalogs(ctx context.Context) error {
 	if err := history.CloseSharedCatalog(ctx); err != nil {
-		t.Fatalf("close shared history catalog: %v", err)
+		return fmt.Errorf("close shared history catalog: %w", err)
 	}
 	if err := stats.CloseUsageCatalogs(ctx); err != nil {
-		t.Fatalf("close usage catalogs: %v", err)
+		return fmt.Errorf("close usage catalogs: %w", err)
 	}
+	return nil
 }
 
 // fenceBootTestHistoryCatalog releases a process-global projection inherited

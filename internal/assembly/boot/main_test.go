@@ -40,5 +40,6 @@ func TestMain(m *testing.M) {
 	// is not isolated by the disposable home.
 	_ = os.Setenv("REASONIX_CREDENTIALS_STORE", "file")
 	feedbackRetired = false
+	testenv.OnCleanup(closeProcessCatalogs)
 	testenv.RunWithIsolatedUserState(m)
 }

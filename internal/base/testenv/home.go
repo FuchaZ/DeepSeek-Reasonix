@@ -88,6 +88,7 @@ func IsolateUserState() (func(), error) {
 	var once sync.Once
 	return func() {
 		once.Do(func() {
+			runCleanupHooks()
 			restoreScope()
 			restore()
 			_ = os.RemoveAll(home)
