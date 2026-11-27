@@ -5,6 +5,7 @@ import type { TreeWorkspace } from "../port/hub";
 import { StudioIcon } from "./StudioIcon";
 import { listenAction } from "./listen";
 import { useCenteredCard } from "./useCenteredCard";
+import { useBack } from "./back";
 
 export interface BlankAdder {
   pickFolder: (preferred?: string) => Promise<string | null>;
@@ -27,6 +28,7 @@ export function BlankProjectDialog({ adder, onDone, onClose, onError }: {
   const [working, setWorking] = useState(false);
   const card = useRef<HTMLDivElement>(null);
   useCenteredCard(card);
+  useBack(true, onClose);
   // The card is its own door: its field starts selected, Escape and an
   // outside click dismiss it, and its buttons are the only way through.
   useEffect(() => {

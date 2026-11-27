@@ -1,6 +1,7 @@
 import { createElement, useCallback, useEffect, useId, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import { ArrowUp } from "lucide-react";
 import { useFolded } from "./usefold";
+import { useBack } from "./back";
 import { StopButton } from "./StopButton";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
@@ -200,6 +201,7 @@ export function Composer({ port, status, running, queued = false, quote, restore
     moveTo(next, at);
     box.current?.focus();
   }, chips, addSession);
+  useBack(menu.open || menu.loading, menu.dismiss);
   const ime = useIme();
   const sendShortcut = useSendShortcut();
   const runningIntent = runningSendIntent(useRunningMessageIntent(), chips.list.length > 0);

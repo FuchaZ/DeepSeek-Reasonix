@@ -3,6 +3,7 @@ import { current, t } from "../i18n";
 import type { HubPort, TreeSession } from "../port/hub";
 import { StudioIcon } from "./StudioIcon";
 import { clearDraftForSession } from "./drafts";
+import { useBack } from "./back";
 
 /** The selected rows that are still on screen; a row that leaves the displayed set leaves the selection. */
 export function useSelectedRows(displayed: TreeSession[], selection: Set<string> | null, setSelection: Dispatch<SetStateAction<Set<string> | null>>): TreeSession[] {
@@ -47,6 +48,8 @@ export function SessionBatch({ hub, selection, selected, displayed, onSelect, on
   const all = displayed.length > 0 && displayed.every((row) => selection?.has(row.path));
   const restore = selected.length > 0 && selected.every((row) => row.archived);
   const cancel = () => { setPhase("idle"); onBusy(false); deleteButton.current?.focus(); };
+  useBack(phase === "confirm", cancel);
+  useBack(selection !== null && phase === "idle", onExit);
   useEffect(() => {
     if (wasSelecting.current && selection === null) {
       onExit();

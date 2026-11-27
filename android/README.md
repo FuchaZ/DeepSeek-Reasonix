@@ -82,6 +82,7 @@ export PATH="$PATH:$(go env GOPATH)/bin"
 | `sync-page.sh` | Builds the frontend, copies `dist/` into assets, copies `LICENSE` |
 | `verify-page.sh` | **No phone needed**: starts the real kernel against the packaged page |
 | `verify-keyboard.mjs <adb-serial> [package]` | Checks keyboard resizing and composer visibility in an unlocked phone's foreground Debug WebView |
+| `verify-back.mjs <adb-serial> [package]` | Checks system back closes Settings and the gathered menu instead of leaving the app |
 | `run.sh [debug\|release]` | `adb install`, launch, follow the log |
 
 `verify-page.sh` runs the isolated local-host smoke check described above.

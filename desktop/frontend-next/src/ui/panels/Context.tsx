@@ -5,6 +5,7 @@ import { SaveNote } from "../SaveNote";
 import type { AgentPort, ContextBreakdown } from "../../port/port";
 import { pct as percent, tokens } from "../../i18n/format";
 import { pinToViewport } from "../place";
+import { useBack } from "../back";
 import { Row } from "./kit";
 import { CompactNow, type CompactAction } from "../CompactNow";
 
@@ -82,6 +83,7 @@ export function Context({ ctx, legend = false, port, onCtx, compact }: {
   // which figure each answers for.
   const [editing, setEditing] = useState(false);
   const bar = useRef<HTMLDivElement>(null);
+  useBack(open, () => setOpen(false));
 
   // A bubble placed once against the viewport goes stale the moment anything
   // moves it, and there is nothing useful to show mid-scroll — so it closes.

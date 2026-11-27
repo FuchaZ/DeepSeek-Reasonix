@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useBack } from "./back";
 import { useModalFocus } from "./useModalFocus";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
@@ -36,6 +37,7 @@ export function ChangePreview({ port, path, onClose }: Props) {
   const [truncated, setTruncated] = useState(false);
   const [failed, setFailed] = useState("");
   const veiled = useRef(false);
+  useBack(true, onClose);
 
   useEffect(() => {
     let live = true;

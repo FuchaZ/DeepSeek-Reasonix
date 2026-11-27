@@ -4,6 +4,7 @@ import { SurfaceMediaContext } from "./media-context";
 import type { SurfaceImage } from "../../port/wire";
 import { imageSourceURL } from "./rich-spec";
 import { t } from "../../i18n";
+import { useBack } from "../back";
 
 
 export function OptionImage({ image, fit = "cover" }: { image?: SurfaceImage; fit?: "cover" | "contain" }) {
@@ -20,6 +21,7 @@ function SourceLink({ source }: { source?: string }) {
 
 function PhotoCard({ src, image, fit }: { src: string; image: SurfaceImage; fit: "cover" | "contain" }) {
   const [opened, setOpened] = useState(false);
+  useBack(opened, () => setOpened(false));
   return <div>
     <MediaImage src={src} alt={image.alt} fit={fit} open={() => setOpened(true)} />
     <SourceLink source={image.source} />

@@ -1,0 +1,15 @@
+@media (pointer: coarse) {
+  .chrome :is(.thbtn, .top-action) { min-width: 40px; min-height: 40px; }
+  .navbtn { width: 44px; height: 44px; }
+  .flow .call[data-k="say"] .acts { height: auto; min-height: 40px; }
+  .flow .user-acts { min-height: 40px; }
+  .flow .call[data-k="say"] .acts > button,
+  .flow .call[data-k="say"] .acts-menu > button,
+  .flow .call[data-k="say"] .copy[data-icon],
+  .flow .user-acts > button,
+  .flow .user-acts .stepctl button { min-width: 40px; min-height: 40px; }
+  .flow .user-acts > .reask-open::after { inset: 0; }
+  .compose .btn.send, .compose .btn.stop { min-width: 44px; min-height: 44px; }
+  .ds-row:not(.sesscopy) { min-height: 40px; }
+  .ds-row .ds-more { min-width: 40px; min-height: 40px; }
+}

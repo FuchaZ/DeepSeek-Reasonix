@@ -3,6 +3,7 @@ import type { AgentPort } from "../port/port";
 import { t } from "../i18n";
 import { reason } from "../i18n/kernel";
 import { StudioIcon } from "./StudioIcon";
+import { useBack } from "./back";
 
 type Refine =
   | { phase: "idle" }
@@ -34,6 +35,7 @@ export function usePromptRefine(port: Pick<AgentPort, "refinePrompt">, text: str
     pending.current = null;
     setState({ phase: "idle" });
   };
+  useBack(state.phase !== "idle", dismiss);
   const take = () => {
     if (state.phase !== "ready") return;
     adopt(state.text);

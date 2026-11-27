@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useModalFocus } from "./useModalFocus";
 import { t } from "../i18n";
 import { host, type BrowserLogin as Ask } from "../port/host";
+import { useBack } from "./back";
 import { listenAction } from "./listen";
 import { StudioIcon } from "./StudioIcon";
 
@@ -41,6 +42,7 @@ function LoginCard({ ask, onAnswer }: { ask: Ask; onAnswer: (username: string, p
     };
     return listenAction(window, "keydown", { action: "browser.login", value: "cancel", listener: onKey });
   }, [onAnswer]);
+  useBack(true, () => onAnswer("", ""));
 
   const where = ask.port ? `${ask.host}:${ask.port}` : ask.host;
   const submit = () => username && onAnswer(username, password);

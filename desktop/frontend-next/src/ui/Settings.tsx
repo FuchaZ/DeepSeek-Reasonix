@@ -5,6 +5,7 @@ import { WindowControls, zoomOnTitleBar } from "./WindowControls";
 import { useModalFocus } from "./useModalFocus";
 import { SettingsLeaveContext, useSettingsLeave } from "./SettingsLeave";
 import { t } from "../i18n";
+import { useBack } from "./back";
 import { listenAction } from "./listen";
 import { useRuntimeReload } from "./RuntimeReload";
 import type { CapabilityScope, McpEntry, ModelEntry, PluginPackage, SkillEntry } from "../port/port";
@@ -97,6 +98,7 @@ export function Settings({ hub, onError, port, networkPort, localWorkspacePort, 
   // 搜索的语料是这张表，不是屏幕上的 DOM：分区是按需挂载的，读 DOM 就只搜得到
   // 当前这一页，而为了搜索把每一页都挂起来会让隐藏页面开始发请求。
   const [query, setQuery] = useState("");
+  useBack(!!query, () => setQuery(""));
   const [landed, setLanded] = useState(openedAnchor);
   // Opened from the composer's effort menu: the running source's editor opens
   // on its reasoning fields. The model ref's first segment is the source name.

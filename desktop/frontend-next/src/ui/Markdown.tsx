@@ -47,7 +47,7 @@ const FENCED = /^```[a-zA-Z]/m;
 // two. Code is split out first: a \[ inside a fence is text, not an equation.
 const CODE = /(```[\s\S]*?```|`[^`\n]*`)/g;
 
-function normalizeMath(md: string) {
+export function normalizeMath(md: string) {
   return md
     .split(CODE)
     .map((part, i) =>
@@ -55,6 +55,9 @@ function normalizeMath(md: string) {
         ? part
         : part
             .replace(/\\\[([\s\S]+?)\\\]/g, (_, m) => `\n\n$$${m}$$\n\n`)
+            // A lone formula on its own line is a display equation; as inline
+            // math KaTeX cannot wrap or scroll it, so it overflows a phone.
+            .replace(/^[ \t]*\$([^$\n]+)\$[ \t\r]*$/gm, (_, m) => `\n\n$$${m}$$\n\n`)
             .replace(/\\\(([\s\S]+?)\\\)/g, (_, m) => `$${m}$`),
     )
     .join("");

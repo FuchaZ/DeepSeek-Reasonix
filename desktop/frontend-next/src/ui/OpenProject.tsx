@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useBack } from "./back";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
 import type { HubPort } from "../port/hub";
@@ -19,6 +20,7 @@ export function OpenProject({ hub, adder, hosts, onOpen, onClose, onError }: {
   const sheet = useRef<HTMLDivElement>(null);
   const [remote, setRemote] = useState<RemoteHost | null>(null);
   useModalFocus(sheet, !remote);
+  useBack(!remote, onClose);
   useEffect(() => {
     if (remote) return;
     const escape = (event: KeyboardEvent) => { if (event.key === "Escape") onClose(); };

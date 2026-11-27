@@ -6,6 +6,7 @@ import { reason, say } from "../i18n/kernel";
 import { CompositionEditor } from "./CompositionEditor";
 import { PresetActions } from "./PresetActions";
 import { usePresetLeave } from "./PresetLeave";
+import { useBack } from "./back";
 import { presetChanges, samePreset } from "./presetDraft";
 import { StudioIcon } from "./StudioIcon";
 
@@ -36,6 +37,7 @@ export function PresetPage({ entry, catalog, port, onClose, onSaved, onDeleted, 
   const changed = !samePreset(draft, entry.definition);
   const dirty = !immutable && (changed || !valid);
   const leave = usePresetLeave(dirty, busy, presetChanges(draft, entry.definition));
+  useBack(true, () => leave.request(onClose));
   const title = t(immutable ? "persona.preset_details" : entry.version ? "persona.edit_preset" : "persona.new_preset");
   const canSave = !immutable && !busy && valid && !!draft.name.trim() &&
     /^(user|project):[a-zA-Z0-9][a-zA-Z0-9._-]{0,63}$/.test(draft.id) && (!entry.version || changed);

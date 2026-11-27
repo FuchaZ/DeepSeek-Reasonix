@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.net.Uri
 import android.os.Bundle
@@ -193,23 +194,33 @@ class MainActivity : AppCompatActivity() {
 
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                // Two meanings, innermost first: step back through the page's own
-                // history, and otherwise leave *to the background* rather than
-                // exiting.
-                //
-                // The last one is the one a phone expects: `finish()` on a
-                // WebView app destroys the window and stops the foreground
-                // service with it, so a turn that was part way through died on a
-                // stray back press. Moving to the back of the task leaves the
-                // kernel running — the service exists for exactly this — and the
-                // next launch is instant.
-                if (web.canGoBack()) {
-                    web.goBack()
-                    return
-                }
-                moveTaskToBack(true)
+                // The page answers first: its settings, menus and previews are
+                // state, not history. Only an unhandled press leaves the window,
+                // and to the background, so the kernel outlives the screen.
+                askPageForBack()
             }
         })
+    }
+
+    /** The page takes back when it has a layer open; otherwise the shell leaves. */
+    private fun askPageForBack() {
+        if (isFinishing || isDestroyed) return
+        val script = "(function(){try{return (window.__reasonixBack && window.__reasonixBack()) ? 1 : 0;}" +
+            "catch(e){return 0;}})()"
+        val asked = runCatching {
+            web.evaluateJavascript(script) { result ->
+                if (result?.trim() != "1") leaveOrGoBack()
+            }
+        }.isSuccess
+        if (!asked) leaveOrGoBack()
+    }
+
+    private fun leaveOrGoBack() {
+        if (runCatching { web.canGoBack() }.getOrDefault(false)) {
+            web.goBack()
+        } else {
+            moveTaskToBack(true)
+        }
     }
 
     private fun configureWebView() = with(web.settings) {
@@ -340,7 +351,10 @@ class MainActivity : AppCompatActivity() {
     private fun installInsetsListener() {
         ViewCompat.setOnApplyWindowInsetsListener(rootLayout) { _, insets ->
             val types = WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout() or WindowInsetsCompat.Type.ime()
-            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout())
+            // The centered punch-hole sits on the short edge; in landscape that
+            // edge is a side and the page does not avoid it. Only system bars
+            // (the status bar on the long edge, the navigation bar) are padded.
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             val keyboard = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom
             // The bars stay the page's to avoid, so it can paint under them. The
             // keyboard is the window's: edge to edge stops `adjustResize` from
@@ -365,14 +379,16 @@ class MainActivity : AppCompatActivity() {
         if (!::web.isInitialized) return
         val density = resources.displayMetrics.density
         val dp = safeArea.map { (it / density).toInt() }
+        // Left and right are already in the WebView's padding; publishing them
+        // again would double-inset the surfaces that add the safe vars.
         web.evaluateJavascript(
             """
 (function() {
   var s = document.documentElement.style;
   s.setProperty('--rx-safe-top', '${dp[1]}px');
-  s.setProperty('--rx-safe-right', '${dp[2]}px');
+  s.setProperty('--rx-safe-right', '0px');
   s.setProperty('--rx-safe-bottom', '${dp[3]}px');
-  s.setProperty('--rx-safe-left', '${dp[0]}px');
+  s.setProperty('--rx-safe-left', '0px');
 })();
             """.trimIndent(),
             null,
@@ -768,6 +784,13 @@ class MainActivity : AppCompatActivity() {
         web.onResume()
         // The window keeps its view across a rotation, a fold and a split, so
         // the bars can have moved without the listener ever running.
+        ViewCompat.requestApplyInsets(rootLayout)
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        // A rotation keeps this Activity, so only this asks the listener again
+        // for the bars on the new long edge.
         ViewCompat.requestApplyInsets(rootLayout)
     }
 

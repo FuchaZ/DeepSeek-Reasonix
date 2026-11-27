@@ -30,6 +30,11 @@
   top: calc(var(--rx-safe-top) + (var(--chrome-h) - 28px) / 2);
 }
 
+[data-fold~="rail"] .prefs {
+  padding-top: calc(28px + var(--rx-safe-top));
+  padding-bottom: calc(28px + var(--rx-safe-bottom));
+}
+
 [data-fold~="phone"] .prefs {
   padding: var(--rx-safe-top) var(--rx-safe-right) var(--rx-safe-bottom) var(--rx-safe-left);
 }
@@ -64,4 +69,26 @@
 .oobe {
   padding-block: calc(26px + var(--rx-safe-top)) calc(26px + var(--rx-safe-bottom));
   padding-inline: calc(var(--rx-safe-left)) calc(var(--rx-safe-right));
+}
+
+.nav {
+  padding-top: calc(var(--chrome-h) + var(--rx-safe-top) + 8px);
+}
+
+.railfoot {
+  padding-bottom: calc(10px + var(--rx-safe-bottom));
+}
+
+@media (pointer: coarse) {
+  .rail .studio-rail-head {
+    padding-top: calc(12px + var(--rx-safe-top));
+  }
+}
+
+.studio-overview-anchor .studio-overview-popover,
+.studio-speed-detail,
+.studio-context-anchor .studio-context-summary {
+  max-height: calc(100dvh / var(--zoom, 1) - var(--rx-safe-top) - 32px);
+  overflow-x: hidden;
+  overflow-y: auto;
 }

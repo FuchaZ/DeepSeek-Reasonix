@@ -5,6 +5,7 @@ import { listenAction } from "./listen";
 import { useModalFocus } from "./useModalFocus";
 import { StudioIcon } from "./StudioIcon";
 import { useSettingsLeaveGuard } from "./SettingsLeave";
+import { useBack } from "./back";
 
 export function usePresetLeave(dirty: boolean, busy: boolean, changes: string[] = []) {
   const [asked, setAsked] = useState<{ leave: () => void; from: HTMLElement | null } | null>(null);
@@ -41,6 +42,7 @@ function PresetLeaveDialog({ changes, onKeep, onDiscard }: { changes: string[]; 
   const root = useRef<HTMLDivElement>(null);
   const title = useId();
   useModalFocus(root);
+  useBack(true, onKeep);
   useEffect(() => {
     root.current?.querySelector<HTMLButtonElement>("[data-primary]")?.focus();
     return listenAction(window, "keydown", { action: "agent-preset.leave-cancel", listener: (event) => {

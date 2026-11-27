@@ -43,7 +43,7 @@
     "docx-preview": "0.4.1",
     "dompurify": "^3.4.17",
     "exceljs": "4.4.0",
-    "katex": "^0.19.1",
+    "katex": "0.16.47",
     "lucide-react": "^1.69.0",
     "maplibre-gl": "6.16.0",
     "papaparse": "^5.7.0",

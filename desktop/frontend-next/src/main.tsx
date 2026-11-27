@@ -3,8 +3,10 @@ import { createRoot } from "react-dom/client";
 import { boot as bootLang, t } from "./i18n";
 import { reason } from "./i18n/kernel";
 import { track as trackWidth } from "./ui/viewport";
+import { takeBack } from "./ui/back";
 import "./styles/legacy.css";
 import "./design/design.css";
+import "./design/touch.css";
 import { App } from "./ui/App";
 import { Boundary } from "./ui/Boundary";
 import { WindowBroken } from "./ui/WindowBroken";
@@ -126,6 +128,8 @@ focus();
 // interface in one language and then swap it.
 bootLang();
 trackWidth();
+// The Android shell asks this before it leaves; see ui/back.ts.
+window.__reasonixBack = takeBack;
 
 // The boot screen is markup in index.html, so it is on screen before this
 // bundle is parsed; from here it plays the intro while the kernel is asked.

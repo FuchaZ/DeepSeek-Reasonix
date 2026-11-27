@@ -4,11 +4,13 @@ import { t } from "../i18n";
 import { Persona } from "./Persona";
 import { StudioIcon } from "./StudioIcon";
 import { usePresetLeave } from "./PresetLeave";
+import { useBack } from "./back";
 
 export function PresetPersonaPage({ port, onClose }: { port: AgentPort; onClose: () => void }) {
   const [dirty, setDirty] = useState(false);
   const [busy, setBusy] = useState(false);
   const leave = usePresetLeave(dirty, busy);
+  useBack(true, () => leave.request(onClose));
   return <>
     <div className="preset-page" data-action-keydown="agent-preset.leave" onKeyDown={(e) => {
       if (e.key !== "Escape") return;

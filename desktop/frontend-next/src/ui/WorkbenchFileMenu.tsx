@@ -6,6 +6,7 @@ import { StudioIcon } from "./StudioIcon";
 import { copyText } from "./CopyButton";
 import { pinToViewport } from "./place";
 import { fileReference } from "./fileReference";
+import { useBack } from "./back";
 
 export type FileMenu = { path: string; folder: boolean; x: number; y: number; anchor: HTMLElement };
 
@@ -24,6 +25,7 @@ export function WorkbenchFileMenu({ menu, root, revealable, platform, onReveal, 
   const [state, setState] = useState<"idle" | "copying" | "failed">("idle");
   const live = useRef(false);
   const close = () => { menu.anchor.focus({ preventScroll: true }); onClose(); };
+  useBack(true, close);
   useEffect(() => {
     live.current = true;
     const shut = () => onClose();

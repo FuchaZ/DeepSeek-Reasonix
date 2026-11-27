@@ -1,9 +1,11 @@
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
+import { useBack } from "./back";
 import { pinToViewport } from "./place";
 
 /** Asked before a terminal with a command running is closed: ending the shell ends the command. */
 export function TerminalCloseAsk({ anchor, onConfirm, onCancel }: { anchor: HTMLElement; onConfirm: () => void; onCancel: () => void }) {
+  useBack(true, onCancel);
   const r = anchor.getBoundingClientRect();
   return createPortal(
     <div className="workbench-close-ask" role="alertdialog" aria-label={t("terminal.close_a_running_one")}

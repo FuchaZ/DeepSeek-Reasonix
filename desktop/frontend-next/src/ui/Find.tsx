@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import { t } from "../i18n";
 import type { FindScope } from "../state/find";
 import type { Finding } from "./usefind";
+import { useBack } from "./back";
 
 const SCOPES: [FindScope, string][] = [
   ["all", "chat.find_scope_all"],
@@ -20,6 +21,7 @@ export function Find({
   pending?: boolean;
   failed?: boolean;
 }) {
+  useBack(find.open, find.close);
   return (
     <div className="findhost">
       {find.open && <Bar find={find} pending={pending} failed={failed} />}

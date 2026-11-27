@@ -2,6 +2,7 @@ import { StudioIcon } from "./StudioIcon";
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
+import { useBack } from "./back";
 import { placeInViewport, useFollow, zoom } from "./place";
 import { folded } from "./viewport";
 import { hasVendorMark, VendorMark } from "./vendormarks";
@@ -251,6 +252,7 @@ export function Picker({
     setOpen(false);
     btn.current?.focus();
   };
+  useBack(open, closeMenu);
 
   return (
     <div className={["picker", wrapClassName].filter(Boolean).join(" ")} ref={wrap}>

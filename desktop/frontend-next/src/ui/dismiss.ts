@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
+import { useBack } from "./back";
 import { listenAction } from "./listen";
 
 // Closes a popover on an outside press or Escape. Both pickers in the model
@@ -15,6 +16,7 @@ export function useDismiss(
   close: () => void,
   also?: RefObject<HTMLElement | null>,
 ) {
+  useBack(open, close);
   useEffect(() => {
     if (!open) return;
     const away = (e: MouseEvent) => {
@@ -52,6 +54,7 @@ const escapeLayers: object[] = [];
 export function useEscape(open: boolean, close: () => void) {
   const closeRef = useRef(close);
   closeRef.current = close;
+  useBack(open, close);
   useEffect(() => {
     if (!open) return;
     const layer = {};

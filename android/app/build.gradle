@@ -27,8 +27,8 @@ plugins {
 // are the answer.
 def publishedVersion = findProperty("reasonixVersion") as String
 def versionMajor = 2
-def versionMinor = 65
-def versionPatch = 0
+def versionMinor = 69
+def versionPatch = 4
 def versionBuild = 1
 if (publishedVersion) {
     def parsed = publishedVersion =~ /^(\d+)\.(\d+)\.(\d+)/

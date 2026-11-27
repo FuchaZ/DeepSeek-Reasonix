@@ -27,6 +27,7 @@ import { WorkbenchTerminals } from "./WorkbenchTerminals";
 import { useTerminalTabs } from "./useTerminalTabs";
 import { useOnBump } from "./useOnBump";
 import { StudioIcon } from "./StudioIcon";
+import { useBack } from "./back";
 import { LazyMarkdown } from "./LazyMarkdown";
 import type { LocalRefs } from "./Markdown";
 import { useGlance } from "./glance";
@@ -143,6 +144,7 @@ export function WorkbenchPanel({
   const [launcher, setLauncher] = useState(false);
   const newTab = useRef<HTMLButtonElement>(null);
   const toggleLauncher = () => { supersede(); setLauncher((open) => !open); };
+  useBack(shown && !!onDismiss, () => onDismiss?.()); useBack(launcher, toggleLauncher);
   const [cursor, setCursor] = useState<[string, number]>(["", 1]);
   const [reread, setReread] = useState(0);
   const chooseFiles = () => {

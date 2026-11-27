@@ -21,6 +21,41 @@ interface Props {
 
 const countOf = (id: Section) => SETTINGS.filter((e) => !e.hidden && !e.within && pageHome(e.section) === id).length;
 
+const REVEAL_MARGIN = 8;
+
+/** revealInStrip keeps the chosen tab whole inside the strip's own scroll box.
+ *  scrollLeft/scrollTop arithmetic rather than scrollIntoView, so a reveal moves
+ *  the strip and nothing else; each axis is touched only when it overflows. */
+function revealInStrip(nav: HTMLElement, tab: HTMLElement | null) {
+  if (!tab) return;
+  if (!nav.clientWidth && !nav.clientHeight) {
+    tab.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+    return;
+  }
+  const navBox = nav.getBoundingClientRect();
+  const tabBox = tab.getBoundingClientRect();
+  // Rects arrive in visual pixels (page zoom, the sheet's entrance transform);
+  // scrollLeft/clientWidth are layout pixels. One scale per axis bridges them.
+  const scaleX = nav.clientWidth ? navBox.width / nav.clientWidth : 1;
+  const scaleY = nav.clientHeight ? navBox.height / nav.clientHeight : 1;
+  if (nav.scrollWidth > nav.clientWidth) {
+    const start = (tabBox.left - navBox.left - nav.clientLeft) / scaleX + nav.scrollLeft;
+    const end = start + tabBox.width / scaleX;
+    let next = nav.scrollLeft;
+    if (start - REVEAL_MARGIN < next) next = start - REVEAL_MARGIN;
+    else if (end + REVEAL_MARGIN > next + nav.clientWidth) next = end + REVEAL_MARGIN - nav.clientWidth;
+    nav.scrollLeft = Math.max(0, Math.min(next, nav.scrollWidth - nav.clientWidth));
+  }
+  if (nav.scrollHeight > nav.clientHeight) {
+    const start = (tabBox.top - navBox.top - nav.clientTop) / scaleY + nav.scrollTop;
+    const end = start + tabBox.height / scaleY;
+    let next = nav.scrollTop;
+    if (start - REVEAL_MARGIN < next) next = start - REVEAL_MARGIN;
+    else if (end + REVEAL_MARGIN > next + nav.clientHeight) next = end + REVEAL_MARGIN - nav.clientHeight;
+    nav.scrollTop = Math.max(0, Math.min(next, nav.scrollHeight - nav.clientHeight));
+  }
+}
+
 export function SettingsNav({ at, values, shown, danger, disabled, onSelect, page, onPage }: Props) {
   const strip = useRef<HTMLElement>(null);
   const phone = useFolded("phone");
@@ -36,9 +71,19 @@ export function SettingsNav({ at, values, shown, danger, disabled, onSelect, pag
     return listenAction(nav, "wheel", { action: "settings.sections-scroll", listener: sideways }, { passive: false });
   }, [phone]);
   useEffect(() => {
-    if (!phone) return;
-    strip.current?.querySelector("[aria-selected='true'], [data-open]")?.scrollIntoView?.({ inline: "nearest", block: "nearest" });
-  }, [phone, at, page]);
+    const nav = strip.current;
+    if (!nav) return;
+    const reveal = () => revealInStrip(nav, nav.querySelector<HTMLElement>("[aria-selected='true'], [data-open]"));
+    reveal();
+    // The sheet's entrance scales the strip after mount; measure again once it
+    // has its final box, then leave manual scrolling alone.
+    const frame = requestAnimationFrame(reveal);
+    const settled = setTimeout(reveal, 500);
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(settled);
+    };
+  }, [at, page]);
   return (
     <nav ref={strip} className="prefs-nav" role="tablist" aria-label={t("settings.settings_sections")} onKeyDown={arrowTabs}>
       {NAV.map(([group, items]) => {

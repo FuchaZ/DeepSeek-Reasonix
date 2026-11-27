@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
 import { keyOf, type Surface } from "./workbench_tabs";
+import { useBack } from "./back";
 import { listenAction } from "./listen";
 import { pinToViewport } from "./place";
 
@@ -13,6 +14,7 @@ interface Props {
 
 export function BrowserTabMenu({ menu, others, left, right, all, label, onDismiss, onClose }: Props) {
   const box = useRef<HTMLDivElement>(null);
+  useBack(true, onDismiss);
   useEffect(() => {
     const dismiss = (event: Event) => { if (!box.current?.contains(event.target as Node)) onDismiss(); };
     const blur = () => onDismiss();

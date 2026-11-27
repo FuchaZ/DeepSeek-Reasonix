@@ -34,6 +34,8 @@ import { useEscStop } from "../state/escstop";
 import { startUpdateWatch } from "../state/updatewatch";
 import { StopHint } from "./StopHint";
 import { useFindAsk } from "./usefindask";
+import { useBack } from "./back";
+import { useFolded } from "./usefold";
 import { folded as roomGaveUp, onRoomWidth } from "./viewport";
 import { useFoldAway } from "./foldaway";
 import { useDrawerCloses } from "./drawer";
@@ -372,6 +374,7 @@ export function App({ hub }: { hub: HubPort }) {
 
   useFoldAway("rail", setRail);
   const navRail = useNavRail(rail);
+  const drawer = useFolded("scene");
   const hidesAmounts = useHidesAmounts();
   const [palette, setPalette] = useState(false);
   useDrawerCloses(setRail, active, settings);
@@ -406,6 +409,15 @@ export function App({ hub }: { hub: HubPort }) {
   const escMode = useEscStop();
   const [stopArmed, setStopArmed] = useState(false);
   useWindowKeys(shortcuts, { browser, settings: !!settings, running, confirm: escMode === "confirm", closeBrowser, stop: stopTurn, onArm: setStopArmed });
+
+  // Back walks the views the shell used to leave on, in the order they opened.
+  // A running turn is not one of them: Escape stops it, back never does.
+  useBack(rail && drawer, () => setRail(false));
+  useBack(browser, closeBrowser);
+  useBack(!!settings, hidePrefs);
+  useBack(palette, () => setPalette(false));
+  useBack(!!renaming, () => setRenaming(null));
+  useBack(adder.pathOpen, adder.closePath);
 
   // A setting changed in the pane is a fact about the session behind it, and
   // the pane is what holds that fact. Without a nudge it keeps polling only

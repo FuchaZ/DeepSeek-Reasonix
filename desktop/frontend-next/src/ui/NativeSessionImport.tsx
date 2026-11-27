@@ -4,6 +4,7 @@ import type { HubPort } from "../port/hub";
 import { t } from "../i18n";
 import { reason } from "../i18n/kernel";
 import { StudioIcon } from "./StudioIcon";
+import { useBack } from "./back";
 
 export function NativeSessionImport({ hub, workspace, onImported }: { hub: HubPort; workspace: string; onImported: () => void }) {
   const [busy, setBusy] = useState(false);
@@ -11,6 +12,7 @@ export function NativeSessionImport({ hub, workspace, onImported }: { hub: HubPo
   const [error, setError] = useState("");
   const input = useRef<HTMLInputElement>(null);
   const [asking, setAsking] = useState(false);
+  useBack(asking, () => setAsking(false));
   const [over, setOver] = useState(false);
   const take = (file: File | undefined) => {
     if (!file) return;

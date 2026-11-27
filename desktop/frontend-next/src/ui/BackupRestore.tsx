@@ -5,6 +5,7 @@ import { reason } from "../i18n/kernel";
 import type { AgentPort, BackupApplyResult, BackupCategory, BackupEntry, BackupPlan, BackupPlanItem, BackupPluginRef } from "../port/port";
 import { AddPlugin } from "./AddPlugin";
 import { StudioIcon } from "./StudioIcon";
+import { useBack } from "./back";
 
 // What each group of a backup holds, in one line. Read by the local file
 // backup's chips; the account copy that used to share it is gone.
@@ -41,6 +42,7 @@ const CONSENT_LABEL: Record<string, string> = {
 // A restore is asked for and read in a dialog; what it did is said afterwards,
 // in the page, in one strip per outcome.
 function RestoreDialog({ title, onClose, footer, wide, children }: { title: string; onClose: () => void; footer: ReactNode; wide?: boolean; children: ReactNode }) {
+  useBack(true, onClose);
   return createPortal(
     <div className="ns-veil" data-action-mousedown="layer.dismiss" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="ns-dlg bk-dlg" data-wide={wide ? "" : undefined} role="dialog" aria-modal="true" aria-label={title} data-action-keydown="layer.dismiss"

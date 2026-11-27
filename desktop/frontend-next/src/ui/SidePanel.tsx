@@ -5,6 +5,7 @@ import type { AgentPort } from "../port/port";
 import { Markdown } from "./Markdown";
 import type { SideProgress } from "../port/side";
 import { StudioIcon } from "./StudioIcon";
+import { useBack } from "./back";
 import { listenAction } from "./listen";
 import { RunClock } from "./RunClock";
 
@@ -178,6 +179,7 @@ export function SidePanel({
     if (open) void open.then((held) => port.closeSide(held)).catch(() => {});
     onClose();
   };
+  useBack(true, close);
 
   return (
     <aside

@@ -4,6 +4,7 @@ import type { HubPort, OpenWithTarget } from "../port/hub";
 import { host } from "../port/host";
 import { t } from "../i18n";
 import { StudioIcon } from "./StudioIcon";
+import { useBack } from "./back";
 
 const LAST = "rx-open-with-last";
 
@@ -43,6 +44,7 @@ export function OpenWithMenu({ hub, root, platform = "", onError }: {
 }) {
   const shell = host().revealsFiles();
   const [open, setOpen] = useState(false);
+  useBack(open, () => setOpen(false));
   const [last, setLast] = useState(readLast);
   const [targets, setTargets] = useState<OpenWithTarget[] | null>(null);
   useEffect(() => {

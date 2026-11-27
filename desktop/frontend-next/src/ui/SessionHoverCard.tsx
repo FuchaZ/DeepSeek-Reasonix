@@ -4,6 +4,7 @@ import { t } from "../i18n";
 import type { DispatchThread, HubPort, TreeSession, TreeWorkspace } from "../port/hub";
 import { StudioIcon } from "./StudioIcon";
 import { zoom } from "./place";
+import { useBack } from "./back";
 
 const stampOf = (ms: number | undefined) => {
   if (!ms) return "";
@@ -26,6 +27,7 @@ export function SessionHoverCard({ hub, ws, session, anchor, onClose, onOpenSess
   onOpenSession: (path: string) => void;
   onKeepOpen: () => void;
 }) {
+  useBack(true, onClose);
   const [threads, setThreads] = useState<DispatchThread[] | null>(null);
   useEffect(() => {
     let alive = true;

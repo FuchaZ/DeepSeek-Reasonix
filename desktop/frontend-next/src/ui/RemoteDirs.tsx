@@ -1,5 +1,6 @@
 import { StudioIcon } from "./StudioIcon";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useBack } from "./back";
 import { useModalFocus } from "./useModalFocus";
 import { createPortal } from "react-dom";
 import { t } from "../i18n";
@@ -73,6 +74,7 @@ export function RemoteDirs({ hub, host, start, onPick, onClose }: Props) {
   const [err, setErr] = useState("");
   const box = useRef<HTMLInputElement>(null);
   const veiled = useRef(false);
+  useBack(true, onClose);
 
   const go = useCallback(
     async (path: string) => {
