@@ -89,7 +89,7 @@ export interface Props {
   brought?: { ids: string[]; bring: (id: string) => void; dismiss: (id: string) => void };
 }
 
-export function Transcript({ items: every, port, historyPaging, entering, onEntered, brought, revision, waiting, scroll, hidden, focus, find, query, onApprove, onFullAccess, onPlan, onAnswer, onForget, onSettings, onExtInvoke, onExtSubmit, reply, onResend, onWithdraw, takeovers = {}, checkpoints, onPrepareRewind, onCommitRewind, onPrepareFileRevert, onCommitFileRevert, onSuggest, foldWork = false, turnRunning = false, scope = "" }: Props) {
+function TranscriptView({ items: every, port, historyPaging, entering, onEntered, brought, revision, waiting, scroll, hidden, focus, find, query, onApprove, onFullAccess, onPlan, onAnswer, onForget, onSettings, onExtInvoke, onExtSubmit, reply, onResend, onWithdraw, takeovers = {}, checkpoints, onPrepareRewind, onCommitRewind, onPrepareFileRevert, onCommitFileRevert, onSuggest, foldWork = false, turnRunning = false, scope = "" }: Props) {
   const held = useHeldSelection(scroll);
   const { items, bar: earlierBar } = useEarlierFold(every);
 
@@ -494,6 +494,8 @@ export function Transcript({ items: every, port, historyPaging, entering, onEnte
     </div>
   );
 }
+
+export const Transcript = memo(TranscriptView);
 
 // Off-screen cards leave the DOM entirely, holding their place with the height
 // they last measured. content-visibility already spared them layout and paint;

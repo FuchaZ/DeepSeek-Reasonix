@@ -2,7 +2,7 @@ import { FEEDBACK_RETIRED } from "../feedbackchannel";
 import { SidebarTools } from "./SidebarTools";
 import { SidebarDestinations } from "./SidebarDestinations";
 import { FeedbackBadge, feedbackEntryTab } from "./feedbackentry";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { t } from "../i18n";
 import logoWordmark from "../assets/logo-wordmark.svg";
 import type { ApprovalMode } from "../port/port";
@@ -182,6 +182,11 @@ export function Sidebar({
   }, [tree, runs]);
   const paletteTree = useMemo(() => [...tree, ...shownRemotes.flatMap((host) =>
     remoteWorkspaces(host, remoteTrees[host.name]).map((ws) => ({ ...ws, host: host.name })))], [tree, shownRemotes, remoteTrees]);
+  const hasOtherRows = useCallback((needle: string, hideLegacy: boolean) => shownRemotes.some((host) =>
+    remoteProjects(host, remoteTrees[host.name], runtimes, railScope, needle, listedIds, hideLegacy).length > 0),
+  [shownRemotes, remoteTrees, runtimes, railScope, listedIds]);
+  const workspacesAdder = useMemo(() => ({ ...adder, add: () => shownRemotes.length ? setProjectPicker(true) : adder.add() }), [adder, shownRemotes]);
+  const pauseSession = useCallback((runtimeId: string) => onPause(runtimeId), [onPause]);
   const [over, setOver] = useState(false);
   const drop = useFileDrop((d) => {
     if (collapsed || adder.busy || d.text) return;
@@ -238,12 +243,36 @@ export function Sidebar({
     [newSessionRoot, onNew, onOpen, onOpenRemote, runtimes, active, onFiles, onView, onSettings, onFeedback, feedbackUnread, onFind, onError],
   );
 
-  const onFold = (root: string, shut: boolean) => {
+  const onFold = useCallback((root: string, shut: boolean) => {
     const next = new Set(folded);
     if (shut) next.add(root);
     else next.delete(root);
     setFolded(next);
-  };
+  }, [folded, setFolded]);
+  const remoteHosts = useMemo(() => shownRemotes.some((host) =>
+    remoteWorkspaces(host, remoteTrees[host.name]).length > 0 || runtimes.some((rt) => rt.host === host.name)) ? (
+    <RemoteHosts
+      hub={hub}
+      hosts={shownRemotes}
+      runtimes={runtimes}
+      active={active}
+      onOpen={onOpenRemote}
+      onFocus={onFocusPane}
+      reload={reloadRemotes}
+      trees={remoteTrees}
+      reloadTrees={reloadRemoteTrees}
+      readTree={readRemoteTree}
+      onClose={onClosePanes}
+      liveIds={liveIds}
+      listedIds={listedIds}
+      scope={railScope}
+      previewLimit={5}
+      folded={folded}
+      onFold={onFold}
+      onError={onError}
+    />
+  ) : null, [shownRemotes, remoteTrees, runtimes, active, onOpenRemote, onFocusPane, reloadRemotes, reloadRemoteTrees,
+    readRemoteTree, onClosePanes, liveIds, listedIds, railScope, folded, onFold, onError, hub]);
 
   return (
     <>
@@ -267,12 +296,12 @@ export function Sidebar({
     {/* 收起而不是卸载：卸掉就丢了侧栏的滚动位置、Inspector 的展开、当前选
         中的面板。inert 是「看不见就够不着」那一半 —— 只做视觉隐藏的话，
         屏幕上没有的栏还能被 Tab 走进去。 */}
-    <button className="railveil" data-action="chrome.rail" tabIndex={-1} aria-label={t("common.collapse_the_workspace_rail")} onClick={() => onCollapse()} />
-    <div className="rail" inert={collapsed} ref={drop}>
+    <button className="railveil" data-rail={collapsed ? "off" : "on"} data-action="chrome.rail" tabIndex={-1} aria-label={t("common.collapse_the_workspace_rail")} onClick={() => onCollapse()} />
+    <div className="rail" data-rail={collapsed ? "off" : "on"} data-nav={navShown ? "on" : "off"} inert={collapsed} ref={drop}>
       {over && !collapsed && !adder.busy && <div className="rail-drop" role="status"><StudioIcon name="folder" /><span>{t("session.drop_to_add_a_project")}</span></div>}
       <div className="railscroll">
-      <div className="studio-rail-head">
-        <div className="studio-brand" aria-label="Reasonix Studio">
+      <div className="studio-rail-head" data-rail={collapsed ? "off" : "on"}>
+        <div className="studio-brand" data-rail={collapsed ? "off" : "on"} aria-label="Reasonix Studio">
           <span className="studio-brand-lockup" aria-hidden="true">
             <img className="studio-brand-logo" src={logoWordmark} alt="" draggable={false} />
             <small className="studio-brand-sub">studio</small>
@@ -303,8 +332,7 @@ export function Sidebar({
         retry={retryTree ? () => void retryTree() : undefined}
         paging={paging}
         previewLimit={5}
-        hasOtherRows={(needle, hideLegacy) => shownRemotes.some((host) => remoteProjects(host, remoteTrees[host.name],
-          runtimes, railScope, needle, listedIds, hideLegacy).length > 0)}
+        hasOtherRows={hasOtherRows}
         opening={opening}
         onOpen={onOpen}
         onFocus={onFocusPane}
@@ -315,35 +343,14 @@ export function Sidebar({
         scope={railScope}
         pinned={pinned}
         onPin={onPin}
-        onPause={(runtimeId) => onPause(runtimeId)}
+        onPause={pauseSession}
         onBranch={onBranch}
         onArchive={onArchive}
         onRename={onRename}
         onError={onError}
-        adder={{ ...adder, add: () => shownRemotes.length ? setProjectPicker(true) : adder.add() }}
+        adder={workspacesAdder}
       >
-        {shownRemotes.some((host) => remoteWorkspaces(host, remoteTrees[host.name]).length > 0 || runtimes.some((rt) => rt.host === host.name)) ? (
-          <RemoteHosts
-            hub={hub}
-            hosts={shownRemotes}
-            runtimes={runtimes}
-            active={active}
-            onOpen={onOpenRemote}
-            onFocus={onFocusPane}
-            reload={reloadRemotes}
-            trees={remoteTrees}
-            reloadTrees={reloadRemoteTrees}
-            readTree={readRemoteTree}
-            onClose={onClosePanes}
-            liveIds={liveIds}
-            listedIds={listedIds}
-            scope={railScope}
-            previewLimit={5}
-            folded={folded}
-            onFold={onFold}
-            onError={onError}
-          />
-        ) : null}
+        {remoteHosts}
       </Workspaces>
       </RailSearch>
       </RailFilterContext.Provider>

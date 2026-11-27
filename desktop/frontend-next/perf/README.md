@@ -39,7 +39,7 @@ node perf/rail.mjs       # 左栏会话树：2×8 / 10×50 / 20×200 / 40×500 �
 node perf/profile.mjs    # CPU 采样，按自耗时列热点（流式那一段）
 node perf/switchprof.mjs # CPU 采样，量点开一份长会话的那一下
 node perf/panes.mjs      # 并行窗格的代价：两个会话同时流式
-node perf/rail-toggle-panes.mjs # Rail-fold frame cost with 1/3/6 panes; existing-pane scroll retention and background-output follow
+node perf/rail-toggle-panes.mjs # Rail-fold frame cost across session length (`PERF_TURNS=0,150,400`, `PERF_TURN_CPU=1`; the pane guard stays on `PERF_CPU=4`): the 150-turn p95 and the 400-turn p50Trim (the median after dropping the one hitch frame) must each stay within `PERF_TURN_RATIO=2` of 0 turns; 400-turn p95/worst are reported only; existing-pane scroll retention and background-output follow
 node perf/verify.mjs     # 行为验证：跟随、块的装卸、切页往返、大会话树
 node perf/panels.mjs     # 两侧栏：收起补间、拖动改宽、上下限、窄屏退场
 node perf/look.mjs       # 外观验证：字号、界面缩放、自定义字体、壁纸上传与调节（含焦点）

@@ -5,7 +5,7 @@ import dock from "./dock.css?raw";
 // controls. Where its slot ends is a hit-testing fact jsdom cannot answer;
 // perf/window-controls-hit.mjs asks the browser, and this holds the rule's
 // shape so the geometry cannot drift back without a red test.
-const rule = dock.match(/\.app\[data-browser="on"\] \.chrome \.wb-dock-head:not\(:empty\)\s*\{([^}]*)\}/);
+const rule = dock.match(/\.chrome\[data-browser="on"\] \.wb-dock-head:not\(:empty\)\s*\{([^}]*)\}/);
 
 describe("the docked strip's slot leaves the window controls their presses", () => {
   it("is found", () => {

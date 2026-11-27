@@ -150,6 +150,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
     pushToast(shown);
   }, []);
   const statusRead = useCallback(() => dispatch({ kind: "__error_clear", from: "status" } as never), []);
+  const onEntered = useCallback((ids: string[]) => dispatch({ kind: "__entered", ids } as never), [dispatch]);
   const agentRuns = useAgentRequest(port, revealBrowser);
   const openRun = agentRuns.open;
   const openJob = agentRuns.openJob;
@@ -434,6 +435,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   const submit = useSubmit({ port, running, dispatch, trajDispatch, refreshStatus, fail });
 
   const [inserted, setInserted] = useState<{ n: number; text: string; session?: { id: string; title: string } }>({ n: 0, text: "" });
+  const onSuggest = useCallback((text: string) => setInserted((was) => ({ n: was.n + 1, text })), []);
   // Guidance said from this window stands in the transcript as its own bubble
   // until the turn reads it, so the strip leaves it out.
   // Steer and pending rows are queued by events that bump the revision.
@@ -537,6 +539,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   return (
     <section
       className="pane"
+      data-browser={docked ? "on" : "off"}
       data-browser-size={browserSize.size}
       data-run={run}
       data-plan={tab === "flow" && (s.plan.length > 0 || status?.goal) ? "" : undefined}
@@ -569,7 +572,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
         onWithdraw={onQueueCancel}
         items={s.items}
         entering={s.entranceOwed}
-        onEntered={(ids) => dispatch({ kind: "__entered", ids } as never)}
+        onEntered={onEntered}
         revision={s.revision}
         takeovers={s.takeovers}
         waiting={s.waiting}
@@ -590,7 +593,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
         onCommitRewind={onCommitRewind}
         onPrepareFileRevert={onPrepareFileRevert}
         onCommitFileRevert={onCommitFileRevert}
-        onSuggest={(text) => setInserted((was) => ({ n: was.n + 1, text }))}
+        onSuggest={onSuggest}
       />
       </ThoughtFolds.Provider></JobsLiveContext.Provider></AgentRunOpener.Provider></PlanLiveContext.Provider>
       </NewAnswerAnchor.Provider>

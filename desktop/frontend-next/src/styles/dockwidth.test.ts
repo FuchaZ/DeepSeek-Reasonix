@@ -15,3 +15,15 @@ it("keeps the workbench width off the inherited, app-wide tween", () => {
     }
   }
 });
+
+it("keeps the rail and nav widths off the inherited, app-wide tween", () => {
+  const tokens = SHEETS["./tokens.css"];
+  expect(tokens).toMatch(/@property --rail-w \{[^}]*inherits: false/);
+  expect(tokens).toMatch(/@property --nav-w \{[^}]*inherits: false/);
+  for (const [name, css] of Object.entries(SHEETS)) {
+    for (const block of css.matchAll(/(^|\n)\s*\.app\s*\{([^}]*)\}/g)) {
+      expect(block[2], `${name}: .app declares --rail-w`).not.toMatch(/--rail-w\s*:/);
+      expect(block[2], `${name}: .app declares --nav-w`).not.toMatch(/--nav-w\s*:/);
+    }
+  }
+});

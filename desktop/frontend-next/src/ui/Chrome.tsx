@@ -47,9 +47,14 @@ interface Props {
   // The window's port, for what belongs to the window rather than a pane.
   hub?: HubPort;
   onError?: (e: unknown) => void;
+  // The window's two left columns, so the bar can follow the same state the
+  // grid does without reading a variable inherited from .app.
+  rail?: boolean;
+  navShown?: boolean;
+  browser?: boolean;
 }
 
-export function Chrome({ port, status, workspace: ws, title, steer, host, task = false, theme, onTheme, onFind, view, rows, onView, hub, onError }: Props) {
+export function Chrome({ port, status, workspace: ws, title, steer, host, task = false, theme, onTheme, onFind, view, rows, onView, hub, onError, rail = false, navShown = false, browser = false }: Props) {
   const root = status?.workspaceRoot || status?.cwd || "";
   const project = root ? base(root) : "—";
   // The folder mark opens the project itself. Only a shell that can enter a
@@ -83,7 +88,7 @@ export function Chrome({ port, status, workspace: ws, title, steer, host, task =
   return (
     <>
     {hub && <DeviceBar hub={hub} />}
-    <div className="chrome" onDoubleClick={zoomOnTitleBar}>
+    <div className="chrome" data-rail={rail ? "on" : "off"} data-nav={navShown ? "on" : "off"} data-browser={browser ? "on" : "off"} onDoubleClick={zoomOnTitleBar}>
 
       <div className="crumb">
         {!task && <span className="crumb-context">

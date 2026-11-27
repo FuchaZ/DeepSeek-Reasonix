@@ -374,21 +374,31 @@ the picker and keyboard navigation.
   the run. Closing the dock resets full view; a pending decision returns to split
   so the person can answer.
 
-- Column widths change on `.app`, so the tween belongs there and `.cols` only
-  reads the result into a track. The tween must be cut during a drag: a .34s
-  tween makes the column chase the pointer.
-- The workbench width is the exception: `--dock-w` does not inherit and lives
-  on the pane that reads it.
+- Widths are registered non-inheriting properties owned by the elements that
+  read them: `--nav-w` on `.cols`, `.chrome`, `.nav` and the fixed `.rail`;
+  `--rail-w` on `.chrome`; `--dock-w` on the pane. None of them lives on `.app`.
 - A tweened inherited property on `.app` restyles every node under it on every
-  frame, which made opening the workbench stutter with a long transcript.
-- The rail, nav and side widths are tweened inherited properties on `.app` too.
-  Nothing under the transcript reads them, so `.flow` resets them.
-- Without the reset, a fold at 300 turns cost about 430 ms of style
-  recalculation against 3 ms of layout; with it the median frame fell from 128 ms
-  to 46 ms (4x CPU throttle, the perf fixture).
-- `perf/rail-toggle-panes.mjs` holds it by reading the widths inside `.flow`
-  while the rail folds. `.srail-peek` is outside `.flow` and still reads `--rail-w`.
-- The gutter writes the width on the pane for the same reason (`DOCK.owner`).
+  frame, which made opening the workbench and folding the rail stutter with a
+  long transcript. `--rail-w` and `--nav-w` were that shape; they are not any
+  more.
+- No `.app[data-rail]`, `.app[data-nav]` or `.app[data-browser]` descendant
+  selector remains: an attribute flip on `.app` would invalidate the whole
+  conversation subtree even when only the rail changes. The state lives on the
+  elements that read it.
+- The rail's grid column is always zero. The rail is fixed and slides with
+  transform/opacity over the conversation, so the conversation width never
+  changes and the transcript never reflows during the fold. The chrome's margin
+  follows the rail; it is the only box that changes.
+- The rail also owns the transcript scroller's left inset (`--rail-inset`,
+  non-inheriting, set on the scroller) equal to its open width, so the reading
+  column clears the overlay at 1201–1439px. A phone drawer adds no inset.
+- The dock no longer tweens its grid track either: the column lands once and the
+  panel slides. `.flow` still resets the three widths so a future inheriting
+  declaration cannot leak into it.
+- `perf/rail-toggle-panes.mjs` holds the frame cost across turn counts;
+  `styles/dockwidth.test.ts` holds the non-inheriting ownership.
+- The gutter writes the width on the pane for the same reason (`DOCK.owner`),
+  and on `.rail` and the handle for the rail's own width while a drag is in flight.
 - The side track is closed unless a panel mounts in it. It was written open and
   closed by `[data-side="off"]`, and the attribute stayed wired to the built-in
   browser after that browser moved onto the workbench. Nothing rendered there
@@ -855,9 +865,10 @@ The scene fold is where the window is a phone: a paired device's browser, or a
 window dragged that narrow. What changes there is how things are reached, not
 what exists.
 
-- The rail is a drawer over the conversation. Its grid track is zero whatever
-  `--rail-w` says, so opening it covers the pane instead of squeezing it to a
-  strip. `.railveil` dims what it covers and closes it on a tap.
+- The rail is a drawer over the conversation at every width: its grid track is
+  zero, and the fixed rail slides over the pane instead of squeezing it. On a
+  phone `.railveil` dims what it covers and closes it on a tap; on a wide window
+  the rail sits over the conversation's left margin.
 - Going somewhere from the drawer — another session, the settings — puts it
   away (`useDrawerCloses`): on a phone the drawer is a route, not a column kept
   beside the work.

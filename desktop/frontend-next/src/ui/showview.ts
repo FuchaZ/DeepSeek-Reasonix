@@ -12,13 +12,19 @@ export function useShowView(id: string, onManualBrowser?: (on: boolean) => void)
     (to: PaneView) => {
       if (to === "browser") {
         onManualBrowser?.(true);
+        // The dock is already open on the same tab: it slides itself; a view
+        // transition here would snapshot the whole pane twice for that motion.
+        if (tab === "flow") return;
         swapping(() => setTab("flow"), "tab");
         return;
       }
-      if (to === "flow") onManualBrowser?.(false);
+      if (to === "flow") {
+        onManualBrowser?.(false);
+        if (tab === "flow") return;
+      }
       swapping(() => setTab(to), "tab");
     },
-    [onManualBrowser, setTab],
+    [onManualBrowser, setTab, tab],
   );
   return [tab, showView];
 }

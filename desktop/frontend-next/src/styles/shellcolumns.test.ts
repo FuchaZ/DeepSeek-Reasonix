@@ -14,7 +14,7 @@ describe("the shell reserves a column only for a panel that mounts in it", () =>
 
   it("closes the side track by default", () => {
     // The rule that names the tracks, not whichever `.app` block comes first.
-    const app = css.match(/\n\s*\.app\s*\{([^}]*--nav-w[^}]*)\}/);
+    const app = css.match(/\n\s*\.app\s*\{([^}]*--side-w[^}]*)\}/);
     expect(app, "no .app track rule found; this file matches nothing").not.toBeNull();
     expect(app![1]).toMatch(/--side-w:\s*0px/);
   });

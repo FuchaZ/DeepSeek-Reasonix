@@ -80,11 +80,19 @@ export function Gutter({ edge, span, width, max = span.max, label, open, onWidth
     bar.dataset.on = "";
     app.dataset.drag = "pointer";
 
-    // 每帧把宽度直接写进变量，而不是走一次 setState：栏宽是拖着的手在感觉的
-    // 东西，而这棵树上还挂着一条正在流的转录。写的是列宽那个变量而不是记住的
-    // 那个 —— 关到一半时两者必须能分开。
+    // Written per frame, not through setState: a drag is felt against a live
+    // transcript. The rail overlays it, so its width, the chrome's offset and
+    // the reading inset follow the pointer; only the dock's grid column moves.
+    const railEl = rail ? (app.querySelector(".rail") as HTMLElement | null) : null;
+    const chromeEl = rail ? (app.querySelector(".chrome") as HTMLElement | null) : null;
+    const scroller = rail ? (app.querySelector('.pane:not([data-off]) .scroll[data-pane="flow"]') as HTMLElement | null) : null;
     const paint = () => {
-      host.style.setProperty(span.col, `${shut ? 0 : now}px`);
+      const width = `${shut ? 0 : now}px`;
+      if (!rail) host.style.setProperty(span.col, width);
+      railEl?.style.setProperty(span.css, width);
+      chromeEl?.style.setProperty(span.css, width);
+      scroller?.style.setProperty("--rail-inset", width);
+      if (rail) bar.style.setProperty(span.css, width);
       bar.style.setProperty("--over", `${over}px`);
       raf = requestAnimationFrame(paint);
     };
@@ -122,13 +130,23 @@ export function Gutter({ edge, span, width, max = span.max, label, open, onWidth
       // 最后一次 move 之后未必还有一帧，栏会停在比松手位置差几像素的地方。这
       // 几像素得在补间恢复之前就落定，否则它们会被慢慢走完 —— 松手时的一记回
       // 弹。读一次布局，就是让这个值先以「不补间」的身份定下来。
-      host.style.setProperty(span.col, `${shut ? 0 : now}px`);
+      const width = `${shut ? 0 : now}px`;
+      if (!rail) host.style.setProperty(span.col, width);
+      railEl?.style.setProperty(span.css, width);
+      chromeEl?.style.setProperty(span.css, width);
+      scroller?.style.setProperty("--rail-inset", width);
+      if (rail) bar.style.setProperty(span.css, width);
       void host.offsetWidth;
       delete app.dataset.drag;
       // Held one frame longer than the release: the stylesheet only produces
       // this same width once React has landed the open/closed attribute, and
       // clearing early flashes the column it had before the drag.
-      requestAnimationFrame(() => host.style.removeProperty(span.col));
+      requestAnimationFrame(() => {
+        if (!rail) host.style.removeProperty(span.col);
+        railEl?.style.removeProperty(span.css);
+        chromeEl?.style.removeProperty(span.css);
+        if (rail) bar.style.removeProperty(span.css);
+      });
       if (shut === open) onOpen(!shut);
       if (!shut) onWidth(now);
     };
@@ -193,6 +211,7 @@ export function Gutter({ edge, span, width, max = span.max, label, open, onWidth
       aria-valuemin={0}
       aria-valuemax={max}
       data-shut={open ? undefined : ""}
+      data-rail={rail ? (open ? "on" : "off") : undefined}
       tabIndex={0}
       onPointerDown={drag}
       onDoubleClick={() => open && onWidth(span.def)}

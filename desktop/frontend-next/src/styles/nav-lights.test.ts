@@ -9,17 +9,17 @@ const css = CSS["./studio.css"]!;
 const rules = (selector: RegExp) => [...css.matchAll(selector)].map((m) => m[1]!).join("\n");
 
 it("starts the icon rail's edge below the title bar where the window controls float", () => {
-  const rule = rules(/\[data-titlebar="app"\]\[data-platform="darwin"\] \.app\[data-nav="on"\] \.nav\s*\{([^}]*)\}/g);
+  const rule = rules(/\[data-titlebar="app"\]\[data-platform="darwin"\] \.nav\[data-nav="on"\]\s*\{([^}]*)\}/g);
   expect(rule).toMatch(/border-right-width:\s*0/);
   expect(rule).toMatch(/background-size:\s*1px calc\(100% - var\(--chrome-h\)\)/);
   expect(rule).toMatch(/background-position:\s*right bottom/);
 });
 
 it("lets the rail's corner take the page colour only while the sidebar is closed, so an open sidebar's header stays one band with it", () => {
-  const closed = rules(/\[data-titlebar="app"\]\[data-platform="darwin"\] \.app\[data-nav="on"\]\[data-rail="off"\] \.nav\s*\{([^}]*)\}/g);
+  const closed = rules(/\[data-titlebar="app"\]\[data-platform="darwin"\] \.nav\[data-nav="on"\]\[data-rail="off"\]\s*\{([^}]*)\}/g);
   expect(closed).toMatch(/background-color:\s*transparent/);
   expect(closed).toMatch(/100% calc\(100% - var\(--chrome-h\)\)/);
-  const always = rules(/\[data-titlebar="app"\]\[data-platform="darwin"\] \.app\[data-nav="on"\] \.nav\s*\{([^}]*)\}/g);
+  const always = rules(/\[data-titlebar="app"\]\[data-platform="darwin"\] \.nav\[data-nav="on"\]\s*\{([^}]*)\}/g);
   expect(always).not.toMatch(/background-color/);
 });
 

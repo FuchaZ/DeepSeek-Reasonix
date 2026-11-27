@@ -3,6 +3,9 @@
 
 .chrome {
 
+  --rail-w: var(--rail-open);
+  --nav-w: 0px;
+  --rail-toggle-gap: 0px;
   --chrome-pad-l: max(20px, calc(var(--lights-w) + var(--rail-toggle-gap) - var(--nav-w) - var(--rail-w)));
   --chrome-pad-r: 12px;
   --chrome-pad-sum: calc(var(--chrome-pad-l) + var(--chrome-pad-r));
@@ -16,8 +19,9 @@
   margin-left: calc(var(--nav-w) + var(--rail-w));
   padding: 0 var(--chrome-pad-r) 0 var(--chrome-pad-l);
   background: var(--surface); color: var(--text); border-bottom: 1px solid var(--hair); box-shadow: none;
-  transition: margin-left var(--t-panel) var(--ease-out);
 }
+.chrome[data-rail="off"] { --rail-w: 0px }
+.chrome[data-nav="on"] { --nav-w: var(--nav-open) }
 @media (max-width: 680px) { .chrome { margin-left: var(--nav-w); } }
 .chrome .crumb { display: flex; align-items: center; align-self: center; gap: 8px; min-width: 0; overflow: hidden; color: var(--faint); font: var(--w-reg) var(--fs-ui) var(--ui); }
 .chrome .crumb-folder { width: 16px; height: 16px; padding: 0; border: 0; background: none; color: var(--muted); display: inline-flex; align-items: center; justify-content: center; flex: none; }

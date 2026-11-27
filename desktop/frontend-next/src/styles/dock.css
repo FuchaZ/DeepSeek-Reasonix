@@ -1,20 +1,19 @@
 
 @container conversation (max-width: 555px) {
-  .app[data-browser="on"] .pane:has(> .pbody[data-dock]) > .findhost { grid-area: 1 / 1 / 2 / 3 }
-  .app[data-browser="on"] .pane:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] {
+  .pane[data-browser="on"]:has(> .pbody[data-dock]) > .findhost { grid-area: 1 / 1 / 2 / 3 }
+  .pane[data-browser="on"]:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] {
     grid-area: 2 / 1 / 4 / 3; border-left: 0; --dock-stacked: 1;
   }
-  .app[data-browser="on"] .pane:has(> .pbody[data-dock]) > :is(.pbody, .compose, .gutter-r) { display: none }
+  .pane[data-browser="on"]:has(> .pbody[data-dock]) > :is(.pbody, .compose, .gutter-r) { display: none }
 }
-.pane:has(> .pbody[data-dock]) { --dock-w: var(--dock-open); transition: --dock-w var(--t-panel) cubic-bezier(.4, 0, .2, 1) }
-.app[data-browser="off"] .pane:has(> .pbody[data-dock]) { --dock-w: 0px }
-.app[data-drag] .pane:has(> .pbody[data-dock]) { transition: none }
+.pane:has(> .pbody[data-dock]) { --dock-w: var(--dock-open) }
+.pane[data-browser="off"]:has(> .pbody[data-dock]) { --dock-w: 0px }
 
-.app[data-browser="on"] .chrome {
+.chrome[data-browser="on"] {
 
   --dock-col: min(var(--dock-open), calc(100% - var(--side-w) - var(--dock-left-min)));
 }
-.app[data-browser="on"] .chrome .wb-dock-head:not(:empty) {
+.chrome[data-browser="on"] .wb-dock-head:not(:empty) {
   --winctl-end: max(6px, calc(var(--winctl-w) - var(--chrome-gap) - var(--winctl-lead) - var(--side-w)));
   position: absolute; left: auto;
   right: calc(var(--side-w) + var(--winctl-end));
@@ -25,7 +24,7 @@
   box-sizing: border-box;
   padding-left: 10px;
 }
-.app[data-browser="on"] .chrome .r:has(.wb-dock-head:not(:empty)) {
+.chrome[data-browser="on"] .r:has(.wb-dock-head:not(:empty)) {
 
   --dock-col-c: min(var(--dock-open), calc(100% + var(--chrome-pad-sum) - var(--side-w) - var(--dock-left-min)));
 

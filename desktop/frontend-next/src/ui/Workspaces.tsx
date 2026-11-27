@@ -1139,7 +1139,15 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
 
 // Panes report upward on every usage round, so the window repaints often; the
 // tree it holds does not change nearly that often.
-export const Workspaces = memo(WorkspacesView);
+const sameWorkspaces = (a: WorkspacesProps, b: WorkspacesProps) => {
+  for (const key of Object.keys(a) as (keyof WorkspacesProps)[]) {
+    if (typeof a[key] === "function") continue;
+    if (a[key] !== b[key]) return false;
+  }
+  return true;
+};
+
+export const Workspaces = memo(WorkspacesView, sameWorkspaces);
 
 // Which runs reached "done" since `before` last recorded them. A state is not
 // an event: `done` persists, so only a change no first sighting can produce —

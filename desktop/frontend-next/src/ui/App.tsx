@@ -7,7 +7,7 @@ import { usePickerProjects } from "./useNewSessionPicker";
 import { watchTreeWake } from "./treewake";
 import { usePinnedSessions } from "./usePinnedSessions";
 import { useWindowNotices } from "./useWindowNotices";
-import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
+import { lazy, Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties } from "react";
 import { reason } from "../i18n/kernel";
 import { t } from "../i18n";
 import type { AgentPort, ProviderSetup } from "../port/port";
@@ -375,6 +375,12 @@ export function App({ hub }: { hub: HubPort }) {
   useFoldAway("rail", setRail);
   const navRail = useNavRail(rail);
   const drawer = useFolded("scene");
+  // The rail overlays the reading column, so its width is the scroller's left
+  // inset. Writing it here keeps the transcript out of the rail's render.
+  useLayoutEffect(() => {
+    const scroller = document.querySelector<HTMLElement>('.pane:not([data-off]) .scroll[data-pane="flow"]');
+    scroller?.style.setProperty("--rail-inset", `${rail && !drawer ? railW : 0}px`);
+  }, [active, drawer, rail, railW]);
   const hidesAmounts = useHidesAmounts();
   const [palette, setPalette] = useState(false);
   useDrawerCloses(setRail, active, settings);
@@ -574,11 +580,12 @@ export function App({ hub }: { hub: HubPort }) {
         onFind={find.toggle}
         view={report.view} rows={report.rows} onView={showView}
         hub={hub} onError={fail}
+        rail={rail} navShown={navRail.shown} browser={browser}
       />
 
       <WallpaperStage sky={!!pack?.sky && effects !== "reduced"} look={look} onLook={onLook} />
 
-      <div className="cols">
+      <div className="cols" style={{ "--nav-w": navRail.shown ? "var(--nav-open)" : "0px" } as CSSProperties}>
         {navRail.drawn && (
           <Nav
             at={settings === false ? null : settings === true ? "" : settings}
@@ -592,6 +599,7 @@ export function App({ hub }: { hub: HubPort }) {
             }}
             feedbackUnread={feedbackUnread}
             shown={navRail.shown}
+            rail={rail}
             wallet={report.wallet}
             approval={report.status?.toolApprovalMode}
             online={(remotes ?? []).filter((h) => h.status === "connected" || h.status === "degraded").length}

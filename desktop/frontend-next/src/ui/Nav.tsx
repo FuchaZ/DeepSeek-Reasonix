@@ -30,9 +30,10 @@ interface Props {
   feedbackUnread: number;
   /** False keeps the column mounted but out of the way and out of reach. */
   shown: boolean;
+  rail?: boolean;
 }
 
-export function Nav({ at, onGo, onFiles, onFeedback, onNew, onSearch, feedbackUnread, shown, wallet, approval, online, hideAmounts, schedules = 0 }: Props) {
+export function Nav({ at, onGo, onFiles, onFeedback, onNew, onSearch, feedbackUnread, shown, wallet, approval, online, hideAmounts, schedules = 0, rail = false }: Props) {
   const entries = useBarEntries();
   // What the sidebar prints beside each name. An icon column has no room for the
   // name, so the reading becomes the tooltip instead of a label.
@@ -48,7 +49,7 @@ export function Nav({ at, onGo, onFiles, onFeedback, onNew, onSearch, feedbackUn
   // are arranged.
   const menu = useNavBarMenu();
   return (
-    <nav className="nav" aria-label={t("settings.main_navigation")} aria-hidden={shown ? undefined : true} inert={!shown}>
+    <nav className="nav" data-nav={shown ? "on" : "off"} data-rail={rail ? "on" : "off"} aria-label={t("settings.main_navigation")} aria-hidden={shown ? undefined : true} inert={!shown}>
       <div className="navgrp" onContextMenu={menu.openAt}>
         {/* One list for the whole bar: an order set in 自定义导航栏 is the order
             drawn here — the two commands included. */}
