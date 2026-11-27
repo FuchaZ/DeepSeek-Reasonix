@@ -26,6 +26,7 @@
   padding-top: calc(6px + var(--rx-safe-top));
 }
 
+[data-fold~="rail"] .studio-menu,
 [data-fold~="phone"] .studio-menu {
   top: calc(var(--rx-safe-top) + (var(--chrome-h) - 28px) / 2);
 }
