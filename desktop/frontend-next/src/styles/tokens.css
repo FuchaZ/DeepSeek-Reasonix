@@ -44,6 +44,7 @@
 @property --side-w { syntax: "<length>"; inherits: true; initial-value: 316px }
 @property --dock-w { syntax: "<length>"; inherits: false; initial-value: 520px }
 @property --rail-inset { syntax: "<length>"; inherits: false; initial-value: 0px }
+@property --rail-shift { syntax: "<length>"; inherits: false; initial-value: 0px }
 
 @property --win-ar { syntax: "<number>"; inherits: true; initial-value: 1.6 }
 
@@ -97,6 +98,7 @@
       1.017 63.9%, 1.001 84.2%, 1);
 
     --t-line: .12s; --t-card: .18s; --t-panel: .26s;
+    --t-drawer: .26s; --ease-drawer: cubic-bezier(.7, .1, .5, .9);
 
     --t-live: .6s;
     --tip-delay: .3s;

@@ -1,13 +1,31 @@
 .compose {
   --pad-x: 0px; --pad-b: 0px;
-  width: min(var(--column), calc(100% - var(--srail-w) - 42px)); max-width: none;
+  width: min(var(--column), calc(100% - var(--srail-w) - 42px - var(--rail-inset, 0px))); max-width: none;
   margin: 0 auto 35px; padding: 0;
   border-radius: var(--r-lg); background: var(--compose-surface, var(--raised));
   box-shadow: 0 3px 12px rgb(25 30 25 / .07);
+  transform: translateX(var(--rail-shift, 0px));
+}
+.composer-top {
+  width: min(var(--column), calc(100% - var(--srail-w) - 42px - var(--rail-inset, 0px)));
+  transform: translateX(var(--rail-shift, 0px));
 }
 .compose::after { border-color: var(--border); }
-@media (max-width: 760px) { .compose { width: calc(100% - 20px); } }
-@media (max-width: 680px) { .compose { width: calc(100% - 24px); } }
+@media (max-width: 760px) { .compose { width: calc(100% - 20px - var(--rail-inset, 0px)); } }
+@media (max-width: 680px) { .compose { width: calc(100% - 24px - var(--rail-inset, 0px)); } }
+.compose[data-rail-move], .composer-top[data-rail-move] {
+  transition: width var(--t-drawer) var(--ease-drawer), transform var(--t-drawer) var(--ease-drawer);
+}
+.compose[data-rail-move="pad"], .composer-top[data-rail-move="pad"] {
+  position: relative;
+  left: calc(var(--rail-inset, 0px) / 2);
+  transform: none;
+  transition: width var(--t-drawer) var(--ease-drawer), left var(--t-drawer) var(--ease-drawer);
+}
+.app[data-drag] :is(.compose, .composer-top)[data-rail-move] { transition: none }
+@media (prefers-reduced-motion: reduce) {
+  .compose[data-rail-move], .composer-top[data-rail-move] { transition: none }
+}
 
 .compose .studio-runstate { box-sizing: border-box; min-height: 30px; gap: 8px; padding: 6px 12px 0; margin: 0; color: var(--muted); font: var(--w-reg) var(--fs-micro)/1.2 var(--ui); }
 .compose:is(:not(:has(.changedpill)), :has(.composeaux > .posturenote)) .studio-runstate[data-idle] { display: none; }

@@ -4,7 +4,7 @@ import { act, cleanup, render, renderHook, screen } from "@testing-library/react
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { langOf } from "./fileKind";
-import { leave, slideAway, useEnteringTabs, useOpenSlide } from "./workbench_motion";
+import { leave, useEnteringTabs } from "./workbench_motion";
 import { WorkbenchTabPicker } from "./WorkbenchTabPicker";
 
 afterEach(() => { cleanup(); vi.useRealTimers(); });
@@ -71,28 +71,5 @@ describe("tabs that move, as the WB-Frame board draws them", () => {
     const shown = rows.filter((row) => row.getAttribute("aria-current") === "true");
     expect(shown, "one row is the current one").toHaveLength(1);
     expect(shown[0], "and it is the fourth").toBe(rows[3]);
-  });
-
-  it("slides the workbench in when it is brought out, and not when it is drawn already out", () => {
-    const el = document.createElement("section");
-    const animate = vi.fn(() => ({ finished: Promise.resolve() }));
-    Object.assign(el, { animate });
-    const ref = { current: el };
-    const { rerender } = renderHook(({ shown }) => useOpenSlide(ref, shown), { initialProps: { shown: true } });
-    expect(animate).not.toHaveBeenCalled();
-    rerender({ shown: false });
-    rerender({ shown: true });
-    expect(animate).toHaveBeenCalledTimes(1);
-  });
-
-  it("puts the workbench away once it has slid out", async () => {
-    const el = document.createElement("section");
-    let finish!: () => void;
-    Object.assign(el, { animate: () => ({ finished: new Promise<void>((done) => { finish = done; }) }) });
-    const then = vi.fn();
-    slideAway(el, then);
-    expect(then).not.toHaveBeenCalled();
-    await act(async () => finish());
-    expect(then).toHaveBeenCalled();
   });
 });

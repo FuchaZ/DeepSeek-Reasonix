@@ -391,21 +391,21 @@ body { background: var(--page) !important; }
   z-index: 12;
   inset: 0 auto 0 var(--nav-w);
   width: var(--rail-open);
+  transform: none;
   display: flex;
   flex-direction: column;
   background: var(--page) !important;
   border-right: 1px solid var(--hair);
   color: var(--text);
-  transform: none;
-  transition: transform var(--t-panel) var(--ease-out), opacity var(--m-card) !important;
+  transition: transform var(--t-drawer) var(--ease-drawer), opacity var(--m-card) !important;
 }
+.app[data-drag] .rail { transition: none !important }
 .rail > * { width: var(--rail-open); }
 .railscroll { min-height: 0; }
 .main { background: var(--surface) !important; }
 .panes { background: var(--surface) !important; }
 .railhost { display: block; }
 .app { --srail-w: 36px; }
-[data-fold~="scene"] .chrome, .chrome[data-rail="off"] { --rail-toggle-gap: 50px; }
 
 /* Prototype header */
 .studio-menu { position: fixed; z-index: 39; left: calc(var(--lights-w) + 10px); top: calc((var(--chrome-h) - 30px) / 2); width: 30px; height: 30px; display: grid; place-items: center; padding: 0; border: 1px solid transparent; border-radius: var(--r-sm); background: transparent; color: var(--faint); cursor: pointer; }
@@ -568,6 +568,15 @@ body { background: var(--page) !important; }
 }
 [data-pane="flow"]:has(> .flow:not([data-empty])) { flex: 1 1 0; scrollbar-gutter: stable both-edges; }
 [data-pane="flow"] { padding-left: var(--rail-inset, 0px) }
+[data-pane="analysis"], .pane[data-browser="off"] > .scroll[data-pane="browser"] { padding-left: var(--rail-inset, 0px) }
+[data-pane="flow"][data-rail-move="slide"] {
+  padding-left: 0;
+  transform: translateX(var(--rail-shift, 0px));
+  transition: transform var(--t-drawer) var(--ease-drawer);
+}
+[data-pane="flow"][data-rail-move="pad"] { transition: padding-left var(--t-drawer) var(--ease-drawer) }
+.app[data-drag] [data-pane="flow"][data-rail-move="pad"] { transition: none }
+.app[data-drag] [data-pane="flow"][data-rail-move="slide"] { transition: none }
 [data-pane="flow"]::-webkit-scrollbar-button { display: none; }
 [data-pane="flow"]::-webkit-scrollbar-corner { background: transparent; }
 .turn-rule { margin: 32px 0 20px; border: 0; border-top: 1px solid var(--border); }
@@ -1488,6 +1497,9 @@ body { background: var(--page) !important; }
   .app,
   .rail,
   .side,
+  [data-pane="flow"][data-rail-move="slide"],
+  [data-pane="flow"][data-rail-move="pad"],
+  .gutter-l,
   .prefs,
   .prefs-sheet,
   .chrome-context-card,

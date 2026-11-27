@@ -16,7 +16,7 @@ import { WorkbenchStatus } from "./WorkbenchStatus";
 import { WorkbenchFileTree } from "./WorkbenchFileTree";
 import { WorkbenchChangesPage } from "./WorkbenchChangesPage";
 import { UnifiedDiff } from "./UnifiedDiff";
-import { leave, slideAway, useEnteringTabs, useOpenSlide, useSwitchFade, useTabStrip } from "./workbench_motion";
+import { leave, useEnteringTabs, useSwitchFade, useTabStrip } from "./workbench_motion";
 import { WorkbenchTabPicker } from "./WorkbenchTabPicker";
 import { WorkbenchCloseAsk } from "./WorkbenchCloseAsk";
 import { WorkbenchState } from "./WorkbenchState";
@@ -382,7 +382,6 @@ export function WorkbenchPanel({
   // brought into it: a selected tab nobody can see reads as a tab that closed.
   const canvas = useRef<HTMLDivElement>(null);
   const frame = useRef<HTMLElement>(null);
-  useOpenSlide(frame, shown);
   const [asking, setAsking] = useState<{ path: string; anchor: HTMLElement } | null>(null);
   const tabKeys = surfaces.map(keyOf);
   const entering = useEnteringTabs(tabKeys);
@@ -600,7 +599,7 @@ export function WorkbenchPanel({
         </TooltipButton>
         {fullMode && <BrowserFullToggle {...fullMode} />}
         {onDismiss && (
-          <TooltipButton className="workbench-dismiss" data-action="workbench.dismiss" aria-label={t("app.close_workbench")} title={t("app.close_workbench")} onClick={() => slideAway(frame.current, onDismiss)}>
+          <TooltipButton className="workbench-dismiss" data-action="workbench.dismiss" aria-label={t("app.close_workbench")} title={t("app.close_workbench")} onClick={onDismiss}>
             <StudioIcon name="close" />
           </TooltipButton>
         )}

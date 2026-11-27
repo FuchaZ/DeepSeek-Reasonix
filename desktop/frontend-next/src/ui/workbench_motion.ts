@@ -46,22 +46,3 @@ export function useTabStrip(): RefObject<HTMLDivElement | null> {
   return useRef<HTMLDivElement>(null);
 }
 
-/** Slides the workbench in from the right when it is brought out, never when it is
- *  drawn already out, so a window that opens with it open does not move. */
-export function useOpenSlide(ref: RefObject<HTMLElement | null>, shown: boolean) {
-  const was = useRef(shown);
-  useEffect(() => {
-    const opened = !was.current && shown;
-    was.current = shown;
-    const el = ref.current;
-    if (opened && el && typeof el.animate === "function" && !still()) {
-      el.animate([{ transform: "translateX(24px)", opacity: 0 }, { transform: "none", opacity: 1 }], { duration: 200, easing: "cubic-bezier(.2,0,0,1)" });
-    }
-  }, [ref, shown]);
-}
-
-/** Slides the workbench back out before it is put away; at once when motion is reduced. */
-export function slideAway(el: HTMLElement | null, then: () => void) {
-  if (!el || typeof el.animate !== "function" || still()) return then();
-  el.animate([{ transform: "none", opacity: 1 }, { transform: "translateX(24px)", opacity: 0 }], { duration: 160, easing: "ease-in" }).finished.then(then, then);
-}

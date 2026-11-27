@@ -5,9 +5,16 @@
     grid-area: 2 / 1 / 4 / 3; border-left: 0; --dock-stacked: 1;
   }
   .pane[data-browser="on"]:has(> .pbody[data-dock]) > :is(.pbody, .compose, .gutter-r) { display: none }
+  .pane[data-browser="on"]:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] .workbench { width: auto }
 }
-.pane:has(> .pbody[data-dock]) { --dock-w: var(--dock-open) }
+.pane:has(> .pbody[data-dock]) { --dock-w: var(--dock-open); transition: --dock-w var(--t-drawer) var(--ease-drawer) }
 .pane[data-browser="off"]:has(> .pbody[data-dock]) { --dock-w: 0px }
+.pane:has(> .pbody[data-dock]):not([data-browser-size="full"]) > .scroll[data-pane="browser"] .workbench { width: var(--dock-open) }
+.app[data-drag] .pane:has(> .pbody[data-dock]) { transition: none }
+.app[data-drag] .pane:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] .workbench { width: auto }
+@media (prefers-reduced-motion: reduce) {
+  .pane:has(> .pbody[data-dock]) { transition: none }
+}
 
 .chrome[data-browser="on"] {
 

@@ -503,7 +503,8 @@
     position: absolute; top: 0; bottom: 0; width: 7px; z-index: 5;
     cursor: col-resize; touch-action: none;
   }
-  .gutter-l { left: -1px; z-index: 13 }
+  .gutter-l { left: -1px; z-index: 13; transition: left var(--t-drawer) var(--ease-drawer) }
+  .app[data-drag] .gutter-l { transition: none }
   .gutter-r { right: -6px }
   .gutter::after {
     content: ""; position: absolute; top: 0; bottom: 0; left: 50%; width: 2px; margin-left: -1px;
@@ -648,7 +649,7 @@
   }
   .pane:has(> .pbody[data-dock]) > .pbody { padding-right: 6px }
   .pane:has(> .pbody[data-dock]) > .gutter-r[data-shut] { width: 14px; margin: 0 0 0 -15px; align-self: center }
-  .pane[data-browser="off"]:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] { visibility: hidden; transition-property: visibility; transition-duration: 0s; transition-delay: var(--t-panel) }
+  .pane[data-browser="off"]:has(> .pbody[data-dock]) > .scroll[data-pane="browser"] { visibility: hidden; transition-property: visibility; transition-duration: 0s; transition-delay: var(--t-drawer) }
   .pane:has(> .pbody[data-dock]) .workbench-body:not([data-files]) { grid-template-columns: minmax(0, 1fr) }
   .pane:has(> .pbody[data-dock]) .workbench-body:not([data-files]) .workbench-explorer { display: none }
   .pane:has(> .pbody[data-dock]) .workbench-body:not([data-files]) .workbench-canvas { grid-column: 1 }

@@ -86,12 +86,38 @@ export function Gutter({ edge, span, width, max = span.max, label, open, onWidth
     const railEl = rail ? (app.querySelector(".rail") as HTMLElement | null) : null;
     const chromeEl = rail ? (app.querySelector(".chrome") as HTMLElement | null) : null;
     const scroller = rail ? (app.querySelector('.pane:not([data-off]) .scroll[data-pane="flow"]') as HTMLElement | null) : null;
+    const composer = rail ? (app.querySelector('.pane:not([data-off]) .compose') as HTMLElement | null) : null;
+    const composerTop = rail ? (app.querySelector('.pane:not([data-off]) .composer-top') as HTMLElement | null) : null;
+    // A capped reading column follows by transform, so a drag costs it no
+    // layout; past the room it has the shift stops and the rail passes over it.
+    const slide = scroller?.dataset.railMove === "slide";
+    const flow = slide ? (scroller?.querySelector(".flow") as HTMLElement | null) : null;
+    const slideMax = slide && scroller && flow
+      ? Math.max(0, (scroller.clientWidth - flow.getBoundingClientRect().width) / 2)
+      : 0;
+    const place = (el: HTMLElement | null, w: number) => {
+      if (!el) return;
+      el.style.setProperty("--rail-shift", `${Math.min(w / 2, slideMax)}px`);
+      el.style.setProperty("--rail-inset", slide ? "0px" : `${w}px`);
+    };
+    const pages = rail
+      ? [
+          app.querySelector<HTMLElement>('.pane:not([data-off]) .scroll[data-pane="analysis"]'),
+          app.querySelector<HTMLElement>('.pane:not([data-off]) > .scroll[data-pane="browser"]'),
+        ]
+      : [];
+    const placeScroller = (w: number) => {
+      place(scroller, w);
+      place(composer, w);
+      place(composerTop, w);
+      for (const el of pages) el?.style.setProperty("--rail-inset", `${w}px`);
+    };
     const paint = () => {
       const width = `${shut ? 0 : now}px`;
       if (!rail) host.style.setProperty(span.col, width);
       railEl?.style.setProperty(span.css, width);
       chromeEl?.style.setProperty(span.css, width);
-      scroller?.style.setProperty("--rail-inset", width);
+      placeScroller(shut ? 0 : now);
       if (rail) bar.style.setProperty(span.css, width);
       bar.style.setProperty("--over", `${over}px`);
       raf = requestAnimationFrame(paint);
@@ -134,7 +160,7 @@ export function Gutter({ edge, span, width, max = span.max, label, open, onWidth
       if (!rail) host.style.setProperty(span.col, width);
       railEl?.style.setProperty(span.css, width);
       chromeEl?.style.setProperty(span.css, width);
-      scroller?.style.setProperty("--rail-inset", width);
+      placeScroller(shut ? 0 : now);
       if (rail) bar.style.setProperty(span.css, width);
       void host.offsetWidth;
       delete app.dataset.drag;

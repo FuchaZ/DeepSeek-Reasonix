@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import app from "./app.css?raw";
 import shell from "../design/shell.css?raw";
 import sidebar from "../design/sidebar.css?raw";
-import studio from "./studio.css?raw";
 
 // With the workspace column shut, the chrome's left edge carries the drawer
 // toggle and the icon rail, both fixed drag surfaces. The folder mark sits
@@ -25,7 +24,7 @@ describe("the project mark stays a control in a collapsed title bar", () => {
   it("still leaves the rest of the bar draggable", () => {
     expect(app).toMatch(/\[data-titlebar="app"\] \.chrome \{ -webkit-app-region: drag \}/);
     expect(shell).toMatch(/\.chrome \{[^}]*position: relative/);
-    expect(studio).toMatch(/\.chrome\[data-rail="off"\] \{ --rail-toggle-gap: 50px; \}/);
+    expect(shell).toMatch(/\.chrome\[data-rail="off"\] \{ --rail-w: 0px; --rail-toggle-gap: 50px \}/);
   });
 
   it("strips the folded rail's brand of its drag region", () => {

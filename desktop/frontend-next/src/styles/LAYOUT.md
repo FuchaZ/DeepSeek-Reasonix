@@ -385,16 +385,18 @@ the picker and keyboard navigation.
   selector remains: an attribute flip on `.app` would invalidate the whole
   conversation subtree even when only the rail changes. The state lives on the
   elements that read it.
-- The rail's grid column is always zero. The rail is fixed and slides with
-  transform/opacity over the conversation, so the conversation width never
-  changes and the transcript never reflows during the fold. The chrome's margin
-  follows the rail; it is the only box that changes.
-- The rail also owns the transcript scroller's left inset (`--rail-inset`,
-  non-inheriting, set on the scroller) equal to its open width, so the reading
-  column clears the overlay at 1201–1439px. A phone drawer adds no inset.
-- The dock no longer tweens its grid track either: the column lands once and the
-  panel slides. `.flow` still resets the three widths so a future inheriting
-  declaration cannot leak into it.
+- The rail's grid column is always zero. The rail is a fixed overlay that slides
+  away with transform, so the pane's box never moves; the chrome's margin and
+  padding follow it on the same drawer curve.
+- The rail also moves the reading scroller (`--rail-inset`, non-inheriting, set
+  on the scroller), so the column clears the overlay at 1201–1439px. Where the
+  column is width-capped it follows by `translateX(--rail-shift)` and the toggle
+  owes it no layout at all; where the room actually narrows the column, the
+  inset reflows it with the drawer transition. A phone drawer adds neither.
+- The dock tweens its grid track once with the same drawer curve; the workbench
+  panel keeps its final width and is clipped, so its contents do not reflow
+  during the reveal. `.flow` still resets the three widths so a future
+  inheriting declaration cannot leak into it.
 - `perf/rail-toggle-panes.mjs` holds the frame cost across turn counts;
   `styles/dockwidth.test.ts` holds the non-inheriting ownership.
 - The gutter writes the width on the pane for the same reason (`DOCK.owner`),
