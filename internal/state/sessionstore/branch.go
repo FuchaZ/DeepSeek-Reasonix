@@ -108,8 +108,13 @@ const (
 	// Positive counts from this version remain authoritative.
 	branchMetaCountsInitialVersion = 1
 	// BranchMetaCountsVersion certifies that zero turns came from a successful,
-	// error-aware decode. Version 1 could cache a preview failure as zero turns.
-	BranchMetaCountsVersion = 2
+	// error-aware decode. Version 2 could cache a host-opened first turn as no
+	// subject at all; version 3 derives the preview from that turn too.
+	BranchMetaCountsVersion = 3
+	// branchMetaCountsAuthoritativeVersion is the first version whose zero was a
+	// successful decode rather than an unread artifact, so a newer rule may
+	// re-derive it instead of leaving it unknown.
+	branchMetaCountsAuthoritativeVersion = 2
 )
 
 // InFlightTurnMeta records the message-log boundary for a foreground turn that

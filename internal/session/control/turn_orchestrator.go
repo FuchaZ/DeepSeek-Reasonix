@@ -278,15 +278,17 @@ func (o *turnOrchestrator) runOrchestratedTurn(ctx context.Context, turn orchest
 		if errors.Is(err, context.Canceled) && c.CancelRequested() {
 			if c.askSkipInFlight() {
 				c.dropInterruptedDisplayAfter(startMessages)
-			} else if turn.synthetic || IsSyntheticUserMessage(turn.raw) {
+			} else if (turn.synthetic || IsSyntheticUserMessage(turn.raw)) && !(turn.opensTurn && c.turnOpensSession(startMessages)) {
 				c.stripInterruptedSyntheticTurnMessagesAfter(startMessages)
 			} else {
-				c.stripCancelledVisibleTurnMessagesAfterWithFallback(startMessages, provider.Message{
+				fallback := provider.Message{
 					Role:      provider.RoleUser,
 					Content:   input,
 					Images:    append([]string(nil), images.userImages...),
 					CreatedAt: time.Now().UnixMilli(),
-				})
+				}
+				fallback.HostAuthored = turn.synthetic
+				c.stripCancelledVisibleTurnMessagesAfterWithFallback(startMessages, fallback)
 			}
 		} else if !turn.synthetic && !IsSyntheticUserMessage(turn.raw) && c.hasInterruptedDisplayAfter(startMessages, provider.Message{
 			Role: provider.RoleUser, Content: input,
@@ -341,7 +343,14 @@ func (c *Controller) announceAuthoredTurn(ctx context.Context, raw string, msgIn
 // because they are one decision: the index the marker records is the index the
 // announcement names.
 func (c *Controller) openTurnBoundary(ctx context.Context, turn orchestratedTurn, msgIndex int) (context.Context, sessionstore.InFlightTurnMeta) {
-	ctx, marker := c.beginTurn(ctx, msgIndex, !turn.synthetic && !IsSyntheticUserMessage(turn.raw))
+	// A synthetic turn that opens the session — a dispatched task, an extension
+	// prompt — is the session's subject, not scaffolding inside someone else's
+	// turn, so recovery preserves it like a visible prompt.
+	preserveUser := !turn.synthetic && !IsSyntheticUserMessage(turn.raw)
+	if !preserveUser && turn.opensTurn {
+		preserveUser = c.turnOpensSession(msgIndex)
+	}
+	ctx, marker := c.beginTurn(ctx, msgIndex, preserveUser)
 	if turn.synthetic {
 		if turn.opensTurn {
 			c.sink.Emit(event.Event{Kind: event.TurnStarted, ModelRef: c.modelRef})

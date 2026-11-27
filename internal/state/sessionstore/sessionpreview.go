@@ -15,13 +15,13 @@ func SessionPreview(path string) (string, int) {
 // SessionPreviewFromMessages computes the same preview line and user-turn count
 // as previewSession, but from an in-memory message slice. Session.Save writes
 // exactly these messages to the .jsonl, so this is byte-for-byte equivalent to
-// decoding the file — letting the autosave path persist the counts into the
-// sidecar without a disk read.
+// decoding the file. The preview falls back to a host-opened first turn, so a
+// dispatched session has a subject; the count stays the person's own turns.
 func SessionPreviewFromMessages(msgs []provider.Message) (string, int) {
-	first := ""
+	firstUser, firstOpening := "", ""
 	turns := 0
 	for _, m := range msgs {
-		if m.Role != provider.RoleUser || m.HostAuthored {
+		if m.Role != provider.RoleUser {
 			continue
 		}
 		// A steer is guidance inside a turn; its displayed copy in RawContent
@@ -29,15 +29,26 @@ func SessionPreviewFromMessages(msgs []provider.Message) (string, int) {
 		if _, _, isSteer := SteerSourceOf(m.Content); isSteer {
 			continue
 		}
-		if !IsUserAuthoredTurn(UserMessageText(m)) {
+		text := UserMessageText(m)
+		if !IsUserAuthoredTurn(text) {
+			continue
+		}
+		preview := TruncatePreview(PreviewProse(text))
+		if firstOpening == "" {
+			firstOpening = preview
+		}
+		if m.HostAuthored {
 			continue
 		}
 		turns++
-		if first == "" {
-			first = TruncatePreview(PreviewProse(UserMessageText(m)))
+		if firstUser == "" {
+			firstUser = preview
 		}
 	}
-	return first, turns
+	if firstUser != "" {
+		return firstUser, turns
+	}
+	return firstOpening, turns
 }
 
 // previewSession returns the first user message (truncated) and the number of
@@ -79,15 +90,18 @@ func TruncatePreview(s string) string {
 	return s
 }
 
-// UserMessagesTitleSource returns the last 300 runes of all human-authored turns joined in order.
+// UserMessagesTitleSource returns the last 300 runes of all human-authored turns
+// joined in order, or a host-opened session's opening turn when the person never
+// wrote one.
 func UserMessagesTitleSource(path string) (string, error) {
 	msgs, _, _, err := loadSessionMessages(path)
 	if err != nil {
 		return "", err
 	}
 	var parts []string
+	subject := ""
 	for _, m := range msgs {
-		if m.Role != provider.RoleUser || m.HostAuthored {
+		if m.Role != provider.RoleUser {
 			continue
 		}
 		text := UserMessageText(m)
@@ -95,9 +109,22 @@ func UserMessagesTitleSource(path string) (string, error) {
 			continue
 		}
 		text = strings.TrimSpace(StripPasteDisplayLabel(text))
-		if text != "" {
-			parts = append(parts, text)
+		if text == "" {
+			continue
 		}
+		if subject == "" {
+			subject = text
+		}
+		if m.HostAuthored {
+			continue
+		}
+		parts = append(parts, text)
+	}
+	if len(parts) == 0 {
+		if r := []rune(subject); len(r) > 300 {
+			subject = string(r[:300])
+		}
+		return subject, nil
 	}
 	runes := []rune(strings.Join(parts, "\n"))
 	if len(runes) > 300 {

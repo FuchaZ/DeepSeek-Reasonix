@@ -171,6 +171,26 @@ func (c *Controller) CancelRequested() bool {
 	return c.gate.canceling
 }
 
+// turnOpensSession reports whether the turn starting at startMessages is the
+// session's first: nothing but the system prompt came before it. Such a turn is
+// the session's subject, whoever the host says authored it, so cancellation and
+// recovery preserve it instead of stripping it as scaffolding.
+func (c *Controller) turnOpensSession(startMessages int) bool {
+	if c == nil || c.executor == nil {
+		return false
+	}
+	msgs := c.executor.Session().Snapshot()
+	if startMessages > len(msgs) {
+		startMessages = len(msgs)
+	}
+	for _, m := range msgs[:max(startMessages, 0)] {
+		if m.Role == provider.RoleUser {
+			return false
+		}
+	}
+	return true
+}
+
 // stripInterruptedSyntheticTurnMessagesAfter relocates a synthetic turn after
 // an in-turn compaction has rewritten the pre-turn message index, then drops
 // that whole controller-created turn.

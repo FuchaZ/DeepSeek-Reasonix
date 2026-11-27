@@ -126,14 +126,26 @@ func (h *Hub) projectPage(roots []string, name string, open map[string]string, w
 	for _, root := range roots {
 		decorateWorkingDirectory(rows, root)
 	}
-	said := len(unlisted) > 0
-	for _, si := range listed {
-		said = said || si.Turns > 0
-	}
+	said := anySaid(listed, unlisted)
 	if window.progressive {
 		h.prioritizeTreeRows(byDir, rows)
 	}
 	return sessionPage{Sessions: rows, Total: total + len(unlisted), Archived: archived, Remaining: remaining, Said: said, Status: status}
+}
+
+// anySaid reports whether a folder has anything worth listing: a live pane, a
+// person's turn, or a counted subject (a host-opened session has one). An
+// unknown row's placeholder preview is not a subject.
+func anySaid(listed []sessionstore.SessionInfo, unlisted []treeSession) bool {
+	if len(unlisted) > 0 {
+		return true
+	}
+	for _, si := range listed {
+		if si.Turns > 0 || (si.CountsKnown && strings.TrimSpace(si.Preview) != "") {
+			return true
+		}
+	}
+	return false
 }
 
 // treeSessionRows is the raw material of one workspace's sidebar rows: what a

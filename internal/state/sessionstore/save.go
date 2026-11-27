@@ -648,7 +648,7 @@ func (s *Session) saveRecoveryBranch(opts RecoveryBranchOptions, shutdown bool) 
 	opts.OriginalPath = originalPath
 	msgs, version, rewriteVersion := s.SnapshotWithVersion()
 	preview, turns := SessionPreviewFromMessages(msgs)
-	if turns == 0 {
+	if turns == 0 && strings.TrimSpace(preview) == "" {
 		return RecoveryBranchInfo{}, ErrSessionRecoveryNotNeeded
 	}
 	digest, err := DigestSessionMessages(msgs)
@@ -1948,23 +1948,9 @@ func ListNativeSessions(dir string) ([]SessionInfo, error) {
 	}
 	var out []SessionInfo
 	for _, session := range ordered {
-		preview, turns := session.Preview, session.Turns
-		if sessionListingCountsNeedRefresh(session.SchemaVersion, turns) {
-			if !sessionArtifactsHaveContent(session.Path) {
-				continue
-			}
-			if strings.TrimSpace(preview) == "" {
-				preview = "History is being indexed — " + filepath.Base(session.Path)
-			}
-			out = append(out, sessionInfoFromOrder(session, preview, turns, false))
-			continue
+		if info, ok := nativeSessionInfo(session); ok {
+			out = append(out, info)
 		}
-		if turns == 0 {
-			// Never had user interaction — an empty conversation that should not
-			// appear in the history panel or the resume picker.
-			continue
-		}
-		out = append(out, sessionInfoFromOrder(session, preview, turns, true))
 	}
 	return out, nil
 }

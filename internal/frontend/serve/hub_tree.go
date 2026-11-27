@@ -177,9 +177,20 @@ func (h *Hub) unlistedOpenSessions(root string, shown []treeSession, onDisk []se
 			continue
 		}
 		seen[canonical] = true
-		out = append(out, treeSession{
-			Path: path, Name: strings.TrimSuffix(filepath.Base(path), ".jsonl"), RuntimeID: rt.ID,
-		})
+		row := treeSession{Path: path, Name: strings.TrimSuffix(filepath.Base(path), ".jsonl"), RuntimeID: rt.ID}
+		// The pane's own row reads the same sidecar a listed row would: a role
+		// a dispatch wrote is the session's name from the moment it is opened.
+		if meta, ok, err := sessionstore.LoadBranchMeta(path); err == nil && ok {
+			row.Turns = meta.Turns
+			row.Title = meta.CustomTitle
+			if row.Title == "" {
+				row.Title = meta.TopicTitle
+			}
+			if row.Title == "" {
+				row.Title = previewTitle(meta.Preview)
+			}
+		}
+		out = append(out, row)
 	}
 	return out
 }

@@ -2,6 +2,8 @@ package sessionstore
 
 import (
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 )
 
@@ -149,4 +151,51 @@ func previewSessionWithError(path string) (string, int, error) {
 	}
 	preview, turns := SessionPreviewFromMessages(msgs)
 	return preview, turns, nil
+}
+
+// nativeSessionInfo decides what one native session's listing row says, or
+// false when the session has nothing to show. A superseded counts-authoritative
+// zero is re-derived once: it may hold a host-opened subject that version could
+// not name. Artifacts that never recorded counts stay unknown, as before.
+func nativeSessionInfo(session SessionOrderInfo) (SessionInfo, bool) {
+	preview, turns := session.Preview, session.Turns
+	if sessionListingCountsNeedRefresh(session.SchemaVersion, turns) {
+		if !sessionArtifactsHaveContent(session.Path) {
+			return SessionInfo{}, false
+		}
+		if session.SchemaVersion >= branchMetaCountsAuthoritativeVersion {
+			refreshedPreview, refreshedTurns, ok := refreshListingCounts(session)
+			if ok {
+				if refreshedTurns == 0 && strings.TrimSpace(refreshedPreview) == "" {
+					return SessionInfo{}, false
+				}
+				return sessionInfoFromOrder(session, refreshedPreview, refreshedTurns, true), true
+			}
+		}
+		if strings.TrimSpace(preview) == "" {
+			preview = "History is being indexed — " + filepath.Base(session.Path)
+		}
+		return sessionInfoFromOrder(session, preview, turns, false), true
+	}
+	if turns == 0 && strings.TrimSpace(preview) == "" {
+		// Nothing was ever said: no person's turn, no host-opened subject.
+		// An empty conversation stays out of the history panel and pickers.
+		return SessionInfo{}, false
+	}
+	return sessionInfoFromOrder(session, preview, turns, true), true
+}
+
+// refreshListingCounts derives a stale sidecar's listing fields from the
+// transcript and records them when the sidecar has not moved underneath it. ok
+// is false when the transcript could not be read whole; the caller then keeps
+// the row visible as still being indexed rather than hiding the user's data.
+func refreshListingCounts(session SessionOrderInfo) (preview string, turns int, ok bool) {
+	preview, turns, err := previewSessionWithError(session.Path)
+	if err != nil {
+		return session.Preview, session.Turns, false
+	}
+	if keptPreview, keptTurns, err := updateSessionListingCountsIfCurrent(session, preview, turns); err == nil {
+		return keptPreview, keptTurns, true
+	}
+	return preview, turns, true
 }
