@@ -134,7 +134,6 @@ export function SayCard({ item, afterAnswer, settled = true, reply, quiet }: { i
   const [touched, setOpen] = useState<boolean | null>(() => folds.get(item.id) ?? null);
   const open = touched ?? start;
   const peeks = useThinkingPreview() && !open;
-  const peek = peeks ? item.reasoning?.trimStart() : "";
   const [menu, setMenu] = useState<"" | "retry" | "more">("");
   const shut = useCallback(() => setMenu(""), []);
   const retry = useRef<HTMLButtonElement>(null);
@@ -166,6 +165,10 @@ export function SayCard({ item, afterAnswer, settled = true, reply, quiet }: { i
   // first answer token, measured — so it gets the same paced reveal the answer
   // does rather than tracking the wire's bursts.
   const thought = useRevealed(item.reasoning ?? "", !item.done && open);
+  // Folded, the preview line is the only view of a live thought; it takes the
+  // same pace as the open one rather than following the wire's batches.
+  const peekText = useRevealed(item.reasoning ?? "", !item.done && peeks);
+  const peek = peeks ? peekText.trimStart() : "";
   return (
     <div className="call" data-k="say" data-quiet={quiet ? "" : undefined}>
       <div className="g">

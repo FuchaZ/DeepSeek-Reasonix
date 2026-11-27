@@ -3,7 +3,7 @@ import { act, cleanup, render, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import "../testkit";
-import { FOLD_DEFAULTS, setFoldModes } from "../../state/prefs";
+import { FOLD_DEFAULTS, setFoldModes, setShowsThinkingPreview } from "../../state/prefs";
 import { appendText, foldMessage } from "../../state/say";
 import type { Item } from "../../state/session";
 import { PaneShown } from "../shown";
@@ -15,6 +15,7 @@ let canceled = 0;
 
 beforeEach(() => {
   setFoldModes(FOLD_DEFAULTS);
+  setShowsThinkingPreview(false);
   frames.clear();
   requested = 0;
   canceled = 0;
@@ -159,5 +160,44 @@ describe("thinking text reveal", () => {
     expect(card.details.open).toBe(true);
     expect(card.text()).toBe(card.reasoning());
     expect(requested).toBe(0);
+  });
+
+  it("holds a burst to the pace it arrived at instead of dumping it in the first frames", () => {
+    setFoldModes({ thinking: "open" });
+    let clock = 10_000;
+    vi.spyOn(performance, "now").mockImplementation(() => clock);
+    const card = draw();
+    const growth: number[] = [];
+    let last = card.text()!.length;
+    for (let t = 16; t <= 2500; t += 16) {
+      clock = 10_000 + t;
+      if (t % 240 === 0) card.append("思考".repeat(48));
+      const pending = frames.entries().next().value as [number, FrameRequestCallback] | undefined;
+      if (pending) {
+        frames.delete(pending[0]);
+        act(() => pending[1](clock));
+      }
+      const len = card.text()!.length;
+      growth.push(len - last);
+      last = len;
+    }
+    // Bursts of 96 characters every 240ms are 6 per 16ms frame; a frame that
+    // hands out 20 is the sawtooth this test exists to stop.
+    expect(Math.max(...growth)).toBeLessThanOrEqual(12);
+    expect(growth.every((n) => n >= 0)).toBe(true);
+    expect(card.reasoning()!.length - card.text()!.length).toBeLessThanOrEqual(200);
+  });
+
+  it("paces the folded preview line by the same rule", () => {
+    setShowsThinkingPreview(true);
+    const card = draw();
+    expect(card.details.open).toBe(false);
+    const preview = () => card.details.querySelector(".thinking-preview")?.textContent ?? "";
+    expect(preview()).toBe("考虑中");
+    card.append("思考".repeat(48));
+    expect(frames.size).toBe(1);
+    expect(preview().length).toBeLessThan(card.reasoning()!.length);
+    drain();
+    expect(preview()).toBe(card.reasoning());
   });
 });

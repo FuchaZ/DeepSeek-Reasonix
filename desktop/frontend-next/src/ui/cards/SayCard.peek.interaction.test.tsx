@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it } from "vitest";
-import { act, cleanup, render, screen, within } from "@testing-library/react";
+import { act, cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { SayCard } from "./SayCard";
 import { Folding } from "../Folding";
@@ -29,13 +29,15 @@ describe("collapsed thinking previews", () => {
     expect(peek(container)).toBeNull();
   });
 
-  it("retains the opening as more reasoning streams, then survives completion", () => {
+  it("retains the opening as more reasoning streams, then survives completion", async () => {
     setShowsThinkingPreview(true);
     const { container, rerender } = render(<SayCard item={{ ...item, done: false, text: "", reasoning: "  First step." }} />);
     expect(peek(container)?.textContent).toBe("First step.");
     const reasoning = `  First step.\n${"More reasoning. ".repeat(30)}`;
     rerender(<SayCard item={{ ...item, done: false, text: "", reasoning }} />);
-    expect(peek(container)?.textContent).toBe(reasoning.trimStart());
+    // The opening is on screen at once; the rest arrives at the stream's pace.
+    expect(peek(container)?.textContent).toBe("First step.");
+    await waitFor(() => expect(peek(container)?.textContent).toBe(reasoning.trimStart()));
     rerender(<SayCard item={{ ...item, reasoning }} />);
     expect(peek(container)?.textContent).toBe(reasoning.trimStart());
   });
