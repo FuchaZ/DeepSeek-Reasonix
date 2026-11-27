@@ -388,6 +388,9 @@ the picker and keyboard navigation.
 - The rail's grid column is always zero. The rail is a fixed overlay that slides
   away with transform, so the pane's box never moves; the chrome's margin and
   padding follow it on the same drawer curve.
+- The icon rail, when drawn, exists only while the workspace rail is shut: its
+  column, the rail's left inset and the NAV's translate run on the same drawer
+  curve, so the left edge never steps backwards.
 - The rail also moves the reading scroller (`--rail-inset`, non-inheriting, set
   on the scroller), so the column clears the overlay at 1201–1439px. Where the
   column is width-capped it follows by `translateX(--rail-shift)` and the toggle

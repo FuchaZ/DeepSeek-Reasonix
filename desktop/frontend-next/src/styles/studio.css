@@ -95,7 +95,7 @@ body { background: var(--page); }
 /* Window bar */
 
 /* Primary navigation and workspace rail */
-.nav { position: fixed; z-index: 13; inset: 0 auto 0 0; width: var(--nav-open); translate: calc(var(--nav-w) - var(--nav-open)) 0; padding: calc(var(--chrome-h) + 8px) 0 10px; gap: 4px; background: color-mix(in srgb, var(--page) 92%, var(--surface)); border-right-color: var(--hair); }
+.nav { position: fixed; z-index: 13; inset: 0 auto 0 0; width: var(--nav-open); translate: calc(var(--nav-w) - var(--nav-open)) 0; padding: calc(var(--chrome-h) + 8px) 0 10px; gap: 4px; background: color-mix(in srgb, var(--page) 92%, var(--surface)); border-right-color: var(--hair); transition: translate var(--t-drawer) var(--ease-drawer); }
 .nav > * { flex: none; }
 .nav[data-nav="off"] { border-right-width: 0; } [data-titlebar="app"][data-platform="darwin"] .nav[data-nav="on"] { border-right-width: 0; background-image: linear-gradient(var(--hair), var(--hair)); background-size: 1px calc(100% - var(--chrome-h)); background-position: right bottom; background-repeat: no-repeat; } [data-titlebar="app"][data-platform="darwin"] .nav[data-nav="on"][data-rail="off"] { background-color: transparent; background-image: linear-gradient(var(--hair), var(--hair)), linear-gradient(color-mix(in srgb, var(--page) 92%, var(--surface)), color-mix(in srgb, var(--page) 92%, var(--surface))); background-size: 1px calc(100% - var(--chrome-h)), 100% calc(100% - var(--chrome-h)); background-position: right bottom, right bottom; }
 [data-titlebar="app"] .nav { -webkit-app-region: drag; }
@@ -381,7 +381,7 @@ body { background: var(--page) !important; }
   background: var(--page) !important;
 }
 .app::after { opacity: .018; }
-.cols { grid-template-columns: var(--nav-w) 0 minmax(0, 1fr) var(--side-w); }
+.cols { grid-template-columns: var(--nav-w) 0 minmax(0, 1fr) var(--side-w); transition: --nav-w var(--t-drawer) var(--ease-drawer); }
 .main { grid-column: 3; }
 .side { grid-column: 4; }
 
@@ -397,7 +397,7 @@ body { background: var(--page) !important; }
   background: var(--page) !important;
   border-right: 1px solid var(--hair);
   color: var(--text);
-  transition: transform var(--t-drawer) var(--ease-drawer), opacity var(--m-card) !important;
+  transition: transform var(--t-drawer) var(--ease-drawer), --nav-w var(--t-drawer) var(--ease-drawer), opacity var(--m-card) !important;
 }
 .app[data-drag] .rail { transition: none !important }
 .rail > * { width: var(--rail-open); }
