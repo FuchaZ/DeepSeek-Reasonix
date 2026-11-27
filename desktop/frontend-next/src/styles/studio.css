@@ -1500,6 +1500,7 @@ body { background: var(--page) !important; }
   [data-pane="flow"][data-rail-move="slide"],
   [data-pane="flow"][data-rail-move="pad"],
   .gutter-l,
+  .panetabs,
   .prefs,
   .prefs-sheet,
   .chrome-context-card,

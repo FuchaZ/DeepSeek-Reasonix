@@ -4028,9 +4028,13 @@
   .panetabs {
     position: relative;
     flex: none; display: flex; align-items: stretch; gap: 2px;
-    padding: 8px 12px 0; border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 82%, var(--page));
+    padding: 8px 12px 0;
+    padding-left: calc(12px + var(--rail-tab, 0px));
+    transition: padding-left var(--t-drawer) var(--ease-drawer);
+    border-bottom: 1px solid var(--border); background: color-mix(in srgb, var(--surface) 82%, var(--page));
     overflow-x: auto; scrollbar-width: none;
   }
+  .app[data-drag] .panetabs { transition: none }
   .panetabs::-webkit-scrollbar { display: none }
 
   .ptab {

@@ -45,6 +45,7 @@
 @property --dock-w { syntax: "<length>"; inherits: false; initial-value: 520px }
 @property --rail-inset { syntax: "<length>"; inherits: false; initial-value: 0px }
 @property --rail-shift { syntax: "<length>"; inherits: false; initial-value: 0px }
+@property --rail-tab { syntax: "<length>"; inherits: false; initial-value: 0px }
 
 @property --win-ar { syntax: "<number>"; inherits: true; initial-value: 1.6 }
 

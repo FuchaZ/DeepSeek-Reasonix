@@ -88,6 +88,7 @@ export function Gutter({ edge, span, width, max = span.max, label, open, onWidth
     const scroller = rail ? (app.querySelector('.pane:not([data-off]) .scroll[data-pane="flow"]') as HTMLElement | null) : null;
     const composer = rail ? (app.querySelector('.pane:not([data-off]) .compose') as HTMLElement | null) : null;
     const composerTop = rail ? (app.querySelector('.pane:not([data-off]) .composer-top') as HTMLElement | null) : null;
+    const tabbar = rail ? (app.querySelector(".panetabs") as HTMLElement | null) : null;
     // A capped reading column follows by transform, so a drag costs it no
     // layout; past the room it has the shift stops and the rail passes over it.
     const slide = scroller?.dataset.railMove === "slide";
@@ -110,6 +111,7 @@ export function Gutter({ edge, span, width, max = span.max, label, open, onWidth
       place(scroller, w);
       place(composer, w);
       place(composerTop, w);
+      tabbar?.style.setProperty("--rail-tab", `${w}px`);
       for (const el of pages) el?.style.setProperty("--rail-inset", `${w}px`);
     };
     const paint = () => {

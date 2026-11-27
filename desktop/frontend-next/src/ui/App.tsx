@@ -407,6 +407,9 @@ export function App({ hub }: { hub: HubPort }) {
     ]) {
       el?.style.setProperty("--rail-inset", `${open}px`);
     }
+    // The session tab strip sits outside the active pane and is left-aligned:
+    // it clears the whole rail, not the half-shift the centred column uses.
+    document.querySelector<HTMLElement>(".panetabs")?.style.setProperty("--rail-tab", `${open}px`);
   }, []);
   const measureRail = useCallback(() => {
     const scroller = document.querySelector<HTMLElement>('.pane:not([data-off]) .scroll[data-pane="flow"]');

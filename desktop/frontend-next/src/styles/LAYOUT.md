@@ -391,6 +391,9 @@ the picker and keyboard navigation.
 - The icon rail, when drawn, exists only while the workspace rail is shut: its
   column, the rail's left inset and the NAV's translate run on the same drawer
   curve, so the left edge never steps backwards.
+- The session tab strip sits outside the active pane and is left-aligned: it
+  takes the rail's full width as a left inset on the same drawer curve, so its
+  tabs never sit under the overlay and move with the fold.
 - The rail also moves the reading scroller (`--rail-inset`, non-inheriting, set
   on the scroller), so the column clears the overlay at 1201–1439px. Where the
   column is width-capped it follows by `translateX(--rail-shift)` and the toggle
