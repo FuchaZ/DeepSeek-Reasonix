@@ -15,7 +15,12 @@ try {
       const wrapped = [];
       for (let width = 900; width >= 400; width -= 10) {
         const rows = await page.evaluate((w) => {
-          document.querySelector(".pane").style.width = `${w}px`;
+          // The rail is an overlay: the pane's width is not the reading width.
+          // Measure the composer, the container the toolbar actually lives in.
+          const compose = document.querySelector(".compose");
+          compose.style.width = `${w}px`;
+          compose.style.maxWidth = "none";
+          compose.style.minWidth = "0";
           const tools = document.querySelector(".turntools");
           const centers = [...tools.children]
             .map((el) => el.getBoundingClientRect())
