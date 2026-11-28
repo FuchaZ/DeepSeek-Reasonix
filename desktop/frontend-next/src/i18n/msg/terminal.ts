@@ -7,6 +7,7 @@ export const TERMINAL: Messages = {
   "terminal.copy_all": { zh: "复制全部", en: "Copy everything" },
   "terminal.copy_link": { zh: "复制链接", en: "Copy link" },
   "terminal.could_not_open": { zh: "没能打开终端：{why}", en: "Could not open a terminal: {why}" },
+  "terminal.could_not_run": { zh: "没能运行这条命令：{why}", en: "Could not run this command: {why}" },
   "terminal.default_shell_note": { zh: "只列这台电脑上找得到的；默认用上次选的", en: "Only what this computer has is listed; the one you chose last is the default" },
   "terminal.exited": { zh: "进程已退出（代码 {code}）", en: "The process exited (code {code})" },
   "terminal.font_larger": { zh: "放大字号", en: "Larger text" },

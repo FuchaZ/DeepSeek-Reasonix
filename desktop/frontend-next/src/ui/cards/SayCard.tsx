@@ -86,6 +86,8 @@ export interface ReplyActions {
   model?: string;
   onConfigureModel?: () => void;
   onRunDetail?: () => void;
+  // A shell snippet from this reply, handed to the person's terminal.
+  onRunCode?: (source: string, lang: string) => void;
 }
 
 // The browser keeps selections outside the answer, including across cards.
@@ -230,7 +232,7 @@ export function SayCard({ item, afterAnswer, settled = true, reply, quiet }: { i
                 e.stopPropagation();
               }}>
               <Boundary retryKey={item.text} fallback={<div className="srcfb"><div className="srcfb-hd"><span className="srcfb-tag">{t("chat.shown_as_written")}</span><span>{t("chat.this_layout_did_not_show")}</span></div><div className="md srcfb-src">{item.text}</div></div>}>
-                <LazyMarkdown text={item.text} streaming={!item.done} local={reply?.files} />
+                <LazyMarkdown text={item.text} streaming={!item.done} local={reply?.files} run={reply?.onRunCode} />
               </Boundary>
             </div>
           )}

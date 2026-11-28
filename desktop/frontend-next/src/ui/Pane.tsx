@@ -82,6 +82,7 @@ import { loadFoldWorkPref, useFoldsTurnWork } from "../state/foldwork";
 import { ChangedFilesPill } from "./ChangedFilesPill";
 import { RootMissingBanner } from "./RootMissingBanner";
 import { useConversationFiles } from "./useConversationFiles";
+import type { RunRequest } from "./useTerminalTabs";
 import { NewAnswerAnchor } from "./NewAnswerLine";
 import { useFrozenNewAnswerAnchor } from "./newAnswerMark";
 import { sameJson } from "./samejson";
@@ -114,6 +115,15 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
   const ready = sessionRead.kind === "settled";
   const workspace = useWorkspaceInfo(port, status?.workspaceRoot || status?.cwd || rt.root, ready);
   const [tab, showView] = useShowView(rt.id, onManualBrowser);
+  const [runAsk, setRunAsk] = useState<RunRequest | null>(null);
+  // The workbench owns the terminal; this is the conversation asking it to run
+  // what a reply's shell block wrote, and bringing that terminal into view.
+  const viewNow = useRef(showView);
+  viewNow.current = showView;
+  const runCode = useCallback((command: string, lang: string) => {
+    setRunAsk((was) => ({ command, lang, n: (was?.n ?? 0) + 1 }));
+    viewNow.current("browser");
+  }, []);
   const [sideAsk, setSideAsk] = useState(false);
   const [worktreeTarget, setWorktreeTarget] = useState<HTMLDivElement | null>(null);
   const [worktreePhase, setWorktreePhase] = useState<string | null>(null);
@@ -471,7 +481,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
       ? old : { port, scope: previewScope, path });
   }, [port, previewScope]);
   const activeFile = visible && workbench && previewFile?.port === port && previewFile.scope === previewScope ? previewFile.path : undefined;
-  const { quote, reply, onResend } = useReplyActions({ port, items: s.items, checkpoints, running, model: status?.label, submit: (line) => submit(line).then((r) => r === true), reloadSession, onSettings, onRunDetail, onError: fail, branchName: `${title} · ${t("common.branch")}`, onBranched: onOpenSession });
+  const { quote, reply, onResend } = useReplyActions({ port, items: s.items, checkpoints, running, model: status?.label, submit: (line) => submit(line).then((r) => r === true), reloadSession, onSettings, onRunDetail, onError: fail, branchName: `${title} · ${t("common.branch")}`, onBranched: onOpenSession, onRunCode: runCode });
   const fileReply = useMemo(() => ({
     ...reply, files: conversationFiles.refs, activeFile,
     onAddFile: (reference: string) => setInserted((was) => ({ n: was.n + 1, text: reference })),
@@ -633,7 +643,7 @@ function PaneView({ port, hub, rt, title, active, visible, sideHost, side, onFoc
             shown={visible && workbench}
             onActiveFile={onActiveFile}
             scheme={theme === "light" ? "light" : "dark"}
-            changes={tree?.changes ?? []} onTreeChanged={refreshTree} revealChanges={revealChanges} revealFiles={revealFiles} toggleFiles={toggleFiles} terminalRequest={terminalPulse}
+            changes={tree?.changes ?? []} onTreeChanged={refreshTree} revealChanges={revealChanges} revealFiles={revealFiles} toggleFiles={toggleFiles} terminalRequest={terminalPulse} runRequest={runAsk}
             running={running}
             wrote={counts.wrote}
             remote={!!rt.host}

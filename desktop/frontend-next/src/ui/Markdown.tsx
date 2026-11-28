@@ -1,7 +1,7 @@
 import { createElement, isValidElement, memo, useEffect, useState, type JSX, type ReactNode, type MouseEvent, type KeyboardEvent } from "react";
 import ReactMarkdown, { type Components, type ExtraProps } from "react-markdown";
 import { t } from "../i18n";
-import { CodeBlock } from "./CodeBlock";
+import { CodeBlock, type RunCode } from "./CodeBlock";
 import remarkGfm from "remark-gfm";
 import remarkMath from "remark-math";
 import { remarkCodeSpanLink, remarkTrimAutolink } from "./autolink";
@@ -204,7 +204,7 @@ const DIRECTED: Components = {
 
 // live is the tail of a message still arriving; tail alone is only the last
 // block, which a settled message has too.
-const Block = memo(function Block({ src, math, emoji, code, tail, live, local, images }: { src: string; math: Plugin | null; emoji: Plugin | null; code: Plugin | null; tail?: boolean; live?: boolean; local?: LocalRefs; images: boolean }) {
+const Block = memo(function Block({ src, math, emoji, code, tail, live, local, images, run }: { src: string; math: Plugin | null; emoji: Plugin | null; code: Plugin | null; tail?: boolean; live?: boolean; local?: LocalRefs; images: boolean; run?: RunCode }) {
   // Inside the memo, so a settled block normalises once instead of per chunk.
   const body = normalizeMath(tail ? balanceFences(src) : src);
   return (
@@ -261,7 +261,7 @@ const Block = memo(function Block({ src, math, emoji, code, tail, live, local, i
           );
         },
         pre: ({ children }) => (
-          <CodeBlock lang={langOf(children)} source={textOf(children)} live={live}>{children}</CodeBlock>
+          <CodeBlock lang={langOf(children)} source={textOf(children)} live={live} run={run}>{children}</CodeBlock>
         ),
         table: ({ children }) => (
           <div className="md-tw">
@@ -277,7 +277,7 @@ const Block = memo(function Block({ src, math, emoji, code, tail, live, local, i
 
 /** images=false is for text nobody in the conversation wrote: a picture
  *  address in it is a request the reader never chose to make. */
-export function Markdown({ text, streaming, local, images = true }: { text: string; streaming?: boolean; local?: LocalRefs; images?: boolean }) {
+export function Markdown({ text, streaming, local, images = true, run }: { text: string; streaming?: boolean; local?: LocalRefs; images?: boolean; run?: RunCode }) {
   const shown = useRevealed(text, streaming);
   const math = usePlugin(MATH.test(text), KATEX);
   const emoji = usePlugin(EMOJI.test(text), EMOJIS);
@@ -296,9 +296,9 @@ export function Markdown({ text, streaming, local, images = true }: { text: stri
     // handing a listing over would hand over something that was never said.
     <div className="md" data-live={streaming ? "" : undefined}>
       {parts.map((p, i) => (
-        <Block key={i} src={p} math={math} emoji={emoji} code={code} local={local} images={images} />
+        <Block key={i} src={p} math={math} emoji={emoji} code={code} local={local} images={images} run={run} />
       ))}
-      <Block src={shown.slice(at)} math={math} emoji={emoji} code={code} local={local} images={images} tail live={streaming} />
+      <Block src={shown.slice(at)} math={math} emoji={emoji} code={code} local={local} images={images} run={run} tail live={streaming} />
       {streaming && <span className="caret" />}
     </div>
   );

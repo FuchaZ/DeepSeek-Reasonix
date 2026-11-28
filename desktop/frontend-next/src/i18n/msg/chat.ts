@@ -368,6 +368,7 @@ export const CHAT: Messages = {
   "chat.run_a_command_in_the": { zh: "在命令行里执行命令并返回输出，用于构建、测试、git、包管理等。", en: "Run a command in the shell and return its output, for builds, tests, git and package managers." },
   "chat.run_a_short_starlark_python": { zh: "运行一小段 Starlark（类 Python）脚本来调用多个工具，几步相互依赖的操作只需一次往返，只返回脚本打印的内容；每次调用都和模型直接调用一样受检查和审批。", en: "Run a short Starlark (Python-like) script that calls several tools, so dependent steps take one round trip and only what the script prints comes back; every call is checked and approved as if the model made it directly." },
   "chat.run_command": { zh: "运行命令", en: "Run command" },
+  "chat.run_in_terminal": { zh: "在终端中运行", en: "Run in terminal" },
   "chat.run_one_well_specified_coding": { zh: "把一个明确的编码任务并行做 2–4 遍，每遍在独立的 git 工作树里；再由评审比较，只把最好的一份写回工作区。", en: "Run one well-specified coding task 2–4 times in parallel, each in its own git worktree, then have a judge compare them and write only the best back into the workspace." },
   "chat.run_several_read_only_sub": { zh: "同时派出多个只读子代理任务，全部完成后返回摘要。", en: "Run several read-only sub-agent tasks at once and return previews when all are done." },
   "chat.running_for_time": { zh: "已运行 {time}", en: "running for {time}" },

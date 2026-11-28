@@ -73,7 +73,9 @@ export const SCRIPT: Beat[] = [
     wait: 700,
     ev: {
       kind: "text",
-      text: "先翻历史 —— #3146 和 #4106 都记着这是网关瞬时态，我们从不删 key。",
+      // The shell fence is here for the run action's sake: a card nobody sees
+      // while developing is the one that rots.
+      text: "先翻历史 —— #3146 和 #4106 都记着这是网关瞬时态，我们从不删 key。\n\n先复现一下：\n\n```bash\ngo test ./internal/provider/...\n```",
     },
   },
   // The kernel seals a finished assistant message with its own event. Without

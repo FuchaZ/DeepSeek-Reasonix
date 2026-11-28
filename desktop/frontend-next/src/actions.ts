@@ -355,6 +355,7 @@ export const ACTIONS: UIAction[] = [
   { id: "ask.answer", kind: "interaction", target: "none", proof: "authority-effect" },
   { id: "ask.step", kind: "view", target: "none", proof: "interaction" },
   { id: "code.download", kind: "interaction", target: "none", proof: "interaction" },
+  { id: "code.run", kind: "shell-native", target: "none", proof: "interaction" },
   { id: "code.fold", kind: "view", target: "none", proof: "interaction" },
   { id: "remote-ask.answer", kind: "interaction", target: "none", proof: "interaction" },
   { id: "browser.login", kind: "interaction", target: "none", proof: "interaction" },

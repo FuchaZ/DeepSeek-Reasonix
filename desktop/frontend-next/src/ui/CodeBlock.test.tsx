@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
-import { CodeBlock, extensionFor } from "./CodeBlock";
+import { CodeBlock, extensionFor, runsInTerminal } from "./CodeBlock";
 import css from "../styles/app.css?raw";
 
 afterEach(cleanup);
@@ -39,6 +39,36 @@ describe("a code block", () => {
     expect(extensionFor("Go")).toBe("go");
     expect(extensionFor("typescript")).toBe("ts");
     expect(extensionFor("brainfuck")).toBe("txt");
+  });
+
+  it("knows which fences name a shell, whatever their case", () => {
+    expect(runsInTerminal("PowerShell")).toBe(true);
+    expect(runsInTerminal("zsh")).toBe(true);
+    expect(runsInTerminal("python")).toBe(false);
+    expect(runsInTerminal("")).toBe(false);
+  });
+});
+
+// A shell fence can run where it is read; anything else has nothing a shell
+// knows how to execute, and a block still arriving has not finished being written.
+describe("running a shell block", () => {
+  const runnable = (lang: string, source: string, run?: (text: string, lang: string) => void, live = false) =>
+    render(<CodeBlock lang={lang} source={source} live={live} run={run}><code>{source}</code></CodeBlock>).container;
+
+  it("hands the whole source over when its run action is pressed", async () => {
+    const run = vi.fn();
+    const box = runnable("bash", "go test ./...\n", run);
+    await userEvent.click(box.querySelector('[data-action="code.run"]')!);
+    expect(run).toHaveBeenCalledWith("go test ./...\n", "bash");
+  });
+
+  it("is offered only for a settled shell block with somewhere to run it", () => {
+    const run = vi.fn();
+    expect(runnable("go", "func main() {}\n", run).querySelector('[data-action="code.run"]')).toBeNull();
+    cleanup();
+    expect(runnable("bash", "ls\n", run, true).querySelector('[data-action="code.run"]')).toBeNull();
+    cleanup();
+    expect(runnable("bash", "ls\n").querySelector('[data-action="code.run"]')).toBeNull();
   });
 });
 

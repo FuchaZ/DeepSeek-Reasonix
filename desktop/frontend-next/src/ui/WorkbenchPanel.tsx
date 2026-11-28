@@ -24,7 +24,7 @@ import { AgentBrowserPanel, UNREAD_TABS } from "./BrowserPanel";
 import { ManualBrowsers } from "./ManualBrowsers";
 import { WorkbenchTabIcon } from "./WorkbenchTabIcon";
 import { WorkbenchTerminals } from "./WorkbenchTerminals";
-import { useTerminalTabs } from "./useTerminalTabs";
+import { useTerminalTabs, type RunRequest } from "./useTerminalTabs";
 import { useOnBump } from "./useOnBump";
 import { StudioIcon } from "./StudioIcon";
 import { useBack } from "./back";
@@ -94,10 +94,13 @@ export function WorkbenchPanel({
   agentRequest,
   onShowCall,
   terminalRequest = 0,
+  runRequest,
 }: {
   onShowCall?: (callId: string) => void;
   // Counts the presses that ask for a terminal.
   terminalRequest?: number;
+  // A shell snippet the conversation asked to run, counted so a repeat lands.
+  runRequest?: RunRequest | null;
   port: AgentPort;
   tabs: BrowserTab[];
   manual: boolean;
@@ -186,7 +189,7 @@ export function WorkbenchPanel({
   const [mode, setMode] = useState<FileMode>("file");
   const { renaming, setRenaming, labelFor, nameTab, renameDraft, setRenameDraft, startRename } = useTabNames((surface) => labelOf(surface, hosts));
   const [failed, setFailed] = useState("");
-  const terminals = useTerminalTabs({ port, shown, pick, setDismissed, onExternal, onError: setFailed, request: terminalRequest });
+  const terminals = useTerminalTabs({ port, shown, pick, setDismissed, onExternal, onError: setFailed, request: terminalRequest, runRequest });
   // Showing a file where it lives needs a shell on the kernel's own machine.
   const revealable = !remote && port.revealsFiles();
   const [platform, setPlatform] = useState("");

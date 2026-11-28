@@ -24,6 +24,18 @@ export function extensionFor(lang: string): string {
   return EXT[lang.toLowerCase()] ?? "txt";
 }
 
+// A fence whose body a terminal already knows how to execute. The list is the
+// line between a snippet and a script: no inference from content.
+const SHELL = new Set(["bash", "sh", "shell", "zsh", "fish", "ksh", "powershell", "ps1", "pwsh", "cmd", "bat", "batch"]);
+
+export function runsInTerminal(lang: string): boolean {
+  return SHELL.has(lang.toLowerCase());
+}
+
+/** What a run press hands over: the block's own source, and the fence that
+ *  says which shell family it was written for. */
+export type RunCode = (source: string, lang: string) => void;
+
 function download(source: string, lang: string) {
   const ext = extensionFor(lang);
   const name = ext === "Dockerfile" ? ext : `snippet.${ext}`;
@@ -37,7 +49,7 @@ function download(source: string, lang: string) {
 
 /** A fenced block in rendered markdown. `live` is a block still arriving, which
  *  never folds: its height changing under the reader is the stream, not a choice. */
-export function CodeBlock({ lang, source, live, children }: { lang: string; source: string; live?: boolean; children: ReactNode }) {
+export function CodeBlock({ lang, source, live, run, children }: { lang: string; source: string; live?: boolean; run?: RunCode; children: ReactNode }) {
   const lines = source.replace(/\n+$/, "").split("\n").length;
   const foldable = !live && lines > FOLD_OVER;
   const [open, setOpen] = useState(false);
@@ -50,6 +62,11 @@ export function CodeBlock({ lang, source, live, children }: { lang: string; sour
         <span className="code-lang">{lang || t("chat.code")}</span>
         <span className="code-lines">{t("chat.n_lines", { n: lines })}</span>
         <span className="code-acts">
+          {!live && run && runsInTerminal(lang) && (
+            <button type="button" className="code-act" data-action="code.run" title={t("chat.run_in_terminal")} aria-label={t("chat.run_in_terminal")} onClick={() => run(source, lang)}>
+              <StudioIcon name="play" />
+            </button>
+          )}
           {!live && (
             <button type="button" className="code-act" data-action="code.download" title={t("chat.download_as_file")} aria-label={t("chat.download_as_file")} onClick={() => download(source, lang)}>
               <StudioIcon name="download" />

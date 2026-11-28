@@ -1,4 +1,5 @@
 import { lazy, Suspense } from "react";
+import type { RunCode } from "./CodeBlock";
 import type { LocalRefs } from "./Markdown";
 
 // React.lazy keeps a failed import failed for the life of the page, so one
@@ -18,10 +19,10 @@ function loader() {
 
 let Markdown = loader();
 
-export function LazyMarkdown({ text, streaming, local, images }: { text: string; streaming?: boolean; local?: LocalRefs; images?: boolean }) {
+export function LazyMarkdown({ text, streaming, local, images, run }: { text: string; streaming?: boolean; local?: LocalRefs; images?: boolean; run?: RunCode }) {
   return (
     <Suspense fallback={<div className="md" style={{ whiteSpace: "pre-wrap" }}>{text}</div>}>
-      <Markdown text={text} streaming={streaming} local={local} images={images} />
+      <Markdown text={text} streaming={streaming} local={local} images={images} run={run} />
     </Suspense>
   );
 }

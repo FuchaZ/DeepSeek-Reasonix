@@ -85,7 +85,9 @@ export class MockTerminal extends MockToolOutput {
           for (const reader of fake.readers) reader({ kind: "exit", code: 130 });
           return;
         }
-        if (command) this.say(fake, command.startsWith("echo ") ? command.slice(5) + "\r\n" : `${command}: command not found\r\n`);
+        if (command.startsWith("echo ")) this.say(fake, command.slice(5) + "\r\n");
+        else if (command.startsWith("go test")) this.say(fake, "ok  \treasonix/internal/provider\t0.42s\r\nok  \treasonix/internal/config\t0.18s\r\n");
+        else if (command) this.say(fake, `${command}: command not found\r\n`);
         this.say(fake, PROMPT);
       } else if (ch === "\x7f") {
         if (fake.line) {

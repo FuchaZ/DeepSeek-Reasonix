@@ -19,6 +19,7 @@ interface Inputs {
   // The title the branch is given and what to do with the session it makes.
   branchName?: string;
   onBranched?: (path: string) => void;
+  onRunCode?: (source: string, lang: string) => void;
 }
 
 interface ReplyTurn {
@@ -39,7 +40,7 @@ function sameTurns(a: Map<string, ReplyTurn>, b: Map<string, ReplyTurn>) {
 /** What a finished reply can be acted on with, and the draft signal a quote
  *  travels to the composer on. The transcript owns neither: the pane holds the
  *  session these read from, and the composer is where a quote has to land. */
-export function useReplyActions({ port, items, checkpoints, running, model, submit, reloadSession, onSettings, onRunDetail, onError, branchName, onBranched }: Inputs) {
+export function useReplyActions({ port, items, checkpoints, running, model, submit, reloadSession, onSettings, onRunDetail, onError, branchName, onBranched, onRunCode }: Inputs) {
   const [quote, setQuote] = useState<Quote>({ text: "", n: 0 });
 
   // Re-running a turn is a conversation rewind and then the same words again:
@@ -121,8 +122,9 @@ export function useReplyActions({ port, items, checkpoints, running, model, subm
       model,
       onConfigureModel: () => onSettings("model"),
       onRunDetail,
+      onRunCode,
     }),
-    [replyTurns, running, regenerate, model, onSettings, onRunDetail, turnOf, onError, port, branchName, onBranched],
+    [replyTurns, running, regenerate, model, onSettings, onRunDetail, turnOf, onError, port, branchName, onBranched, onRunCode],
   );
 
   // Rewriting a message is the same act with different words: the turn goes
