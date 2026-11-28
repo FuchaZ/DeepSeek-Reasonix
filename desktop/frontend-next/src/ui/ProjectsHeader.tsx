@@ -11,11 +11,15 @@ import { WsMark } from "./WsMark";
  *  labels answer to; folding a single group lives on its own label. The check
  *  starts a picking session, because it acts on the whole list the way the
  *  fold does. */
-export function ProjectsHeader({ adder, bothFolded, searching, onToggleBoth, onSelect, selecting, canSelect }: {
+export function ProjectsHeader({ adder, bothFolded, searching, onToggleBoth, onToggleProjects, projectsFolded, canFoldProjects, onSelect, selecting, canSelect }: {
   adder: Adder;
   bothFolded?: boolean;
   searching?: boolean;
   onToggleBoth?: () => void;
+  /** Fold every project folder's sessions, not the runs themselves. */
+  onToggleProjects?: () => void;
+  projectsFolded?: boolean;
+  canFoldProjects?: boolean;
   /** Start picking conversations: the same mode a session's own menu opens,
    *  offered here because it acts on the list rather than on one row. */
   onSelect?: () => void;
@@ -24,6 +28,7 @@ export function ProjectsHeader({ adder, bothFolded, searching, onToggleBoth, onS
 }) {
   const rail = useContext(RailFilterContext);
   const said = t(bothFolded ? "session.expand_all_groups" : "session.collapse_all_groups");
+  const foldersSaid = t(projectsFolded ? "session.expand_all_project_sessions" : "session.collapse_all_project_sessions");
   return (
     <div className="projects-header">
       <div className="projects-tabs">
@@ -36,6 +41,14 @@ export function ProjectsHeader({ adder, bothFolded, searching, onToggleBoth, onS
           {t("session.task_list")}
           <WsMark open={onToggleBoth ? !bothFolded : undefined} />
         </button>
+        {onToggleProjects && (
+          <button type="button" className="projects-toggle" data-action="workspace.fold-all" data-value="folders"
+            disabled={!canFoldProjects || searching || bothFolded}
+            aria-expanded={canFoldProjects ? !projectsFolded : undefined}
+            title={foldersSaid} aria-label={foldersSaid} onClick={onToggleProjects}>
+            <StudioIcon name={projectsFolded ? "unfoldAll" : "foldAll"} />
+          </button>
+        )}
         <span className="projects-spacer" />
         {rail?.clock}
         <button className="projects-add" data-busy={adder.busy ? "" : undefined} disabled={adder.busy}

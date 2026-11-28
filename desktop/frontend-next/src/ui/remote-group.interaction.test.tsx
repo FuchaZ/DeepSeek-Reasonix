@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { RailSearch } from "./railsearch";
@@ -52,7 +52,7 @@ it("routes identical project and session paths to their owning SSH host", async 
 it("folds projects independently even when roots match across hosts, and search reveals them", async () => {
   draw();
   await userEvent.click(document.querySelectorAll(".wsrow")[0]!);
-  expect(screen.queryByText("GPU task")).toBeNull();
+  await waitFor(() => expect(screen.queryByText("GPU task")).toBeNull());
   expect(document.querySelectorAll(".wsrow")[1]!.getAttribute("aria-expanded")).toBeNull();
   await userEvent.type(screen.getByRole("searchbox", { name: "搜索会话 / 项目" }), "GPU task");
   expect(screen.getByText("GPU task")).toBeTruthy();

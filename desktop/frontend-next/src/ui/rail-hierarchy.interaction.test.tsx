@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import "./testkit";
 import { MockHub } from "../port/mock_hub";
@@ -71,13 +71,13 @@ it("folds local projects from the group head and leaves SSH rows to their own fo
   expect(screen.getByText("first")).toBeTruthy();
   expect(screen.getByText("Remote task")).toBeTruthy();
   await userEvent.click(screen.getByRole("button", { name: "收起所有项目" }));
-  expect(screen.queryByText("first")).toBeNull();
+  await waitFor(() => expect(screen.queryByText("first")).toBeNull());
   expect(screen.getByText("Remote task")).toBeTruthy();
   await userEvent.click(screen.getByRole("treeitem", { name: /Remote project/ }));
-  expect(screen.queryByText("Remote task")).toBeNull();
+  await waitFor(() => expect(screen.queryByText("Remote task")).toBeNull());
   await userEvent.click(screen.getByRole("button", { name: "展开所有项目" }));
   expect(screen.getByText("first")).toBeTruthy();
-  expect(screen.queryByText("Remote task")).toBeNull();
+  await waitFor(() => expect(screen.queryByText("Remote task")).toBeNull());
   await userEvent.click(screen.getByRole("treeitem", { name: /Remote project/ }));
   expect(screen.getByText("Remote task")).toBeTruthy();
 });

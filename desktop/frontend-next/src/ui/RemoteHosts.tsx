@@ -12,6 +12,7 @@ import { workspacesOf } from "./Remotes";
 export { remoteProjectKey, remoteWorkspaces } from "./remoteProjects";
 import { StudioIcon } from "./StudioIcon";
 import { WsMark } from "./WsMark";
+import { Fold } from "./Fold";
 import { Confirm } from "./WorkspaceConfirm";
 import { UnreadCount } from "./UnreadMark";
 import { clearDraftForSession } from "./drafts";
@@ -214,7 +215,7 @@ function RemoteHostsView({ hub, hosts, runtimes, active, onOpen, onFocus, reload
                 <StudioIcon name={working ? "refresh" : "warning"} />
                 <span>{detail}</span>
               </div>}
-              {!folded && hasChildren && <div className="kids">
+              {hasChildren && <Fold open={!folded} className="kids">
                 {visible.map((session) => {
                   const held = panes.find((rt) => rt.sessionPath === session.path);
                   const name = session.title || session.name;
@@ -254,7 +255,7 @@ function RemoteHostsView({ hub, hosts, runtimes, active, onOpen, onFocus, reload
                     data-live="" onClick={() => onFocus(rt.id)}>
                     <span className="ds-lead"><i className="pip ds-dot" /></span><span className="sesstitle ds-title" title={rt.name}><span>{rt.name}</span></span>
                   </div>)}
-              </div>}
+              </Fold>}
             </div>
           );
         });

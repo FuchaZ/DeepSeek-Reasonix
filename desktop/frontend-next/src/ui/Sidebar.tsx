@@ -244,11 +244,23 @@ export function Sidebar({
   );
 
   const onFold = useCallback((root: string, shut: boolean) => {
-    const next = new Set(folded);
-    if (shut) next.add(root);
-    else next.delete(root);
-    setFolded(next);
-  }, [folded, setFolded]);
+    setFolded((held) => {
+      const next = new Set(held);
+      if (shut) next.add(root);
+      else next.delete(root);
+      return next;
+    });
+  }, [setFolded]);
+  const onFoldAll = useCallback((roots: string[], shut: boolean) => {
+    setFolded((held) => {
+      const next = new Set(held);
+      for (const root of roots) {
+        if (shut) next.add(root);
+        else next.delete(root);
+      }
+      return next;
+    });
+  }, [setFolded]);
   const remoteHosts = useMemo(() => shownRemotes.some((host) =>
     remoteWorkspaces(host, remoteTrees[host.name]).length > 0 || runtimes.some((rt) => rt.host === host.name)) ? (
     <RemoteHosts
@@ -328,6 +340,7 @@ export function Sidebar({
         active={active}
         folded={folded}
         onFold={onFold}
+        onFoldAll={onFoldAll}
         reload={reloadTree}
         retry={retryTree ? () => void retryTree() : undefined}
         paging={paging}

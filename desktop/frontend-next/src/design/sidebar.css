@@ -66,6 +66,10 @@
 .rail .projects-add:disabled { opacity: .4; cursor: default; }
 .rail .scroll { padding-inline: 10px; }
 .rail .kids { margin: 0; padding-left: 0; border-left: 0; }
+.foldgrid { display: grid; grid-template-rows: 0fr; transition: grid-template-rows var(--t-card) var(--ease-out); }
+.foldgrid[data-open] { grid-template-rows: 1fr; }
+.foldgrid-in { min-height: 0; overflow: hidden; }
+@media (prefers-reduced-motion: reduce) { .foldgrid { transition: none } }
 .rail .studio-rail-head { padding-top: 12px; }
 .rail .studio-brand { height: 32px; }
 [data-titlebar="app"][data-platform="darwin"] .rail .studio-rail-head { padding-top: 0; }

@@ -18,6 +18,9 @@ export interface WorkspacesProps {
   // sidebar keeps them here rather than asking for them back every reload.
   folded: Set<string>;
   onFold: (root: string, folded: boolean) => void;
+  // The header's fold-every-folder control writes the same set in one go: the
+  // roots arrive already chosen, so a stale closure cannot drop a neighbour.
+  onFoldAll?: (roots: string[], folded: boolean) => void;
   reload: () => Promise<void>;
   retry?: () => void;
   paging?: TreePaging;

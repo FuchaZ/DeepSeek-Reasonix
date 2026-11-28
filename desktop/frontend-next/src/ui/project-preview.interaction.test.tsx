@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import "./testkit";
 import { useState } from "react";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it } from "vitest";
 import { Workspaces } from "./Workspaces";
@@ -33,7 +33,7 @@ it("folds from the folder title without a separate arrow, and reveals search mat
   render(<Preview />);
   expect(document.querySelector(".wsrow .twist")).toBeNull();
   await userEvent.click(screen.getByText("Project"));
-  expect(screen.queryByText("Task 0")).toBeNull();
+  await waitFor(() => expect(screen.queryByText("Task 0")).toBeNull());
   await userEvent.type(screen.getByRole("searchbox", { name: "搜索会话 / 项目" }), "Task 6");
   expect(screen.getByText("Task 6")).toBeTruthy();
 });

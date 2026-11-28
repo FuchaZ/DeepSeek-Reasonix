@@ -27,6 +27,7 @@ import { asksDelete } from "./keys";
 import { clearDraftForSession } from "./drafts";
 import { workspaceMenuKeys } from "./WorkspaceOrder";
 import { WorkspaceReveal } from "./WorkspaceReveal";
+import { Fold } from "./Fold";
 import { SessionMenu } from "./SessionMenu";
 import { useSessionMove } from "./useSessionMove";
 import { useSessionMoveTo } from "./useSessionMoveTo";
@@ -63,7 +64,7 @@ const GROUP_DRAG_KIND = "application/x-reasonix-group";
 // group label or a label onto a row: the kinds keep the two gestures apart.
 const SESSION_DRAG_KIND = "application/x-reasonix-session";
 
-function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active, folded, reload, retry, paging = NO_PAGING, previewLimit = Infinity, onFold, opening = "", onOpen, onFocus, onClose, liveIds, listedIds = liveIds, runs, scope = "all", pinned = new Set(), onPin = () => {}, onPause = () => {}, onBranch, onArchive = async () => {}, onRename, onError, adder, children, hasOtherRows }: WorkspacesProps) {
+function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active, folded, reload, retry, paging = NO_PAGING, previewLimit = Infinity, onFold, onFoldAll, opening = "", onOpen, onFocus, onClose, liveIds, listedIds = liveIds, runs, scope = "all", pinned = new Set(), onPin = () => {}, onPause = () => {}, onBranch, onArchive = async () => {}, onRename, onError, adder, children, hasOtherRows }: WorkspacesProps) {
   const [busy, setBusy] = useState("");
   const [confirm, setConfirm] = useState("");
   // The project whose folder an open just found gone: the question is asked about it, not about a removal chosen from the menu.
@@ -410,6 +411,10 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
   const hasKids = (ws: TreeWorkspace) => ws.sessions.length > 0 || ws.countsComplete === false || ws.listingState === "degraded" || (pagedScope && unloaded(ws, loadedRows(ws.root)) > 0);
   const projectsFold = groupFold(groups.projects, folded, hasKids);
   const tasksFold = groupFold(groups.tasks, folded, hasKids);
+  // The header's folder control acts on project folders only: the task run has
+  // no folder rows, and its own label already folds its conversations.
+  const folderRoots = groups.projects.filter((ws) => !ws.auto && hasKids(ws)).map((ws) => ws.root);
+  const foldersShut = folderRoots.length > 0 && folderRoots.every((root) => folded.has(root));
   // A count still in flight is not an empty run: the notes wait for the tree
   // to settle before saying a run holds nothing.
   const settled = tree.every((ws) => ws.countsComplete !== false);
@@ -553,7 +558,8 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
             setProjAdd({ x: box.left / zoom(), y: (box.bottom + 6) / zoom() });
           } : () => void startTaskSession()}
           adding={adder.busy || busy === "new:"} />
-        {restEmpty && !collapsed && group === "projects" && list.length === 0 && (
+        <Fold open={!collapsed || !!needle}>
+        {restEmpty && group === "projects" && list.length === 0 && (
           <>
             <div className="ws-none">{t("session.no_projects_yet")}</div>
             {tree.length === 0 && (
@@ -562,13 +568,13 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
             )}
           </>
         )}
-        {restEmpty && !collapsed && group === "tasks" && (list.length === 0 || tasksEmpty) && (
+        {restEmpty && group === "tasks" && (list.length === 0 || tasksEmpty) && (
           <div className="ws-none">{t("session.no_tasks_yet")}</div>
         )}
         {/* A fold is a resting-state preference: while a query is on, the rows
             it would hide are the very rows the query just found, so the run
             opens for the search no matter how it was put away. */}
-        {(!collapsed || !!needle) && list.map((ws) => {
+        {list.map((ws) => {
             // A fold is a resting-state preference; while a query is on it would hide
             // the very rows the query just found.
             const hasChildren = hasKids(ws);
@@ -747,8 +753,8 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
 
                 {/* 子项自己成一块，才能拿到那条层级引导线。缩进单独说不清楚层级：
                     两级差 18px，扫一眼只读得出“有点错位”。 */}
-                {!shut && hasChildren && (
-                  <div className="kids">
+                {hasChildren && (
+                  <Fold open={!shut} className="kids">
                 {visible.map((session) => sessionRow(session, ws))}
 
                 <ListingProgress workspace={ws} searching={searching} onRetry={retry} />
@@ -773,11 +779,12 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
                     </button>
                   )
                 )}
-                  </div>
+                  </Fold>
                 )}
               </div>
             );
         })}
+        </Fold>
       </Fragment>
     );
   };
@@ -1097,6 +1104,8 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
         onClose={() => setRenameFor(null)}
         onSave={() => void saveRename()} />}
       <ProjectsHeader adder={adder} bothFolded={bothFolded} searching={searching} onToggleBoth={() => toggleBothRuns()}
+        onToggleProjects={onFoldAll ? () => onFoldAll(folderRoots, !foldersShut) : undefined}
+        projectsFolded={foldersShut} canFoldProjects={folderRoots.length > 0}
         onSelect={() => setSelection(new Set())} selecting={!!selection} canSelect={displayed.length > 0} />
       <div className="scroll">
         <div role="tree" aria-label={t("session.projects_and_conversations")} aria-multiselectable={selection !== null} inert={busy === "batch"} data-action-keydown="tree.navigate" ref={treeKeys.ref} onKeyDown={treeKeys.onKeyDown}>

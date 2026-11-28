@@ -26,7 +26,7 @@ function draw() {
       return next;
     });
     return <Workspaces hub={{} as never} tree={tree} treeRead runtimes={[]} active=""
-      folded={folded} onFold={(root, shut) => fold([root], shut)}
+      folded={folded} onFold={(root, shut) => fold([root], shut)} onFoldAll={fold}
       reload={async () => {}} onOpen={async () => {}} onFocus={() => {}} onClose={async () => {}}
       liveIds={() => []} runs={{}} onRename={() => {}} onError={() => {}}
       adder={{ add: () => {}, close: () => {}, at: null } as never} />;
@@ -50,12 +50,34 @@ it("folds the whole projects run from the 项目 head and leaves the task group 
   expect(screen.queryByRole("treeitem", { name: "one" })).toBeNull();
   expect(screen.queryByRole("treeitem", { name: "two" })).toBeNull();
   expect(screen.getByRole("treeitem", { name: "three" })).toBeTruthy();
-  expect(row("a")).toBeUndefined();
+  await waitFor(() => expect(row("a")).toBeUndefined());
   expect(projects.getAttribute("aria-expanded")).toBe("false");
   expect(projects.getAttribute("aria-label")).toBe("展开所有项目");
   await userEvent.click(projects);
   expect(screen.getByRole("treeitem", { name: "one" })).toBeTruthy();
   expect(screen.getByRole("treeitem", { name: "three" })).toBeTruthy();
+});
+
+const folders = () => document.querySelector<HTMLButtonElement>('[data-action="workspace.fold-all"][data-value="folders"]')!;
+
+it("folds and expands every project folder from the header control", async () => {
+  draw();
+  const button = folders();
+  expect(button.getAttribute("aria-expanded")).toBe("true");
+  expect(button.getAttribute("aria-label")).toBe("收起所有项目会话");
+  await userEvent.click(button);
+  expect(screen.queryByRole("treeitem", { name: "one" })).toBeNull();
+  expect(screen.queryByRole("treeitem", { name: "two" })).toBeNull();
+  expect(screen.getByRole("treeitem", { name: "three" })).toBeTruthy();
+  await waitFor(() => expect(screen.queryByText("one")).toBeNull());
+  expect(row("a").getAttribute("aria-expanded")).toBe("false");
+  expect(row("b").getAttribute("aria-expanded")).toBe("false");
+  expect(button.getAttribute("aria-expanded")).toBe("false");
+  expect(button.getAttribute("aria-label")).toBe("展开所有项目会话");
+  await userEvent.click(button);
+  expect(screen.getByRole("treeitem", { name: "one" })).toBeTruthy();
+  expect(screen.getByRole("treeitem", { name: "two" })).toBeTruthy();
+  expect(button.getAttribute("aria-expanded")).toBe("true");
 });
 
 it("folds the task group from the 任务 head and leaves the projects alone", async () => {
@@ -133,7 +155,7 @@ it("folds the empty task run's note from its standing label", async () => {
   expect(tasks.disabled).toBe(false);
   expect(tasks.getAttribute("aria-expanded")).toBe("true");
   await userEvent.click(tasks);
-  expect(notes()).toEqual(["暂无项目"]);
+  await waitFor(() => expect(notes()).toEqual(["暂无项目"]));
   expect(tasks.getAttribute("aria-expanded")).toBe("false");
   await userEvent.click(tasks);
   expect(notes()).toEqual(["暂无项目", "暂无任务"]);
@@ -144,7 +166,7 @@ it("folds 暂无项目 and the first-project offer from the 项目 label", async
   const projects = head("projects");
   expect(projects.disabled).toBe(false);
   await userEvent.click(projects);
-  expect(notes()).toEqual(["暂无任务"]);
+  await waitFor(() => expect(notes()).toEqual(["暂无任务"]));
   expect(document.querySelector('[data-action="workspace.add"]')).toBeTruthy(); // the head's + stands whatever the runs show
   await userEvent.click(projects);
   expect(document.querySelector('[data-action="workspace.add"]')).toBeTruthy();
@@ -190,7 +212,7 @@ it("folds both runs at once from the 任务列表 head", async () => {
 it("folds both empty runs' notes from the 任务列表 head", async () => {
   drawTree([]);
   await userEvent.click(both());
-  expect(notes()).toEqual([]);
+  await waitFor(() => expect(notes()).toEqual([]));
   expect(document.querySelector('[data-action="workspace.add"]')).toBeTruthy(); // the head's + stands whatever the runs show
   await userEvent.click(both());
   expect(notes()).toEqual(["暂无项目", "暂无任务"]);
