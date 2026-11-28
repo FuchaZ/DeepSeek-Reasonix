@@ -1,6 +1,8 @@
 .scrolljump { position: sticky; bottom: 0; z-index: 4; height: 0; pointer-events: none; }
 .scrolljump > div { position: absolute; right: 14px; bottom: 12px; display: grid; gap: 6px; pointer-events: auto; }
 .railhost ~ .scrolljump > div { right: 45px; }
+[data-rail-move="slide"] .scrolljump > div { right: calc(14px + var(--jump-shift, 0px)); }
+[data-rail-move="slide"] .railhost ~ .scrolljump > div { right: calc(45px + var(--jump-shift, 0px)); }
 .scrolljump button {
   display: grid; place-items: center; width: 28px; height: 28px; padding: 0; cursor: pointer;
   border: 1px solid var(--hair); border-radius: var(--r-sm); background: color-mix(in srgb, var(--surface) 93%, transparent); color: var(--muted);

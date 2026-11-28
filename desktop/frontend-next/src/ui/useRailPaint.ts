@@ -41,6 +41,9 @@ export function useRailPaint({ rail, drawer, railW, active, panes }: {
     // The session tab strip sits outside the active pane and is left-aligned:
     // it clears the whole rail, not the half-shift the centred column uses.
     document.querySelector<HTMLElement>(".panetabs")?.style.setProperty("--rail-tab", `${open}px`);
+    // --rail-shift does not inherit, by design; the jump pills need it on
+    // their own host so they stay inside the shifted scroller's viewport.
+    pane.querySelector<HTMLElement>(".scrolljump")?.style.setProperty("--jump-shift", railSlide.current ? `${open / 2}px` : "0px");
   }, []);
   const measureRail = useCallback(() => {
     const scroller = document.querySelector<HTMLElement>('.pane:not([data-off]) .scroll[data-pane="flow"]');

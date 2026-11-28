@@ -1,4 +1,4 @@
-import { useEffect, useState, type RefObject } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import { t } from "../i18n";
 import { reach, type Direction } from "./jumpreach";
 import { StudioIcon } from "./StudioIcon";
@@ -16,6 +16,15 @@ export function ScrollJump({ scroll, flow, active, onJump }: {
   onJump: (dir: Direction, step: boolean) => void;
 }) {
   const [shown, setShown] = useState(NONE);
+  const host = useRef<HTMLDivElement>(null);
+  // The rail translates the scroller, but --rail-shift is registered
+  // non-inheriting; hand the visible shift to this host instead.
+  useEffect(() => {
+    const root = scroll.current;
+    if (!root) return;
+    const shift = root.dataset.railMove === "slide" ? getComputedStyle(root).getPropertyValue("--rail-shift").trim() || "0px" : "0px";
+    host.current?.style.setProperty("--jump-shift", shift);
+  }, [scroll, shown.up, shown.down]);
   useEffect(() => {
     const root = scroll.current;
     if (!root || !active) {
@@ -45,7 +54,7 @@ export function ScrollJump({ scroll, flow, active, onJump }: {
 
   if (!shown.up && !shown.down) return null;
   return (
-    <div className="scrolljump">
+    <div className="scrolljump" ref={host}>
       <div>
         {shown.up && (
           <TooltipButton data-action="transcript.scroll" data-value="up" aria-label={t("chat.back_to_top")} title={t("chat.back_to_top_shift_click")} onClick={(e) => onJump("up", e.shiftKey)}>
