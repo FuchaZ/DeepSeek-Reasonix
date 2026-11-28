@@ -17,7 +17,7 @@ try {
     await page.goto(`${BASE}?pref=zh&turns=3`, { waitUntil: "networkidle" });
     const add = page.locator('.projects-header [data-action="workspace.add"]');
     const filter = page.locator('.projects-header .session-filter-trigger');
-    const fold = page.locator('.projects-header [data-action="workspace.fold-all"]');
+    const fold = page.locator('.projects-header [data-action="workspace.fold-all"][data-value="both"]');
     await add.waitFor();
     await page.addStyleTag({ content: "*{transition:none!important;animation:none!important}" });
     const paint = (control) => control.evaluate((button) => {
