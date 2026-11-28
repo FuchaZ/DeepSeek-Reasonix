@@ -387,19 +387,11 @@ body { background: var(--page) !important; }
 
 /* The navigation owns the whole left edge, as in the prototype. */
 .rail {
-  position: fixed;
-  z-index: 12;
-  inset: 0 auto 0 var(--nav-w);
-  width: var(--rail-open);
-  transform: none;
-  display: flex;
-  flex-direction: column;
-  background: var(--page) !important;
-  border-right: 1px solid var(--hair);
-  color: var(--text);
-  transition: transform var(--t-drawer) var(--ease-drawer), --nav-w var(--t-drawer) var(--ease-drawer), opacity var(--m-card) !important;
+  position: fixed; z-index: 12; inset: 0 auto 0 var(--nav-w); width: var(--rail-open); transform: none;
+  display: flex; flex-direction: column; background: var(--page) !important; border-right: 1px solid var(--hair); color: var(--text);
+  transition: var(--rail-motion, transform var(--t-drawer) var(--ease-drawer), --nav-w var(--t-drawer) var(--ease-drawer), opacity var(--m-card)) !important;
 }
-.app[data-drag] .rail { transition: none !important }
+.app[data-drag] .rail { --rail-motion: none }
 .rail > * { width: var(--rail-open); }
 .railscroll { min-height: 0; }
 .main { background: var(--surface) !important; }
@@ -562,18 +554,12 @@ body { background: var(--page) !important; }
 .flow:not([data-empty]) {
   flex: 0 0 auto;
   width: min(var(--doc), calc(100% - var(--srail-w) - 34px));
-  margin: 0 auto;
-  padding: 28px 0 36px;
-  box-sizing: border-box;
+  margin: 0 auto; padding: 28px 0 36px; box-sizing: border-box;
 }
 [data-pane="flow"]:has(> .flow:not([data-empty])) { flex: 1 1 0; scrollbar-gutter: stable both-edges; }
 [data-pane="flow"] { padding-left: var(--rail-inset, 0px) }
 [data-pane="analysis"], .pane[data-browser="off"] > .scroll[data-pane="browser"] { padding-left: var(--rail-inset, 0px) }
-[data-pane="flow"][data-rail-move="slide"] {
-  padding-left: 0;
-  transform: translateX(var(--rail-shift, 0px));
-  transition: transform var(--t-drawer) var(--ease-drawer);
-}
+[data-pane="flow"][data-rail-move="slide"] { padding-left: 0; transform: translateX(var(--rail-shift, 0px)); transition: transform var(--t-drawer) var(--ease-drawer) }
 [data-pane="flow"][data-rail-move="pad"] { transition: padding-left var(--t-drawer) var(--ease-drawer) }
 .app[data-drag] [data-pane="flow"][data-rail-move="pad"] { transition: none }
 .app[data-drag] [data-pane="flow"][data-rail-move="slide"] { transition: none }

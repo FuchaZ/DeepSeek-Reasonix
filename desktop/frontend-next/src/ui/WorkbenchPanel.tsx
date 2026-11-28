@@ -93,13 +93,11 @@ export function WorkbenchPanel({
   fileRequest,
   agentRequest,
   onShowCall,
-  terminalRequest = 0,
-  runRequest,
+  terminalRequest = 0, runRequest,
 }: {
   onShowCall?: (callId: string) => void;
   // Counts the presses that ask for a terminal.
   terminalRequest?: number;
-  // A shell snippet the conversation asked to run, counted so a repeat lands.
   runRequest?: RunRequest | null;
   port: AgentPort;
   tabs: BrowserTab[];

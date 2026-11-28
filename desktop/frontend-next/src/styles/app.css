@@ -479,9 +479,7 @@
 
             .call[data-pending] > .c { opacity: .7 }
 
-  .app {
-    --side-w: 0px;
-  }
+  .app { --side-w: 0px }
   .app[data-side="on"] { --side-w: var(--side-open) }
 
   .app[data-drag] { transition: none }
@@ -499,10 +497,7 @@
   .rail, .side { transition: opacity var(--m-card) var(--m-step) }
   .rail[data-rail="off"], .app:not([data-side="on"]) .side { opacity: 0; transition: opacity var(--m-exit) }
 
-  .gutter {
-    position: absolute; top: 0; bottom: 0; width: 7px; z-index: 5;
-    cursor: col-resize; touch-action: none;
-  }
+  .gutter { position: absolute; top: 0; bottom: 0; width: 7px; z-index: 5; cursor: col-resize; touch-action: none }
   .gutter-l { left: -1px; z-index: 13; transition: left var(--t-drawer) var(--ease-drawer) }
   .app[data-drag] .gutter-l { transition: none }
   .gutter-r { right: -6px }

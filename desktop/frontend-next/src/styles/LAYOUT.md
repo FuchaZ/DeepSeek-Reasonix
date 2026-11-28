@@ -395,10 +395,10 @@ the picker and keyboard navigation.
   takes the rail's full width as a left inset on the same drawer curve, so its
   tabs never sit under the overlay and move with the fold.
 - The rail also moves the reading scroller (`--rail-inset`, non-inheriting, set
-  on the scroller), so the column clears the overlay at 1201–1439px. Where the
-  column is width-capped it follows by `translateX(--rail-shift)` and the toggle
-  owes it no layout at all; where the room actually narrows the column, the
-  inset reflows it with the drawer transition. A phone drawer adds neither.
+  on the scroller), so the column clears the overlay at 1201–1439px.
+- Where the column is width-capped it follows by `translateX(--rail-shift)` and
+  the toggle owes it no layout; where the room narrows, the inset reflows it
+  with the drawer transition. A phone drawer adds neither.
 - The dock tweens its grid track once with the same drawer curve; the workbench
   panel keeps its final width and is clipped, so its contents do not reflow
   during the reveal. `.flow` still resets the three widths so a future

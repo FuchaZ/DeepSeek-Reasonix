@@ -49,20 +49,7 @@ import { useWorkspaceDrag } from "./useWorkspaceDrag";
 import { SessionTail } from "./SessionAge";
 import { SessionArchiveAction, SessionMoreAction, SessionPinAction } from "./SessionRowActions";
 import { useSessionMutation, type SessionMutation } from "./useSessionMutation";
-
-const parentOf = (root: string) => root.replace(/[/\\]+$/, "").split(/[/\\]/).slice(-2, -1)[0] ?? "";
-
-// A conversation a pane holds before its first turn is written has only a file
-// name; calling it that would show a timestamp where every other row shows words.
-const rowLabel = (session: TreeSession) =>
-  session.title || (session.runtimeId && !session.turns ? t("common.new_session") : session.name);
-
-// The drag payload of a group-label reorder: only drags that carry it move a
-// run, the way the row reorder carries its own kind.
-const GROUP_DRAG_KIND = "application/x-reasonix-group";
-// A conversation row carries its own kind, so a row can never drop onto a
-// group label or a label onto a row: the kinds keep the two gestures apart.
-const SESSION_DRAG_KIND = "application/x-reasonix-session";
+import { allFolded, GROUP_DRAG_KIND, parentOf, projectFoldRoots, rowLabel, SESSION_DRAG_KIND } from "./workspaceTree";
 
 function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active, folded, reload, retry, paging = NO_PAGING, previewLimit = Infinity, onFold, onFoldAll, opening = "", onOpen, onFocus, onClose, liveIds, listedIds = liveIds, runs, scope = "all", pinned = new Set(), onPin = () => {}, onPause = () => {}, onBranch, onArchive = async () => {}, onRename, onError, adder, children, hasOtherRows }: WorkspacesProps) {
   const [busy, setBusy] = useState("");
@@ -411,10 +398,8 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
   const hasKids = (ws: TreeWorkspace) => ws.sessions.length > 0 || ws.countsComplete === false || ws.listingState === "degraded" || (pagedScope && unloaded(ws, loadedRows(ws.root)) > 0);
   const projectsFold = groupFold(groups.projects, folded, hasKids);
   const tasksFold = groupFold(groups.tasks, folded, hasKids);
-  // The header's folder control acts on project folders only: the task run has
-  // no folder rows, and its own label already folds its conversations.
-  const folderRoots = groups.projects.filter((ws) => !ws.auto && hasKids(ws)).map((ws) => ws.root);
-  const foldersShut = folderRoots.length > 0 && folderRoots.every((root) => folded.has(root));
+  const folderRoots = projectFoldRoots(groups.projects, hasKids);
+  const foldersShut = allFolded(folderRoots, folded);
   // A count still in flight is not an empty run: the notes wait for the tree
   // to settle before saying a run holds nothing.
   const settled = tree.every((ws) => ws.countsComplete !== false);
@@ -537,14 +522,8 @@ function WorkspacesView({ hub, tree, treeRead, answered = null, runtimes, active
     const collapsed = collapsedRuns.has(group);
     return (
       <Fragment key={group}>
-        {/* One head for every shape of run: the label folds the whole run —
-            the folder rows and every conversation under them — through the
-            persisted rest store, so a reload opens the same shape. Remote
-            rows on the tree or a scope on the view must not take the fold
-            away; the query is the only thing that stands the label
-            unclickable, and even then the head reads as its disabled
-            button. The row's plus answers its own run: the projects' adds a
-            project, the tasks' opens the window's own kind of conversation. */}
+        {/* The label folds its whole run through the persisted rest store; a
+            query stands it unclickable, and its plus answers its own run. */}
         <WorkspaceGroupHead group={group} folded={searching ? fold.folded : collapsed} canFold={!searching} searching={searching}
           onToggle={() => toggleRun(group)} dragProps={groupDragProps(group)}
           dropping={groupDrag?.over?.group === group ? groupDrag.over.edge : undefined} dragging={groupDrag?.from === group}

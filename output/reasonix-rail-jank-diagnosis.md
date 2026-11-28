@@ -1,3 +1,10 @@
+---
+owner: @esengine
+backup: @SivanCola
+status: active
+reviewed: 2026-11-28
+---
+
 # Reasonix Studio 左栏 / 右工作台开合掉帧：复现与根因
 
 > 只读诊断，未改动源码。日期：2026-11-27。
@@ -9,7 +16,9 @@
 
 一句话根因：
 
-> `.app` 上的 `data-rail` 翻转会触发一次全子树样式失效，而 `--rail-w` 是被 `@property` 注册为**可继承**、又由 CSS transition 逐帧插值的属性；动画期间每一帧都让整棵子树重新计算样式。会话越长，DOM 占位块越多，这笔重算越贵；新会话几乎没有可重算的内容。右工作台的 `data-browser` 翻转是同一机制，另加 View Transition 快照与 Electron 原生 `WebContentsView` 的逐次 `setBounds`/遮挡探测。
+> `.app` 上的 `data-rail` 翻转会触发一次全子树样式失效，而 `--rail-w` 是被 `@property` 注册为**可继承**、又由 CSS transition 逐帧插值的属性；动画期间每一帧都让整棵子树重新计算样式。会话越长，DOM 占位块越多，这笔重算越贵；新会话几乎没有可重算的内容。
+>
+> 右工作台的 `data-browser` 翻转是同一机制，另加 View Transition 快照与 Electron 原生 `WebContentsView` 的逐次 `setBounds`/遮挡探测。
 
 **我先前列出的「grid 轨道逐帧重排」假设被测量否定**：`.flow` 宽度恒为 760px，文本从不折行；Layout 全程平坦（CPU=1 每次 toggle 5.5–6.5ms），固定 grid 列、`transition:none`、scene 窄布局都救不了帧时间。**「安卓走 scene 抽屉所以不卡」也被否定**：600px 下 grid rail 列确实固定为 0，但成本不变。
 
@@ -104,7 +113,8 @@ TURNS=0 的同一 trace：UpdateLayoutTree 283.6–310.6ms（分 10–11 次，�
 - `data-browser` 挂在 `.app` 上，CSS 里是 `.app[data-browser="off"] .pane:has(> .pbody[data-dock]) …` 这类后代 + `:has()` 选择器；每次开关触发一次全文档样式重算，规模随 DOM 增长。
 - `--dock-w` 已经在之前的修复里改成 `inherits: false` 并落在 `.pane`（`tokens.css:45`、`dock.css:9`），所以**没有**左栏那种每帧整树继承重算；剩下的每帧成本是 `.pane` 的 grid 轨道布局 + 重绘（Layout 在左栏测量里很便宜，但 `.pane` 子树更重）。
 - View Transition：`showView` 走 `swapping()`，起止各截一次整块 pane 快照，`flushSync` 强制同步提交，一次性但很重。
-- 原生浏览器视图（Electron 独有）：`BrowserPanel.tsx:246-279` 的 ResizeObserver + body MutationObserver + transitionend/animationend + 400ms 轮询，48ms 去抖后 `showBrowserView(target, box)`；`visibleBox` 逐祖先 `getComputedStyle`，`occluded` 最多 81 次 `elementsFromPoint` + `paints()`（每次再算祖先/伪元素样式），再跨进程 `setBounds`。工作台里开着浏览器页时，动画期间每 48ms 一次这套探测 + IPC。
+- 原生浏览器视图（Electron 独有）：`BrowserPanel.tsx:246-279` 的 ResizeObserver + body MutationObserver + transitionend/animationend + 400ms 轮询，48ms 去抖后 `showBrowserView(target, box)`。
+- `visibleBox` 逐祖先 `getComputedStyle`，`occluded` 最多 81 次 `elementsFromPoint` + `paints()`（每次再算祖先/伪元素样式），再跨进程 `setBounds`。工作台里开着浏览器页时，动画期间每 48ms 一次这套探测 + IPC。
 - 工作台每次 `shown` 变真都会重新读文件树和当前文件（`WorkbenchPanel.tsx:229-270`、`useWorkbenchFiles.ts:86-93`），并重建 tab 条宿主（`useWorkbenchDock`）。
 - 所以右栏的掉帧是：**一次性全文档重算（`data-browser`）+ VT 快照 + 原生视图/文件树**，与左栏的「逐帧继承重算」不是同一条主因；修复要分开做。
 

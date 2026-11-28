@@ -1,3 +1,10 @@
+---
+owner: @esengine
+backup: @SivanCola
+status: active
+reviewed: 2026-11-28
+---
+
 # Reasonix 复现「先测量、再回答、给证据」行为：只读评估
 
 > 只读分析，未改动任何源码。分析对象：截图里 Claude 桌面版回答「每张设备卡片是否等高」时表现出的那一类行为。
@@ -63,7 +70,8 @@ Reasonix 的提示是分层拼装的：
 
   > Do not claim success without evidence. State any unverified result or assumption explicitly.
 
-- 每轮模型实际看到的验证信号是 `<execution-policy preset="balanced" version="3" verify="targeted">`（`internal/runtime/taskpolicy/policy.go:61-79`）。它只有诊断意义，**没有向模型解释 `verify=targeted/full` 是什么意思**；真正执行验证约束的是宿主侧的 evidence ledger（`internal/safety/evidence/`）与完成回执（`internal/runtime/completion/report.go`）。
+- 每轮模型实际看到的验证信号是 `<execution-policy preset="balanced" version="3" verify="targeted">`（`internal/runtime/taskpolicy/policy.go:61-79`）。它只有诊断意义，**没有向模型解释 `verify=targeted/full` 是什么意思**。
+- 真正执行验证约束的是宿主侧的 evidence ledger（`internal/safety/evidence/`）与完成回执（`internal/runtime/completion/report.go`）。
 
 - 技能索引走 turn tail，头部很强（`internal/ext/skill/index.go:19-20`）：
 
@@ -91,7 +99,8 @@ Reasonix 的提示是分层拼装的：
 工具面还有两个值得注意的细节：
 
 - **`view_image` 是顶层可见的**（注册后进入 provider schema，`internal/assembly/boot/agent_preset.go:156-162`），不是藏在代理后面；模型可以直接调用。
-- **`browser_*`、`grep/glob/ls`、`present_files` 藏在 `use_capability` 后面**，但 `use_capability` 的描述里有一行「Deferred tools, called by id: …」，把这些工具的名字和首句描述列出来（`internal/runtime/usecap/deferred_index.go:12-48`）。这是 schema 体积与可发现性的折中：多一次代理调用，不是能力缺失，但会带来一点「多一步」的摩擦。
+- **`browser_*`、`grep/glob/ls`、`present_files` 藏在 `use_capability` 后面**，但 `use_capability` 的描述里有一行「Deferred tools, called by id: …」，把这些工具的名字和首句描述列出来（`internal/runtime/usecap/deferred_index.go:12-48`）。
+- 这是 schema 体积与可发现性的折中：多一次代理调用，不是能力缺失，但会带来一点「多一步」的摩擦。
 
 **结论**：这次行为所需的工具能力，Reasonix 已经覆盖，且图像回显通道比截图中 Claude 的描述更完整（工具缩略图、Markdown 内嵌、交付卡片三种）。**不需要新增内置工具。** 真要补，也只是补一句工具描述，而不是补能力。
 
@@ -133,7 +142,9 @@ Reasonix 的提示是分层拼装的：
    即使模型想核验，也没有一份写好的「渲染 → 测量 → 标注 → 展示」步骤，尤其在项目没有现成 renderer、或 Pillow 不可用时。技能可以把这些步骤和回退路径固化下来。
 
 3. **宿主闭环不完整（可选，代码层）**
-   `internal/safety/evidence/render.go` 已经实现了 `unseen_render` 义务：写完 `.html/.htm/.svg` 后，如果没有一次 `browser_read` 截图看过，就算欠一笔证据债。但当前生产代码里 **`UnseenRenders` / `OnlyRendersSeen` 没有任何调用者**（只在测试中出现），`completion` 的 gap 列表也不包含它。也就是说，「写完页面必须看一眼」这条宿主保证已经写好，但还没接线。另外它目前只覆盖 `.html/.htm/.svg`，不含 `.png`；`Viewed` 也只由 `browser_read` 填写（`internal/runtime/agent/tool_receipts.go:100-106`），`view_image` 不算一次「看」。
+   - `internal/safety/evidence/render.go` 已经实现了 `unseen_render` 义务：写完 `.html/.htm/.svg` 后，如果没有一次 `browser_read` 截图看过，就算欠一笔证据债。
+   - 但当前生产代码里 **`UnseenRenders` / `OnlyRendersSeen` 没有任何调用者**（只在测试中出现），`completion` 的 gap 列表也不包含它。也就是说，「写完页面必须看一眼」这条宿主保证已经写好，但还没接线。
+   - 另外它目前只覆盖 `.html/.htm/.svg`，不含 `.png`；`Viewed` 也只由 `browser_read` 填写（`internal/runtime/agent/tool_receipts.go:100-106`），`view_image` 不算一次「看」。
 
 4. **两处小摩擦（工具描述层）**
    - `view_image` 的描述只说「the picture itself is shown to you」，没有说「Studio 里用户也会看到」。模型因此不知道这是一条展示通道，可能只把它当自检。
